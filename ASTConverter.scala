@@ -6,7 +6,8 @@ import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.lang.psi.api.base.ScLiteral
-import org.jetbrains.plugins.scala.lang.psi.api.expr.{ScBlock, ScBlockExpr, ScExpression, ScInfixExpr}
+import org.jetbrains.plugins.scala.lang.psi.api.base.patterns.{ScCaseClause, ScLiteralPattern, ScPattern, ScWildcardPattern}
+import org.jetbrains.plugins.scala.lang.psi.api.expr._
 import org.jetbrains.plugins.scala.lang.psi.api.statements.params.ScParameter
 import org.jetbrains.plugins.scala.lang.psi.api.statements.{ScFunction, ScFunctionDeclaration, ScFunctionDefinition}
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.imports.{ScImportExpr, ScImportStmt}
@@ -33,6 +34,13 @@ object ASTConverter {
     case _: ScFunctionDeclaration =>
       Stmt.EmptyBlock
   }
+  def getTypeArgs(genCall: ScGenericCall) = {
+    genCall.typeArgs.
+      map(_.typeArgs)
+      .toSeq
+      .flatten
+      .map(z => TypeParam(genType(z.`type`())))
+  }
   def genType(t: TypeResult) = Type(t.getOrAny.canonicalText)
 
   def gen[T](psi: PsiElement): T = (psi match {
@@ -53,11 +61,42 @@ object ASTConverter {
         genFunctionBody(x))
     case x: ScParameter =>
       DefParam(genType(x.`type`()), x.name)
-    case x: ScBlockExpr =>
+    case x: ScBlock =>
       Stmt.MultiBlock(x.statements.map(gen[Expr]))
     case x: ScInfixExpr =>
       Expr.BinExpr(genType(x.`type`()), BinOp(x.operation.getText), gen[Expr](x.left), gen[Expr](x.right))
     case x: ScLiteral =>
       Expr.Lit(genType(x.`type`()), x.getText)
+    case x: ScParenthesisedExpr =>
+      Expr.ParenExpr(gen[Expr](x.innerElement.get))
+    case x: ScReferenceExpression =>
+      Expr.Ref(genType(x.`type`()), x.getText)
+    case x: ScMethodCall =>
+      Expr.Call(
+        genType(x.`type`()),
+        x.getInvokedExpr match {
+          case y: ScGenericCall =>
+            gen[Expr](y.referencedExpr)
+          case y => gen[Expr](y)
+        },
+        x.getInvokedExpr match {
+          case y: ScGenericCall => getTypeArgs(y)
+          case _ => Seq.empty
+        },
+        x.args.exprs.map(gen[Expr]))
+    case x: ScGenericCall =>
+      Expr.Call(genType(x.`type`()),
+        gen[Expr](x.referencedExpr),
+        getTypeArgs(x),
+        Seq.empty
+      )
+    case x: ScMatchStmt =>
+      Expr.Match(gen[Expr](x.expr.get), x.caseClauses.map(gen[CaseClause]))
+    case x: ScCaseClause =>
+      CaseClause(gen[CasePattern](x.pattern.get), gen[Expr](x.expr.get))
+    case x: ScLiteralPattern =>
+      LitPattern(gen[Expr.Lit](x.getLiteral))
+    case x: ScWildcardPattern =>
+      WildcardPattern
   }).asInstanceOf[T]
 }
