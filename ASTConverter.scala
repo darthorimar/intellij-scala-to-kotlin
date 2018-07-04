@@ -34,6 +34,9 @@ object ASTConverter {
     case _: ScFunctionDeclaration =>
       Stmt.EmptyBlock
   }
+  private def multiOrEmptyBlock(defs: Seq[Def]) =
+    if (defs.isEmpty) EmptyBlock
+    else MultiBlock(defs)
   def getTypeArgs(genCall: ScGenericCall) = {
     genCall.typeArgs.
       map(_.typeArgs)
@@ -52,7 +55,7 @@ object ASTConverter {
     case x: ScImportExpr =>
       ImportDef(x.reference.map(_.getText).get, x.importedNames)
     case x: ScClass =>
-      Stmt.ClassDef(x.name, x.extendsBlock.functions.map(gen[Stmt.Def]))
+      Stmt.ClassDef(x.name, multiOrEmptyBlock(x.extendsBlock.functions.map(gen[Stmt.Def])))
     case x: ScFunction =>
       Stmt.DefnDef(
         x.name,
@@ -62,7 +65,13 @@ object ASTConverter {
     case x: ScParameter =>
       DefParam(genType(x.`type`()), x.name)
     case x: ScBlock =>
-      Stmt.MultiBlock(x.statements.map(gen[Expr]))
+      if (x.hasRBrace || x.statements.size > 1)
+        Stmt.MultiBlock(x.statements.map(gen[Expr]))
+      else if (x.statements.isEmpty)
+        Stmt.EmptyBlock
+      else
+        Stmt.SingleBlock(gen[Expr](x.statements.head))
+
     case x: ScInfixExpr =>
       Expr.BinExpr(genType(x.`type`()), BinOp(x.operation.getText), gen[Expr](x.left), gen[Expr](x.right))
     case x: ScLiteral =>
@@ -96,7 +105,7 @@ object ASTConverter {
       CaseClause(gen[CasePattern](x.pattern.get), gen[Expr](x.expr.get))
     case x: ScLiteralPattern =>
       LitPattern(gen[Expr.Lit](x.getLiteral))
-    case x: ScWildcardPattern =>
+    case _: ScWildcardPattern =>
       WildcardPattern
   }).asInstanceOf[T]
 }
