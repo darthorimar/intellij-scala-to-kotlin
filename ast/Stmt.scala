@@ -23,7 +23,7 @@ object Stmt {
   trait Def extends Stmt
   case class ClassDef(name: String, members: Seq[Def]) extends Def
   case class ValDef(name: String, ty: Type) extends Def
-  case class DefnDef(name: String, ty: Type, args: Seq[(String, String)], body: Block) extends Def
+  case class DefnDef(name: String, ty: Type, args: Seq[DefParam], body: Block) extends Def
   case class ObjDef(name: String, members: Seq[Def]) extends Def
   case class ImportDef(reference: String, names: Seq[String]) extends Def
 
