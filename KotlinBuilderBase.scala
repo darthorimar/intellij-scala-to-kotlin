@@ -34,7 +34,10 @@ trait KotlinBuilderBase {
     rep(values, str(sep))(h)
 
   def repNl[T](values: Seq[T])(h: T => Unit): Unit =
-    rep(values, nl)(h)
+    rep(values, nl())(h)
+
+  def opt[T](value: Option[T])(h: T => Unit): Unit =
+    value.foreach(h)
 
   def text: String = builder.toString
 }

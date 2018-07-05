@@ -5,21 +5,22 @@ import org.jetbrains.plugins.kotlinConverter.ast.Stmt._
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
-import org.jetbrains.plugins.scala.lang.psi.api.base.ScLiteral
-import org.jetbrains.plugins.scala.lang.psi.api.base.patterns.{ScCaseClause, ScLiteralPattern, ScPattern, ScWildcardPattern}
+import org.jetbrains.plugins.scala.lang.psi.api.base.{ScLiteral, ScReferenceElement, ScStableCodeReferenceElement}
+import org.jetbrains.plugins.scala.lang.psi.api.base.patterns._
 import org.jetbrains.plugins.scala.lang.psi.api.expr._
 import org.jetbrains.plugins.scala.lang.psi.api.statements.params.ScParameter
-import org.jetbrains.plugins.scala.lang.psi.api.statements.{ScFunction, ScFunctionDeclaration, ScFunctionDefinition}
+import org.jetbrains.plugins.scala.lang.psi.api.statements._
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.imports.{ScImportExpr, ScImportStmt}
-import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScClass
-import org.jetbrains.plugins.scala.lang.psi.impl.expr.ScBlockExprImpl
+import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.{ScClass, ScObject, ScTrait}
+import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTemplateDefinitionImpl}
 import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
+import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
 import org.jetbrains.plugins.scala.lang.psi.types.ScType
 import org.jetbrains.plugins.scala.lang.psi.types.result.TypeResult
 
 import scala.collection.immutable
 
-object ASTConverter {
+object ASTGenerator {
   private def genDefinitions(file: ScalaFile): Seq[PsiElement] = {
     println(file.typeDefinitions.mkString(", "))
     val functionDefns =
@@ -28,34 +29,61 @@ object ASTConverter {
       file.findChildrenByType(ScalaElementTypes.FUNCTION_DECLARATION)
     functionDefns ++ functionDecls ++ file.getClasses
   }
-  private def genFunctionBody(fun: ScFunction) = fun match {
+
+  private def genFunctionBody(fun: ScFunction): Block = fun match {
     case x: ScFunctionDefinition =>
       x.body.map(gen[Stmt.Block]).getOrElse(Stmt.EmptyBlock)
     case _: ScFunctionDeclaration =>
       Stmt.EmptyBlock
   }
-  private def multiOrEmptyBlock(defs: Seq[Def]) =
+
+  private def multiOrEmptyBlock(defs: Seq[Def]): Block =
     if (defs.isEmpty) EmptyBlock
     else MultiBlock(defs)
-  def getTypeArgs(genCall: ScGenericCall) = {
+
+  def genTypeArgs(genCall: ScGenericCall): Seq[TypeParam] = {
     genCall.typeArgs.
       map(_.typeArgs)
       .toSeq
       .flatten
-      .map(z => TypeParam(genType(z.`type`())))
+      .map(z => TypeParam(Type(z.getText)))
   }
+
   def genType(t: TypeResult) = Type(t.getOrAny.canonicalText)
 
   def gen[T](psi: PsiElement): T = (psi match {
     case x: ScalaFile =>
       Stmt.FileDef(
-        x.getName,
+        x.getPackageName,
         x.getImportStatements.flatMap(_.importExprs).map(gen[Stmt.ImportDef]),
-        genDefinitions(x).map(gen[Stmt.Def]))
+        genDefinitions(x)
+          .filter(!_.isInstanceOf[PsiClassWrapper])
+          .map(gen[Stmt.Def]))
     case x: ScImportExpr =>
       ImportDef(x.reference.map(_.getText).get, x.importedNames)
     case x: ScClass =>
-      Stmt.ClassDef(x.name, multiOrEmptyBlock(x.extendsBlock.functions.map(gen[Stmt.Def])))
+      Stmt.ClassDef(
+        x.name,
+        Seq.empty,
+        multiOrEmptyBlock(
+          x.extendsBlock.members.map(gen[Stmt.Def])))
+    case x: PsiClassWrapper =>
+      gen[Def](x.definition)
+    case x: ScTrait =>
+      Stmt.TraitDef(
+        x.name,
+        Seq.empty,
+        multiOrEmptyBlock(
+          x.extendsBlock.members.map(gen[Stmt.Def])))
+
+    case x: ScObject =>
+      x.fakeCompanionClass
+      Stmt.ObjDef(
+        x.name,
+        Seq.empty,
+        multiOrEmptyBlock(
+          x.extendsBlock.members.map(gen[Stmt.Def])))
+
     case x: ScFunction =>
       Stmt.DefnDef(
         x.name,
@@ -89,14 +117,14 @@ object ASTConverter {
           case y => gen[Expr](y)
         },
         x.getInvokedExpr match {
-          case y: ScGenericCall => getTypeArgs(y)
+          case y: ScGenericCall => genTypeArgs(y)
           case _ => Seq.empty
         },
         x.args.exprs.map(gen[Expr]))
     case x: ScGenericCall =>
       Expr.Call(genType(x.`type`()),
         gen[Expr](x.referencedExpr),
-        getTypeArgs(x),
+        genTypeArgs(x),
         Seq.empty
       )
     case x: ScMatchStmt =>
@@ -105,7 +133,27 @@ object ASTConverter {
       CaseClause(gen[CasePattern](x.pattern.get), gen[Expr](x.expr.get))
     case x: ScLiteralPattern =>
       LitPattern(gen[Expr.Lit](x.getLiteral))
+    case x: ScConstructorPattern =>
+      ConstructorPattern(x.ref.qualName, x.args.patterns.map(gen[CasePattern]))
+    case x: ScTypedPattern =>
+      TypedPattern(x.name, genType(x.typePattern.get.typeElement.`type`()))
+    case x: ScReferencePattern =>
+      ReferencePattern(x.name)
+    case x: ScReferenceElement =>
+      ReferencePattern(x.refName)
+    case x: ScStableReferenceElementPattern =>
+      ReferencePattern(x.getReferenceExpression.get.refName)
     case _: ScWildcardPattern =>
       WildcardPattern
+    case x: ScPatternDefinition =>
+      Stmt.ValDef(x.bindings.head.name, genType(x.bindings.head.`type`()), gen[Expr](x.expr.get))
+    case x: ScVariableDefinition =>
+      Stmt.VarDef(x.bindings.head.name, genType(x.bindings.head.`type`()), gen[Expr](x.expr.get))
+    case x: ScAssignStmt =>
+      Expr.Assign(gen[Expr](x.getLExpression), gen[Expr](x.getRExpression.get))
+    case x: ScNewTemplateDefinitionImpl =>
+      Expr.New(
+        x.constructor.get.typeElement.getText,
+        x.constructor.get.args.toSeq.flatMap(_.exprs).map(gen[Expr]))
   }).asInstanceOf[T]
 }

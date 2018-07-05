@@ -6,7 +6,7 @@ import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 object Converter {
   def convert(file: ScalaFile): String = {
     val builder = new KotlinBuilder
-    builder.gen(ASTConverter.gen[FileDef](file))
+    builder.gen(ASTGenerator.gen[FileDef](file))
     builder.text
   }
 }

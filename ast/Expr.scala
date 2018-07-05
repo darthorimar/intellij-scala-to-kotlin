@@ -1,5 +1,7 @@
 package org.jetbrains.plugins.kotlinConverter.ast
 
+import org.jetbrains.plugins.scala.lang.psi.api.expr.ScExpression
+
 trait Expr extends AST
 
 object Expr {
@@ -9,6 +11,9 @@ object Expr {
   case class Lit(ty: Type, name: String) extends Expr
   case class Ref(ty: Type, name: String) extends Expr
   case class Match(expr: Expr, clauses: Seq[CaseClause]) extends Expr
+  case class Assign(left: Expr, right: Expr) extends Expr
+  case class New(name: String, args: Seq[Expr]) extends Expr
+
 }
 
 

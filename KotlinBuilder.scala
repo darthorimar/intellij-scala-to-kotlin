@@ -4,86 +4,143 @@ import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.ast.Stmt._
 import org.jetbrains.plugins.kotlinConverter.ast.Expr._
 
-class KotlinBuilder extends KotlinBuilderBase {
-  def gen(ast: AST): Unit =  ast match {
-    case FileDef(pckg, imports, defns) =>
-      repNl(imports)(gen)
-      nl()
-      repNl(defns)(gen)
-    case ClassDef(name, block) =>
-      str("class ")
-      str(name)
-      str(" ")
-      gen(block)
+import scala.collection.mutable
 
-    case ValDef(name, ty) =>
-    case DefnDef(name, ty, args, body) =>
-      str("fun ")
-      str(name)
-      str("(")
-      rep(args, ", ") { case DefParam(ty, name) =>
+class KotlinBuilder extends KotlinBuilderBase {
+  def gen(ast: AST): Unit =
+    ast match {
+      case FileDef(pckg, imports, defns) =>
+        if (pckg.trim.nonEmpty) {
+          str("package ")
+          str(pckg)
+        }
+        nl()
+        repNl(imports)(gen)
+        nl()
+        repNl(defns)(gen)
+      case ClassDef(name, supers, block) =>
+        str("class ")
+        str(name)
+        str(" ")
+        gen(block)
+
+      case TraitDef(name, supers, block) =>
+        str("trait ")
+        str(name)
+        str(" ")
+        gen(block)
+
+      case ObjDef(name, supers, block) =>
+        str("object ")
+        str(name)
+        str(" ")
+        gen(block)
+
+      case ValDef(name, ty, expr) =>
+        str("val ")
         str(name)
         str(": ")
         gen(ty)
-      }
-      str("): ")
-      gen(ty)
-      str(" ")
-      gen(body)
-    case ObjDef(name, members) =>
-    case ImportDef(reference, names) =>
-      repNl(names) { n =>
-        str("import ")
-        str(reference)
-        str(".")
-        str(n)
-      }
-    case BinExpr(ty, op, left, right) =>
-      gen(left)
-      str(" ")
-      gen(op)
-      str(" ")
-      gen(right)
-    case ParenExpr(inner) =>
-      str("(")
-      gen(inner)
-      str(")")
-    case Call(ty, ref, typeParams, params) =>
-      gen(ref)
-      str("(")
-      rep(params, ", ")(gen)
-      str(")")
-    case Lit(ty, name) =>
-      str(name)
-    case Ref(ty, name) =>
-      str(name)
-    case Match(expr, clauses) =>
-      str("when(")
-      gen(expr)
-      str(") {")
-      indent()
-      repNl(clauses) { case CaseClause(pattern, expr) =>
+        str(" = ")
+        gen(expr)
+      case VarDef(name, ty, expr) =>
+        str("var ")
+        str(name)
+        str(": ")
+        gen(ty)
+        str(" = ")
+        gen(expr)
+      case DefnDef(name, ty, args, body) =>
+        str("fun ")
+        str(name)
+        str("(")
+        rep(args, ", ") { case DefParam(ty, name) =>
+          str(name)
+          str(": ")
+          gen(ty)
+        }
+        str("): ")
+        gen(ty)
+        str(" ")
+        gen(body)
+      case ImportDef(reference, names) =>
+        repNl(names) { n =>
+          str("import ")
+          str(reference)
+          str(".")
+          str(n)
+        }
+      case BinExpr(ty, op, left, right) =>
+        gen(left)
+        str(" ")
+        gen(op)
+        str(" ")
+        gen(right)
+      case ParenExpr(inner) =>
+        str("(")
+        gen(inner)
+        str(")")
+      case Assign(left, right) =>
+        gen(left)
+        str(" = ")
+        gen(right)
+      case Call(ty, ref, typeParams, params) =>
+        gen(ref)
+        if (typeParams.nonEmpty) {
+          str("<")
+          rep(typeParams, ", ")(gen)
+          str(">")
+        }
+        str("(")
+        rep(params, ", ")(gen)
+        str(")")
+      case Lit(ty, name) =>
+        str(name)
+      case Ref(ty, name) =>
+        str(name)
+      case Match(expr, clauses) =>
+        str("when(")
+        gen(expr)
+        str(") {")
+        indent()
+        repNl(clauses) { case CaseClause(pattern, expr) =>
           gen(pattern)
           str(" -> ")
           gen(expr)
-      }
-      unIndent()
-    case SingleBlock(stmt) =>
-      gen(stmt)
-    case MultiBlock(stmts) =>
-      str("{")
-      indent()
-      repNl(stmts)(gen)
-      unIndent()
-      str("}")
-    case EmptyBlock =>
-    case Type(name) =>
-      str(name)
-    case BinOp(name) =>
-      str(name)
-    case LitPattern(lit) =>
-      gen(lit)
-    case WildcardPattern =>
-      str("else")
-  }
+        }
+        unIndent()
+      case New(name, args) =>
+        str("new ")
+        str(name)
+        rep(args, ", ")(gen)
+      case SingleBlock(stmt) =>
+        gen(stmt)
+      case MultiBlock(stmts) =>
+        str("{")
+        indent()
+        repNl(stmts)(gen)
+        unIndent()
+        str("}")
+      case EmptyBlock =>
+      case Type(name) =>
+        str(name)
+      case BinOp(name) =>
+        str(name)
+      case LitPattern(lit) =>
+        gen(lit)
+      case ReferencePattern(ref) =>
+        str(ref)
+      case WildcardPattern =>
+        str("else")
+      case ConstructorPattern(ref, args) =>
+        str(ref)
+        str("(")
+        rep(args, ", ")(gen)
+        str(")")
+      case TypedPattern(ref, ty) => //todo use ref
+        str("is ")
+        gen(ty)
+      case TypeParam(ty) =>
+        gen(ty)
+    }
 }
