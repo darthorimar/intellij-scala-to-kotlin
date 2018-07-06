@@ -81,6 +81,14 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("(")
         gen(inner)
         str(")")
+      case Lambda(params, expr) =>
+        str("{ ")
+        rep(params, ", ") { case DefParam(ty, name) =>
+          str(name)
+        }
+        str(" -> ")
+        gen(expr)
+        str("}")
       case Assign(left, right) =>
         gen(left)
         str(" = ")
@@ -97,6 +105,8 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(")")
       case Lit(ty, name) =>
         str(name)
+      case UnderSc =>
+        str("it")
       case Ref(ty, name) =>
         str(name)
       case Match(expr, clauses) =>

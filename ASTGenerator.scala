@@ -109,6 +109,8 @@ object ASTGenerator {
       Expr.BinExpr(genType(None ,x.`type`()), BinOp(x.operation.getText), gen[Expr](x.left), gen[Expr](x.right))
     case x: ScLiteral =>
       Expr.Lit(genType(None, x.`type`()), x.getText)
+    case x: ScUnderscoreSection =>
+      Expr.UnderSc
     case x: ScParenthesisedExpr =>
       Expr.ParenExpr(gen[Expr](x.innerElement.get))
     case x: ScReferenceExpression =>
@@ -134,6 +136,8 @@ object ASTGenerator {
       )
     case x: ScMatchStmt =>
       Expr.Match(gen[Expr](x.expr.get), x.caseClauses.map(gen[CaseClause]))
+    case x: ScFunctionExpr =>
+      Expr.Lambda(x.parameters.map(gen[DefParam]), gen[Expr](x.result.get))
     case x: ScCaseClause =>
       CaseClause(gen[CasePattern](x.pattern.get), gen[Expr](x.expr.get))
     case x: ScLiteralPattern =>
