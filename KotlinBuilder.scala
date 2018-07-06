@@ -22,11 +22,39 @@ class KotlinBuilder extends KotlinBuilderBase {
           nl()
         }
         repNl(defns)(gen)
-      case ClassDef(name, supers, block) =>
+      case ClassDef(attrs, name, consruct, supers, block) =>
+        rep(attrs, " ") (gen)
+        if (attrs.nonEmpty) str(" ")
         str("class ")
         str(name)
+        gen(consruct)
         str(" ")
         gen(block)
+      case EmptyConstruct =>
+
+      case ParamsConstruct(params) =>
+        str("(")
+        rep(params, ", ") (gen)
+        str(")")
+
+      case ConstructParam(parType, mod, name, ty) =>
+        gen(mod)
+        str(" ")
+        gen(parType)
+        str(" ")
+        str(name)
+        genType(ty)
+
+      case ValType =>
+        str("val")
+      case VarType =>
+        str("var")
+      case NoType =>
+      case PrivModifier =>
+        str("private")
+      case PublModifier =>
+        str("public")
+      case NoModifier =>
 
       case TraitDef(name, supers, block) =>
         str("trait ")
@@ -152,6 +180,10 @@ class KotlinBuilder extends KotlinBuilderBase {
         genType(ty)
       case TypeParam(ty) =>
         str(ty)
+      case CaseAttr =>
+        str("data")
+      case EmptyAst =>
+        str(" EPMTY_AST ")
     }
 
   def genRealType(ty: Type): Unit =

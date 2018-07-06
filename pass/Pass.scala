@@ -9,7 +9,11 @@ trait Pass {
 
   private var parentsStack = List.empty[AST]
 
-  protected def parents: List[AST] = parentsStack
+  protected def parents: List[AST] =
+    parentsStack.tail
+
+  protected def parent: AST =
+    parents.head
 
   final def pass[T](ast: AST): T = {
     println(" " * parentsStack.size + ast.getClass.getSimpleName)
@@ -20,8 +24,16 @@ trait Pass {
   }
 
   private def copy(ast: AST): AST = ast match {
-    case ClassDef(name, supers, block) =>
-      ClassDef(name, supers.map(pass[Type]), pass[Block](block))
+    case ClassDef(attrs, name, construct, supers, block) =>
+      ClassDef(attrs.map(pass[Attr]), name, pass[Construct](construct), supers.map(pass[Type]), pass[Block](block))
+
+    case EmptyConstruct => EmptyConstruct
+
+    case ParamsConstruct(params) =>
+      ParamsConstruct(params.map(pass[ConstructParam]))
+
+    case ConstructParam(parType, mod, name, ty) =>
+      ConstructParam(parType, mod, name, pass[Type](ty))
 
     case TraitDef(name, supers, block) =>
       TraitDef(name, supers.map(pass[Type]), pass[Block](block))
@@ -118,11 +130,14 @@ trait Pass {
 
     case WildcardPattern =>
       WildcardPattern
+
+    case EmptyAst => EmptyAst
+    case CaseAttr => CaseAttr
   }
 }
 
 object Pass {
   def applyPasses(ast: AST): AST = {
-    new LambdaPass().pass[AST](ast)
+    new BasicPass().pass[AST](ast)
   }
 }

@@ -15,6 +15,7 @@ object Expr {
   case class Assign(left: Expr, right: Expr) extends Expr
   case class New(name: String, args: Seq[Expr]) extends Expr
   case class Lambda(params: Seq[DefParam], expr: Expr) extends Expr
+  case class Throw(expr: Expr) extends Expr
 
 }
 

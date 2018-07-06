@@ -21,7 +21,7 @@ object Stmt {
   }
 
   trait Def extends Stmt
-  case class ClassDef(name: String, supers: Seq[Type], block: Block) extends Def
+  case class ClassDef(attrs: Seq[Attr], name: String, consruct: Construct, supers: Seq[Type], block: Block) extends Def
   case class TraitDef(name: String, supers: Seq[Type], block: Block) extends Def
   case class ObjDef(name: String, supers: Seq[Type], block: Block) extends Def
   case class ValDef(name: String, ty: Type, expr: Expr) extends Def

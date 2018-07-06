@@ -5,14 +5,14 @@ import org.jetbrains.plugins.kotlinConverter.ast.Stmt._
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
-import org.jetbrains.plugins.scala.lang.psi.api.base.{ScLiteral, ScReferenceElement, ScStableCodeReferenceElement}
+import org.jetbrains.plugins.scala.lang.psi.api.base.{ScLiteral, ScPrimaryConstructor, ScReferenceElement, ScStableCodeReferenceElement}
 import org.jetbrains.plugins.scala.lang.psi.api.base.patterns._
 import org.jetbrains.plugins.scala.lang.psi.api.base.types.ScTypeElement
 import org.jetbrains.plugins.scala.lang.psi.api.expr._
-import org.jetbrains.plugins.scala.lang.psi.api.statements.params.ScParameter
+import org.jetbrains.plugins.scala.lang.psi.api.statements.params.{ScClassParameter, ScParameter}
 import org.jetbrains.plugins.scala.lang.psi.api.statements._
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.imports.{ScImportExpr, ScImportStmt}
-import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.{ScClass, ScObject, ScTrait}
+import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.{ScClass, ScObject, ScTrait, ScTypeDefinition}
 import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTemplateDefinitionImpl}
 import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
 import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
@@ -56,19 +56,33 @@ object ASTGenerator {
   def genType(real: Option[ScTypeElement], inf: Option[ScType]) =
     Type(real.map(_.getText), inf.map(_.canonicalText))
 
+  def genAttrs(x: ScTypeDefinition): Seq[Attr] = {
+    def attr(p: Boolean, a: Attr) =
+      if (p) Some(a) else None
+
+    attr(x.isCase, CaseAttr)
+      .toSeq
+  }
+
   def gen[T](psi: PsiElement): T = (psi match {
     case x: ScalaFile =>
       Stmt.FileDef(
         x.getPackageName,
         x.importStatementsInHeader.flatMap(_.importExprs).map(gen[Stmt.ImportDef]),
         genDefinitions(x)
-          .filter(!_.isInstanceOf[PsiClassWrapper])
+          .filter {
+            case _: PsiClassWrapper => false
+            case y: ScObject if y.isSyntheticObject => false
+            case _ => true
+          }
           .map(gen[Stmt.Def]))
     case x: ScImportExpr =>
       ImportDef(x.reference.map(_.getText).get, x.importedNames)
     case x: ScClass =>
       Stmt.ClassDef(
+        genAttrs(x),
         x.name,
+        x.constructor.map(gen[Construct]).getOrElse(EmptyConstruct),
         Seq.empty,
         multiOrEmptyBlock(
           x.extendsBlock.members.map(gen[Stmt.Def])))
@@ -95,8 +109,7 @@ object ASTGenerator {
         genType(x.returnTypeElement, x.`type`()),
         x.parameters.map(gen[DefParam]),
         genFunctionBody(x))
-    case x: ScParameter =>
-      DefParam(genType(x.typeElement, x.`type`()), x.name)
+
     case x: ScBlock =>
       if (x.hasRBrace || x.statements.size > 1)
         Stmt.MultiBlock(x.statements.map(gen[Expr]))
@@ -106,7 +119,7 @@ object ASTGenerator {
         Stmt.SingleBlock(gen[Expr](x.statements.head))
 
     case x: ScInfixExpr =>
-      Expr.BinExpr(genType(None ,x.`type`()), BinOp(x.operation.getText), gen[Expr](x.left), gen[Expr](x.right))
+      Expr.BinExpr(genType(None, x.`type`()), BinOp(x.operation.getText), gen[Expr](x.left), gen[Expr](x.right))
     case x: ScLiteral =>
       Expr.Lit(genType(None, x.`type`()), x.getText)
     case x: ScUnderscoreSection =>
@@ -134,6 +147,8 @@ object ASTGenerator {
         genTypeArgs(x),
         Seq.empty
       )
+    //    case x: ScThrowStmt =>
+    //      Expr.Throw(gen[Expr](x.body.get))
     case x: ScMatchStmt =>
       Expr.Match(gen[Expr](x.expr.get), x.caseClauses.map(gen[CaseClause]))
     case x: ScFunctionExpr =>
@@ -170,5 +185,25 @@ object ASTGenerator {
       Expr.New(
         x.constructor.get.typeElement.getText,
         x.constructor.get.args.toSeq.flatMap(_.exprs).map(gen[Expr]))
+    case x: ScPrimaryConstructor =>
+      ParamsConstruct(x.parameters.map(gen[ConstructParam]))
+
+    case x: ScClassParameter =>
+      val mod =
+        if (x.isPrivate) PrivModifier
+        else if (x.isPublic) PublModifier
+        else NoModifier
+      val t =
+        if(x.isVal) ValType
+        else if(x.isVar) VarType
+        else NoType
+      ConstructParam(t, mod, x.name, genType(x.typeElement, x.`type`()))
+
+    case x: ScParameter =>
+      DefParam(genType(x.typeElement, x.`type`()), x.name)
+
+    case x =>
+      println(s"No case for $x")
+      EmptyAst
   }).asInstanceOf[T]
 }
