@@ -14,9 +14,13 @@ class KotlinBuilder extends KotlinBuilderBase {
           str("package ")
           str(pckg)
         }
-        nl()
-        repNl(imports)(gen)
-        nl()
+        if (imports.nonEmpty) {
+          nl()
+          nl()
+          repNl(imports)(gen)
+          nl()
+          nl()
+        }
         repNl(defns)(gen)
       case ClassDef(name, supers, block) =>
         str("class ")
@@ -39,15 +43,13 @@ class KotlinBuilder extends KotlinBuilderBase {
       case ValDef(name, ty, expr) =>
         str("val ")
         str(name)
-        str(": ")
-        gen(ty)
+        genRealType(ty)
         str(" = ")
         gen(expr)
       case VarDef(name, ty, expr) =>
         str("var ")
         str(name)
-        str(": ")
-        gen(ty)
+        genRealType(ty)
         str(" = ")
         gen(expr)
       case DefnDef(name, ty, args, body) =>
@@ -56,11 +58,10 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("(")
         rep(args, ", ") { case DefParam(ty, name) =>
           str(name)
-          str(": ")
-          gen(ty)
+          genType(ty)
         }
-        str("): ")
-        gen(ty)
+        str(")")
+        genType(ty)
         str(" ")
         gen(body)
       case ImportDef(reference, names) =>
@@ -110,9 +111,10 @@ class KotlinBuilder extends KotlinBuilderBase {
         }
         unIndent()
       case New(name, args) =>
-        str("new ")
         str(name)
+        str("(")
         rep(args, ", ")(gen)
+        str(")")
       case SingleBlock(stmt) =>
         gen(stmt)
       case MultiBlock(stmts) =>
@@ -122,8 +124,6 @@ class KotlinBuilder extends KotlinBuilderBase {
         unIndent()
         str("}")
       case EmptyBlock =>
-      case Type(name) =>
-        str(name)
       case BinOp(name) =>
         str(name)
       case LitPattern(lit) =>
@@ -139,8 +139,19 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(")")
       case TypedPattern(ref, ty) => //todo use ref
         str("is ")
-        gen(ty)
+        genType(ty)
       case TypeParam(ty) =>
-        gen(ty)
+        str(ty)
     }
+
+  def genRealType(ty: Type): Unit =
+    ty.real.foreach { c =>
+      str(": ")
+      str(c)
+    }
+
+  def genType(ty: Type): Unit = {
+    str(": ")
+    str(ty.realOfInf.getOrElse("Any"))
+  }
 }

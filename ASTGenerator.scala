@@ -7,6 +7,7 @@ import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.lang.psi.api.base.{ScLiteral, ScReferenceElement, ScStableCodeReferenceElement}
 import org.jetbrains.plugins.scala.lang.psi.api.base.patterns._
+import org.jetbrains.plugins.scala.lang.psi.api.base.types.ScTypeElement
 import org.jetbrains.plugins.scala.lang.psi.api.expr._
 import org.jetbrains.plugins.scala.lang.psi.api.statements.params.ScParameter
 import org.jetbrains.plugins.scala.lang.psi.api.statements._
@@ -46,16 +47,20 @@ object ASTGenerator {
       map(_.typeArgs)
       .toSeq
       .flatten
-      .map(z => TypeParam(Type(z.getText)))
+      .map(z => TypeParam(z.getText))
   }
 
-  def genType(t: TypeResult) = Type(t.getOrAny.canonicalText)
+  def genType(real: Option[ScTypeElement], inf: TypeResult) =
+    Type(real.map(_.getText), inf.toOption.map(_.canonicalText))
+
+  def genType(real: Option[ScTypeElement], inf: Option[ScType]) =
+    Type(real.map(_.getText), inf.map(_.canonicalText))
 
   def gen[T](psi: PsiElement): T = (psi match {
     case x: ScalaFile =>
       Stmt.FileDef(
         x.getPackageName,
-        x.getImportStatements.flatMap(_.importExprs).map(gen[Stmt.ImportDef]),
+        x.importStatementsInHeader.flatMap(_.importExprs).map(gen[Stmt.ImportDef]),
         genDefinitions(x)
           .filter(!_.isInstanceOf[PsiClassWrapper])
           .map(gen[Stmt.Def]))
@@ -87,11 +92,11 @@ object ASTGenerator {
     case x: ScFunction =>
       Stmt.DefnDef(
         x.name,
-        genType(x.returnType),
+        genType(x.returnTypeElement, x.`type`()),
         x.parameters.map(gen[DefParam]),
         genFunctionBody(x))
     case x: ScParameter =>
-      DefParam(genType(x.`type`()), x.name)
+      DefParam(genType(x.typeElement, x.`type`()), x.name)
     case x: ScBlock =>
       if (x.hasRBrace || x.statements.size > 1)
         Stmt.MultiBlock(x.statements.map(gen[Expr]))
@@ -101,16 +106,16 @@ object ASTGenerator {
         Stmt.SingleBlock(gen[Expr](x.statements.head))
 
     case x: ScInfixExpr =>
-      Expr.BinExpr(genType(x.`type`()), BinOp(x.operation.getText), gen[Expr](x.left), gen[Expr](x.right))
+      Expr.BinExpr(genType(None ,x.`type`()), BinOp(x.operation.getText), gen[Expr](x.left), gen[Expr](x.right))
     case x: ScLiteral =>
-      Expr.Lit(genType(x.`type`()), x.getText)
+      Expr.Lit(genType(None, x.`type`()), x.getText)
     case x: ScParenthesisedExpr =>
       Expr.ParenExpr(gen[Expr](x.innerElement.get))
     case x: ScReferenceExpression =>
-      Expr.Ref(genType(x.`type`()), x.getText)
+      Expr.Ref(genType(None, x.`type`()), x.getText)
     case x: ScMethodCall =>
       Expr.Call(
-        genType(x.`type`()),
+        genType(None, x.`type`()),
         x.getInvokedExpr match {
           case y: ScGenericCall =>
             gen[Expr](y.referencedExpr)
@@ -122,7 +127,7 @@ object ASTGenerator {
         },
         x.args.exprs.map(gen[Expr]))
     case x: ScGenericCall =>
-      Expr.Call(genType(x.`type`()),
+      Expr.Call(genType(None, x.`type`()),
         gen[Expr](x.referencedExpr),
         genTypeArgs(x),
         Seq.empty
@@ -136,7 +141,7 @@ object ASTGenerator {
     case x: ScConstructorPattern =>
       ConstructorPattern(x.ref.qualName, x.args.patterns.map(gen[CasePattern]))
     case x: ScTypedPattern =>
-      TypedPattern(x.name, genType(x.typePattern.get.typeElement.`type`()))
+      TypedPattern(x.name, genType(x.typePattern.map(_.typeElement), None))
     case x: ScReferencePattern =>
       ReferencePattern(x.name)
     case x: ScReferenceElement =>
@@ -146,9 +151,15 @@ object ASTGenerator {
     case _: ScWildcardPattern =>
       WildcardPattern
     case x: ScPatternDefinition =>
-      Stmt.ValDef(x.bindings.head.name, genType(x.bindings.head.`type`()), gen[Expr](x.expr.get))
+      Stmt.ValDef(
+        x.bindings.head.name,
+        genType(x.typeElement, x.`type`()),
+        gen[Expr](x.expr.get))
     case x: ScVariableDefinition =>
-      Stmt.VarDef(x.bindings.head.name, genType(x.bindings.head.`type`()), gen[Expr](x.expr.get))
+      Stmt.VarDef(
+        x.bindings.head.name,
+        genType(x.typeElement, x.`type`()),
+        gen[Expr](x.expr.get))
     case x: ScAssignStmt =>
       Expr.Assign(gen[Expr](x.getLExpression), gen[Expr](x.getRExpression.get))
     case x: ScNewTemplateDefinitionImpl =>
