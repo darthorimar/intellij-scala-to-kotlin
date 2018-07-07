@@ -15,7 +15,7 @@ case class FuncType(left: Type, right: Type) extends Type {
 }
 case class ProdType(types: Seq[Type]) extends Type {
   override def asKotlin: String =
-    types.mkString("(", ", ", ")")
+    types.map(_.asKotlin).mkString("(", ", ", ")")
 }
 case class SimpleType(name: String) extends Type {
   override def asKotlin: String = name
