@@ -19,8 +19,7 @@ case class TypedPattern(ref: String, ty: Type) extends CasePattern
 case class ReferencePattern(ref: String) extends CasePattern
 case object WildcardPattern extends CasePattern
 
-sealed trait Attr extends AST
-case object CaseAttr extends Attr
+
 
 
 trait Construct extends AST
@@ -28,15 +27,5 @@ case class ParamsConstruct(params: Seq[ConstructParam]) extends Construct
 case object EmptyConstruct extends Construct
 
 case class ConstructParam(parType: ParamType, mod: ParamModifier, name: String, ty: Type) extends AST
-
-trait ParamModifier extends AST
-case object PrivModifier extends ParamModifier
-case object PublModifier extends ParamModifier
-case object NoModifier extends ParamModifier
-
-trait ParamType extends AST
-case object ValType extends ParamType
-case object VarType extends ParamType
-case object NoType extends ParamType
 
 

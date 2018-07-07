@@ -23,9 +23,9 @@ trait Pass {
     res
   }
 
-  private def copy(ast: AST): AST = ast match {
-    case ClassDef(attrs, name, construct, supers, block) =>
-      ClassDef(attrs.map(pass[Attr]), name, pass[Construct](construct), supers.map(pass[Type]), pass[Block](block))
+  protected def copy(ast: AST): AST = ast match {
+    case Defn(attrs, t, name, construct, supers, block) =>
+      Defn(attrs.map(pass[Attr]), t, name, construct.map(pass[Construct]), supers.map(pass[Type]), pass[Block](block))
 
     case EmptyConstruct => EmptyConstruct
 
@@ -34,12 +34,6 @@ trait Pass {
 
     case ConstructParam(parType, mod, name, ty) =>
       ConstructParam(parType, mod, name, pass[Type](ty))
-
-    case TraitDef(name, supers, block) =>
-      TraitDef(name, supers.map(pass[Type]), pass[Block](block))
-
-    case ObjDef(name, supers, block) =>
-      ObjDef(name, supers.map(pass[Type]), pass[Block](block))
 
     case ValDef(name, ty, expr) =>
       ValDef(name, pass[Type](ty), pass[Expr](expr))
@@ -132,7 +126,7 @@ trait Pass {
       WildcardPattern
 
     case EmptyAst => EmptyAst
-    case CaseAttr => CaseAttr
+    case x: Keyword => x
   }
 }
 

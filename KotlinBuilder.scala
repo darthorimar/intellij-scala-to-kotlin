@@ -22,14 +22,17 @@ class KotlinBuilder extends KotlinBuilderBase {
           nl()
         }
         repNl(defns)(gen)
-      case ClassDef(attrs, name, consruct, supers, block) =>
+
+      case Defn(attrs, t, name, consruct, supers, block) =>
         rep(attrs, " ") (gen)
         if (attrs.nonEmpty) str(" ")
-        str("class ")
+        gen(t)
+        str(" ")
         str(name)
-        gen(consruct)
+        opt(consruct)(gen)
         str(" ")
         gen(block)
+
       case EmptyConstruct =>
 
       case ParamsConstruct(params) =>
@@ -44,29 +47,6 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(" ")
         str(name)
         genType(ty)
-
-      case ValType =>
-        str("val")
-      case VarType =>
-        str("var")
-      case NoType =>
-      case PrivModifier =>
-        str("private")
-      case PublModifier =>
-        str("public")
-      case NoModifier =>
-
-      case TraitDef(name, supers, block) =>
-        str("trait ")
-        str(name)
-        str(" ")
-        gen(block)
-
-      case ObjDef(name, supers, block) =>
-        str("object ")
-        str(name)
-        str(" ")
-        gen(block)
 
       case ValDef(name, ty, expr) =>
         str("val ")
@@ -184,7 +164,27 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("data")
       case EmptyAst =>
         str(" EPMTY_AST ")
+      case x: Keyword =>
+        genKeyword(x)
     }
+
+  def genKeyword(k: Keyword): Unit = k match {
+    case ClassDefn => str("class")
+    case TraitDefn => str("trait")
+    case ObjDefn => str("object")
+    case ValType => str("val")
+    case VarType => str("var")
+    case NoType =>
+    case PrivModifier => str("private")
+    case PublModifier => str("public")
+    case NoModifier =>
+    case CaseAttr => str("data")
+    case PublAttr => str("public")
+    case PrivAttr => str("private")
+    case ProtAttr => str("protected")
+    case OpenAttr => str("open")
+    case FinalAttr => str("final")
+  }
 
   def genRealType(ty: Type): Unit =
     ty.real.foreach { c =>

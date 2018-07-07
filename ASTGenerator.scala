@@ -60,8 +60,13 @@ object ASTGenerator {
     def attr(p: Boolean, a: Attr) =
       if (p) Some(a) else None
 
-    attr(x.isCase, CaseAttr)
-      .toSeq
+    (attr(x.isCase, CaseAttr) ::
+      attr(x.isPrivate, PrivAttr) ::
+      attr(x.isPublic, PublAttr) ::
+      attr(x.isProtected, ProtAttr) ::
+      attr(x.hasFinalModifier, FinalAttr) ::
+      Nil
+      ).flatten
   }
 
   def gen[T](psi: PsiElement): T = (psi match {
@@ -78,30 +83,24 @@ object ASTGenerator {
           .map(gen[Stmt.Def]))
     case x: ScImportExpr =>
       ImportDef(x.reference.map(_.getText).get, x.importedNames)
-    case x: ScClass =>
-      Stmt.ClassDef(
+    case x: ScTypeDefinition =>
+      Stmt.Defn(
         genAttrs(x),
+        x match {
+          case _: ScClass => ClassDefn
+          case _: ScTrait => TraitDefn
+          case _: ScObject => TraitDefn
+        },
         x.name,
-        x.constructor.map(gen[Construct]).getOrElse(EmptyConstruct),
+        x match {
+          case y: ScClass => Some(y.constructor.map(gen[Construct]).getOrElse(EmptyConstruct))
+          case _ => None
+        },
         Seq.empty,
         multiOrEmptyBlock(
           x.extendsBlock.members.map(gen[Stmt.Def])))
     case x: PsiClassWrapper =>
       gen[Def](x.definition)
-    case x: ScTrait =>
-      Stmt.TraitDef(
-        x.name,
-        Seq.empty,
-        multiOrEmptyBlock(
-          x.extendsBlock.members.map(gen[Stmt.Def])))
-
-    case x: ScObject =>
-      x.fakeCompanionClass
-      Stmt.ObjDef(
-        x.name,
-        Seq.empty,
-        multiOrEmptyBlock(
-          x.extendsBlock.members.map(gen[Stmt.Def])))
 
     case x: ScFunction =>
       Stmt.DefnDef(
@@ -194,8 +193,8 @@ object ASTGenerator {
         else if (x.isPublic) PublModifier
         else NoModifier
       val t =
-        if(x.isVal) ValType
-        else if(x.isVar) VarType
+        if (x.isVal) ValType
+        else if (x.isVar) VarType
         else NoType
       ConstructParam(t, mod, x.name, genType(x.typeElement, x.`type`()))
 
