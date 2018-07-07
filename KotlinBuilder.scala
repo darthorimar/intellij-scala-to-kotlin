@@ -78,6 +78,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(")")
         genType(ty)
         str(" ")
+        if (body.isSingle) str("=")
         gen(body)
       case ImportDef(reference, names) =>
         repNl(names) { n =>
@@ -108,7 +109,8 @@ class KotlinBuilder extends KotlinBuilderBase {
         gen(left)
         str(" = ")
         gen(right)
-      case Call(ty, ref, typeParams, params) =>
+      case x@Call(ty, ref, typeParams, params) =>
+        println(x)
         gen(ref)
         if (typeParams.nonEmpty) {
           str("<")
@@ -118,6 +120,15 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("(")
         rep(params, ", ")(gen)
         str(")")
+      case If(cond, trueB, falseB) =>
+        str("if (")
+        gen(cond)
+        str(")")
+        gen(trueB)
+        if (falseB.stmts.nonEmpty) {
+          str(" else ")
+          gen(falseB)
+        }
       case Lit(ty, name) =>
         str(name)
       case UnderSc =>
@@ -134,6 +145,7 @@ class KotlinBuilder extends KotlinBuilderBase {
           str(" -> ")
           gen(expr)
         }
+        str("}")
         unIndent()
       case New(name, args) =>
         str(name)
@@ -164,7 +176,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(")")
       case TypedPattern(ref, ty) => //todo use ref
         str("is ")
-        genType(ty)
+        genType(ty, false)
       case TypeParam(ty) =>
         str(ty)
       case CaseAttr =>
@@ -199,8 +211,8 @@ class KotlinBuilder extends KotlinBuilderBase {
       str(c)
     }
 
-  def genType(ty: Type): Unit = {
-    str(": ")
+  def genType(ty: Type, prefix: Boolean = true): Unit = {
+    if (prefix) str(": ")
     str(ty.realOfInf.getOrElse("Any"))
   }
 }

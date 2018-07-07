@@ -10,6 +10,8 @@ object Stmt {
 
   trait Block extends Stmt {
     def stmts: Seq[Expr]
+    def isSingle: Boolean = stmts.size == 1
+    def isEmpty: Boolean = stmts.isEmpty
   }
   case class SingleBlock(stmt: Expr) extends Block {
     override def stmts: Seq[Expr] = Seq(stmt)

@@ -32,9 +32,15 @@ object ASTGenerator extends App() with AST {
     functionDefns ++ functionDecls ++ file.getClasses
   }
 
+  def exprToBlock(expr: Option[Expr]): Block =
+    expr.map {
+      case y: Block => y
+      case y => SingleBlock(y)
+    }.getOrElse(Stmt.EmptyBlock)
+
   private def genFunctionBody(fun: ScFunction): Block = fun match {
     case x: ScFunctionDefinition =>
-      x.body.map(gen[Stmt.Block]).getOrElse(Stmt.EmptyBlock)
+      exprToBlock(x.body.map(gen[Expr]))
     case _: ScFunctionDeclaration =>
       Stmt.EmptyBlock
   }
@@ -152,8 +158,13 @@ object ASTGenerator extends App() with AST {
       Expr.Call(genType(None, x.`type`()),
         gen[Expr](x.referencedExpr),
         genTypeArgs(x),
-        Seq.empty
-      )
+        Seq.empty)
+    case x: ScIfStmt =>
+      Stmt.If(
+        gen[Expr](x.condition.get),
+        exprToBlock(x.thenBranch.map(gen[Expr])),
+        exprToBlock(x.elseBranch.map(gen[Expr])))
+
     //    case x: ScThrowStmt =>
     //      Expr.Throw(gen[Expr](x.body.get))
     case x: ScMatchStmt =>
