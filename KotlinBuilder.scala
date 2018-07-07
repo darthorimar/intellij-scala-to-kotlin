@@ -38,7 +38,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         gen(block)
 
       case Super(ty, construct) =>
-        genRealType(ty, false)
+        genRealTypeCont(ty, false)
 
       case EmptyConstruct =>
 
@@ -53,18 +53,18 @@ class KotlinBuilder extends KotlinBuilderBase {
         gen(parType)
         str(" ")
         str(name)
-        genType(ty)
+        genTypeCont(ty)
 
       case ValDef(name, ty, expr) =>
         str("val ")
         str(name)
-        genRealType(ty)
+        genRealTypeCont(ty)
         str(" = ")
         gen(expr)
       case VarDef(name, ty, expr) =>
         str("var ")
         str(name)
-        genRealType(ty)
+        genRealTypeCont(ty)
         str(" = ")
         gen(expr)
       case DefnDef(name, ty, args, body) =>
@@ -73,10 +73,10 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("(")
         rep(args, ", ") { case DefParam(ty, name) =>
           str(name)
-          genType(ty)
+          genTypeCont(ty)
         }
         str(")")
-        genType(ty)
+        genTypeCont(ty)
         str(" ")
         if (body.isSingle) str("=")
         gen(body)
@@ -176,7 +176,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(")")
       case TypedPattern(ref, ty) => //todo use ref
         str("is ")
-        genType(ty, false)
+        genTypeCont(ty, false)
       case TypeParam(ty) =>
         str(ty)
       case CaseAttr =>
@@ -205,14 +205,18 @@ class KotlinBuilder extends KotlinBuilderBase {
     case FinalAttr => str("final")
   }
 
-  def genRealType(ty: Type, prefix: Boolean = true): Unit =
+  def genRealTypeCont(ty: TypeCont, prefix: Boolean = true): Unit =
     ty.real.foreach { c =>
       if (prefix) str(": ")
-      str(c)
+      genType(c)
     }
 
-  def genType(ty: Type, prefix: Boolean = true): Unit = {
+  def genTypeCont(ty: TypeCont, prefix: Boolean = true): Unit = {
     if (prefix) str(": ")
-    str(ty.realOfInf.getOrElse("Any"))
+    genType(ty.realOfInf.getOrElse(SimpleType("Any")))
+  }
+
+  def genType(t: Type): Unit = {
+    str(t.asKotlin)
   }
 }

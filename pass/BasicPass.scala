@@ -17,7 +17,7 @@ class BasicPass extends Pass {
         case ConstructParam(parType, mod, name, ty) =>
           val t = if (parType == NoType) ValType else parType
           val m = if (mod == NoModifier) PublModifier else mod
-          ConstructParam(t, m, name, pass[Type](ty))
+          ConstructParam(t, m, name, pass[TypeCont](ty))
       }))
 
     case x: Defn =>
