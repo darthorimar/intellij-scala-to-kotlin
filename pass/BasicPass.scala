@@ -29,13 +29,14 @@ class BasicPass extends Pass {
 
   private def handleAttrs(attrs: List[Attr]) = {
     def comparator(attr: Attr) = attr match {
-      case CaseAttr =>3
-      case PublAttr =>1
-      case PrivAttr =>1
-      case ProtAttr =>1
-      case OpenAttr =>2
-      case FinalAttr =>2
+      case CaseAttr => 3
+      case PublAttr => 1
+      case PrivAttr => 1
+      case ProtAttr => 1
+      case OpenAttr => 2
+      case FinalAttr => 2
     }
+
     (if (attrs.contains(FinalAttr)) attrs.filter(_ == FinalAttr)
     else if (!attrs.contains(CaseAttr)) OpenAttr :: attrs
     else attrs)

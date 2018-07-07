@@ -25,13 +25,14 @@ object Stmt {
                   t: DefnType,
                   name: String,
                   construct: Option[Construct],
-                  supers: Seq[Type],
+                  supers: Seq[Super],
                   block: Block) extends Def
   case class ValDef(name: String, ty: Type, expr: Expr) extends Def
   case class VarDef(name: String, ty: Type, expr: Expr) extends Def
   case class DefnDef(name: String, ty: Type, args: Seq[DefParam], body: Block) extends Def
   case class ImportDef(ref: String, names: Seq[String]) extends Def
 
+  case class Super(ty: Type, construct: Option[Construct]) extends AST
 
 
   trait Top extends Stmt

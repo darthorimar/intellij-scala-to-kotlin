@@ -16,7 +16,7 @@ trait Pass {
     parents.head
 
   final def pass[T](ast: AST): T = {
-    println(" " * parentsStack.size + ast.getClass.getSimpleName)
+//    println(" " * parentsStack.size + ast.getClass.getSimpleName)
     parentsStack = ast :: parentsStack
     val res = action(ast).getOrElse(copy(ast)).asInstanceOf[T]
     parentsStack = parentsStack.tail
@@ -25,8 +25,10 @@ trait Pass {
 
   protected def copy(ast: AST): AST = ast match {
     case Defn(attrs, t, name, construct, supers, block) =>
-      Defn(attrs.map(pass[Attr]), t, name, construct.map(pass[Construct]), supers.map(pass[Type]), pass[Block](block))
+      Defn(attrs.map(pass[Attr]), t, name, construct.map(pass[Construct]), supers.map(pass[Super]), pass[Block](block))
 
+    case Super(ty, construct) =>
+      Super(pass[Type](ty),construct.map(pass[Construct]))
     case EmptyConstruct => EmptyConstruct
 
     case ParamsConstruct(params) =>

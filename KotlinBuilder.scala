@@ -30,8 +30,15 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(" ")
         str(name)
         opt(consruct)(gen)
+        if (supers.nonEmpty) {
+          str(" : ")
+          rep(supers, ", ")(gen)
+        }
         str(" ")
         gen(block)
+
+      case Super(ty, construct) =>
+        genRealType(ty, false)
 
       case EmptyConstruct =>
 
@@ -186,9 +193,9 @@ class KotlinBuilder extends KotlinBuilderBase {
     case FinalAttr => str("final")
   }
 
-  def genRealType(ty: Type): Unit =
+  def genRealType(ty: Type, prefix: Boolean = true): Unit =
     ty.real.foreach { c =>
-      str(": ")
+      if (prefix) str(": ")
       str(c)
     }
 

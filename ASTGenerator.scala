@@ -5,13 +5,14 @@ import org.jetbrains.plugins.kotlinConverter.ast.Stmt._
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
-import org.jetbrains.plugins.scala.lang.psi.api.base.{ScLiteral, ScPrimaryConstructor, ScReferenceElement, ScStableCodeReferenceElement}
+import org.jetbrains.plugins.scala.lang.psi.api.base._
 import org.jetbrains.plugins.scala.lang.psi.api.base.patterns._
-import org.jetbrains.plugins.scala.lang.psi.api.base.types.ScTypeElement
+import org.jetbrains.plugins.scala.lang.psi.api.base.types.{ScSimpleTypeElement, ScTypeElement}
 import org.jetbrains.plugins.scala.lang.psi.api.expr._
 import org.jetbrains.plugins.scala.lang.psi.api.statements.params.{ScClassParameter, ScParameter}
 import org.jetbrains.plugins.scala.lang.psi.api.statements._
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.imports.{ScImportExpr, ScImportStmt}
+import org.jetbrains.plugins.scala.lang.psi.api.toplevel.templates.ScClassParents
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.{ScClass, ScObject, ScTrait, ScTypeDefinition}
 import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTemplateDefinitionImpl}
 import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
@@ -21,7 +22,7 @@ import org.jetbrains.plugins.scala.lang.psi.types.result.TypeResult
 
 import scala.collection.immutable
 
-object ASTGenerator {
+object ASTGenerator extends App() with AST {
   private def genDefinitions(file: ScalaFile): Seq[PsiElement] = {
     println(file.typeDefinitions.mkString(", "))
     val functionDefns =
@@ -96,7 +97,14 @@ object ASTGenerator {
           case y: ScClass => Some(y.constructor.map(gen[Construct]).getOrElse(EmptyConstruct))
           case _ => None
         },
-        Seq.empty,
+        x.extendsBlock
+          .findChildrenByType(ScalaElementTypes.CLASS_PARENTS)
+          .flatMap { case y: ScClassParents =>
+            y.findChildrenByType(ScalaElementTypes.CONSTRUCTOR)
+              .map { case z: ScConstructor =>
+                Super(genType(Option(z.typeElement), z.expectedType), None)
+              }
+          },
         multiOrEmptyBlock(
           x.extendsBlock.members.map(gen[Stmt.Def])))
     case x: PsiClassWrapper =>
