@@ -17,7 +17,7 @@ class BasicPass extends Pass {
         case ConstructParam(parType, mod, name, ty) =>
           val t = if (parType == NoType) ValType else parType
           val m = if (mod == NoModifier) PublModifier else mod
-          ConstructParam(t, m, name, pass[TypeCont](ty))
+          ConstructParam(t, m, name, pass[Type](ty))
       }))
 
     //handle def attrs
@@ -41,7 +41,7 @@ class BasicPass extends Pass {
       val params = collectParams(x)
       val ref = collectRef(x)
       Some(Call(
-        pass[TypeCont](x.ty),
+        pass[Type](x.ty),
         pass[Expr](ref),
         x.typeParams.map(pass[TypeParam]),
         params.map(pass[Expr])))
@@ -49,8 +49,8 @@ class BasicPass extends Pass {
     case PType(SimpleType(tn), Seq(t))
       if tn == "_root_.scala.Option" || tn == "_root_.scala.Some" =>
       Some(NulableType(pass[Type](t)))
-//    case Ref(TypeCont(x, Some(SimpleType("_root_.scala.None.type"))),"None") =>
-//      Some(Ref(TypeCont(x, Some(SimpleType("_root_.scala.None.type"))), "null"))
+//    case Ref(Type(x, Some(SimpleType("_root_.scala.None.type"))),"None") =>
+//      Some(Ref(Type(x, Some(SimpleType("_root_.scala.None.type"))), "null"))
     case _ => None
   }
 

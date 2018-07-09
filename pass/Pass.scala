@@ -28,23 +28,23 @@ trait Pass {
       Defn(attrs.map(pass[Attr]), t, name, construct.map(pass[Construct]), supers.map(pass[Super]), pass[Block](block))
 
     case Super(ty, construct) =>
-      Super(pass[TypeCont](ty),construct.map(pass[Construct]))
+      Super(pass[Type](ty),construct.map(pass[Construct]))
     case EmptyConstruct => EmptyConstruct
 
     case ParamsConstruct(params) =>
       ParamsConstruct(params.map(pass[ConstructParam]))
 
     case ConstructParam(parType, mod, name, ty) =>
-      ConstructParam(parType, mod, name, pass[TypeCont](ty))
+      ConstructParam(parType, mod, name, pass[Type](ty))
 
     case ValDef(name, ty, expr) =>
-      ValDef(name, pass[TypeCont](ty), pass[Expr](expr))
+      ValDef(name, pass[Type](ty), pass[Expr](expr))
 
     case VarDef(name, ty, expr) =>
-      VarDef(name, pass[TypeCont](ty), pass[Expr](expr))
+      VarDef(name, pass[Type](ty), pass[Expr](expr))
 
     case DefnDef(name, ty, args, body) =>
-      DefnDef(name, pass[TypeCont](ty), args.map(pass[DefParam]), pass[Block](body))
+      DefnDef(name, pass[Type](ty), args.map(pass[DefParam]), pass[Block](body))
 
     case ImportDef(ref, names) =>
       ImportDef(ref, names)
@@ -53,25 +53,25 @@ trait Pass {
       FileDef(pckg, imports.map(pass[ImportDef]), defns.map(pass[Def]))
 
     case BinExpr(ty, op, left, right) =>
-      BinExpr(pass[TypeCont](ty), op, pass[Expr](left), pass[Expr](right))
+      BinExpr(pass[Type](ty), op, pass[Expr](left), pass[Expr](right))
 
     case ParenExpr(inner) =>
       ParenExpr(pass[Expr](inner))
 
     case Call(ty, ref, typeParams, params) =>
-      Call(pass[TypeCont](ty), pass[Expr](ref), typeParams.map(pass[TypeParam]), params.map(pass[Expr]))
+      Call(pass[Type](ty), pass[Expr](ref), typeParams.map(pass[TypeParam]), params.map(pass[Expr]))
 
     case Lit(ty, name) =>
-      Lit(pass[TypeCont](ty), name)
+      Lit(pass[Type](ty), name)
 
     case UnderSc =>
       UnderSc
 
     case Ref(ty, obj, ref) =>
-      Ref(pass[TypeCont](ty), obj.map(pass[Expr]), pass[Expr](ref))
+      Ref(pass[Type](ty), obj.map(pass[Expr]), pass[Expr](ref))
 
     case RefF(ty, name) =>
-      RefF(pass[TypeCont](ty), name)
+      RefF(pass[Type](ty), name)
 
     case Match(expr, clauses) =>
       Match(pass[Expr](expr), clauses.map(pass[CaseClause]))
@@ -103,9 +103,6 @@ trait Pass {
     case While(cond, body) =>
       While(pass[Expr](cond), pass[Block](body))
 
-    case TypeCont(real, inferenced) =>
-      TypeCont(real.map(pass[Type]), inferenced.map(pass[Type]))
-
     case PType(des, params) =>
       PType(pass[Type](des), params.map(pass[Type]))
 
@@ -118,8 +115,11 @@ trait Pass {
     case SimpleType(name) =>
       SimpleType(name)
 
+    case NoType =>
+      NoType
+
     case DefParam(ty, name) =>
-      DefParam(pass[TypeCont](ty), name)
+      DefParam(pass[Type](ty), name)
 
     case CaseClause(pattern, expr) =>
       CaseClause(pattern, pass[Expr](expr))
@@ -134,7 +134,7 @@ trait Pass {
       ConstructorPattern(ref, args.map(pass))
 
     case TypedPattern(ref, ty) =>
-      TypedPattern(ref, pass[TypeCont](ty))
+      TypedPattern(ref, pass[Type](ty))
 
     case ReferencePattern(ref) =>
       ReferencePattern(ref)

@@ -1,10 +1,5 @@
 package org.jetbrains.plugins.kotlinConverter.ast
 
-case class TypeCont(real: Option[Type], inferenced: Option[Type]) extends AST {
-  def realOfInf: Option[Type] =
-    real.orElse(inferenced)
-}
-
 trait Type extends AST {
   def asKotlin: String
 }
@@ -32,4 +27,6 @@ case class SimpleType(name: String) extends Type {
   override def asKotlin: String = name
 }
 
-case class TypeParam(ty: String) extends AST
+case object NoType extends Type {
+  override def asKotlin: String = "Any"
+}

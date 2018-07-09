@@ -38,7 +38,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         gen(block)
 
       case Super(ty, construct) =>
-        genRealTypeCont(ty, false)
+        genType(ty, false)
 
       case EmptyConstruct =>
 
@@ -53,18 +53,18 @@ class KotlinBuilder extends KotlinBuilderBase {
         gen(parType)
         str(" ")
         str(name)
-        genTypeCont(ty)
+        genType(ty)
 
       case ValDef(name, ty, expr) =>
         str("val ")
         str(name)
-        genRealTypeCont(ty)
+        genType(ty)
         str(" = ")
         gen(expr)
       case VarDef(name, ty, expr) =>
         str("var ")
         str(name)
-        genRealTypeCont(ty)
+        genType(ty)
         str(" = ")
         gen(expr)
       case DefnDef(name, ty, args, body) =>
@@ -73,10 +73,10 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("(")
         rep(args, ", ") { case DefParam(ty, name) =>
           str(name)
-          genTypeCont(ty)
+          genType(ty)
         }
         str(")")
-        genTypeCont(ty)
+        genType(ty)
         str(" ")
         if (body.isSingle) str("=")
         gen(body)
@@ -180,7 +180,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(")")
       case TypedPattern(ref, ty) => //todo use ref
         str("is ")
-        genTypeCont(ty, false)
+        genType(ty, false)
       case TypeParam(ty) =>
         str(ty)
       case CaseAttr =>
@@ -197,7 +197,7 @@ class KotlinBuilder extends KotlinBuilderBase {
     case ObjDefn => str("object")
     case ValType => str("val")
     case VarType => str("var")
-    case NoType =>
+    case NoParamType =>
     case PrivModifier => str("private")
     case PublModifier => str("public")
     case NoModifier =>
@@ -209,18 +209,9 @@ class KotlinBuilder extends KotlinBuilderBase {
     case FinalAttr => str("final")
   }
 
-  def genRealTypeCont(ty: TypeCont, prefix: Boolean = true): Unit =
-    ty.real.foreach { c =>
-      if (prefix) str(": ")
-      genType(c)
-    }
 
-  def genTypeCont(ty: TypeCont, prefix: Boolean = true): Unit = {
-    if (prefix) str(": ")
-    genType(ty.realOfInf.getOrElse(SimpleType("Any")))
-  }
-
-  def genType(t: Type): Unit = {
+  def genType(t: Type, pref: Boolean = true): Unit = {
+    if (pref) str(": ")
     str(t.asKotlin)
   }
 }

@@ -70,11 +70,19 @@ object ASTGenerator extends App() with AST {
     }
   }
 
-  def genTypeCont(real: Option[ScTypeElement], inf: TypeResult): TypeCont =
-    genTypeCont(real, inf.toOption)
+  def genType(t: Option[ScTypeElement]): Type =
+    t.map(x => genType(x.`type`().get)).getOrElse(NoType)
 
-  def genTypeCont(real: Option[ScTypeElement], inf: Option[ScType]): TypeCont =
-    TypeCont(real.map(x => genType(x.`type`().get)), inf.map(genType))
+//  def genType(t: Option[ScType]): Type =
+//    t.map(genType).getOrElse(NoType)
+
+  def genType(t: TypeResult): Type =
+    t.map(genType).getOrElse(NoType)
+
+  def realOrInfType(r: Option[ScTypeElement], t: TypeResult) =
+    r.map(x => genType(x.`type`()))
+      .getOrElse(genType(t))
+
 
   def genAttrs(x: ScTypeDefinition): Seq[Attr] = {
     def attr(p: Boolean, a: Attr) =
@@ -121,7 +129,7 @@ object ASTGenerator extends App() with AST {
           .flatMap { case y: ScClassParents =>
             y.findChildrenByType(ScalaElementTypes.CONSTRUCTOR)
               .map { case z: ScConstructor =>
-                Super(genTypeCont(Option(z.typeElement), z.expectedType), None)
+                Super(genType(z.typeElement.`type`()), None)
               }
           },
         multiOrEmptyBlock(
@@ -132,7 +140,7 @@ object ASTGenerator extends App() with AST {
     case x: ScFunction =>
       Stmt.DefnDef(
         x.name,
-        genTypeCont(x.returnTypeElement, x.`type`()),
+        realOrInfType(x.returnTypeElement, x.`type`()),
         x.parameters.map(gen[DefParam]),
         genFunctionBody(x))
 
@@ -145,22 +153,22 @@ object ASTGenerator extends App() with AST {
         Stmt.SingleBlock(gen[Expr](x.statements.head))
 
     case x: ScInfixExpr =>
-      Expr.BinExpr(genTypeCont(None, x.`type`()), BinOp(x.operation.getText), gen[Expr](x.left), gen[Expr](x.right))
+      Expr.BinExpr(genType(x.`type`()), BinOp(x.operation.getText), gen[Expr](x.left), gen[Expr](x.right))
     case x: ScLiteral =>
-      Expr.Lit(genTypeCont(None, x.`type`()), x.getText)
+      Expr.Lit(genType(x.`type`()), x.getText)
     case x: ScUnderscoreSection =>
       Expr.UnderSc
     case x: ScParenthesisedExpr =>
       Expr.ParenExpr(gen[Expr](x.innerElement.get))
     case x: ScReferenceExpression =>
-     Expr.Ref(genTypeCont(None, None),
+     Expr.Ref(genType(x.`type`()),
        x.qualifier.map(gen[Expr]),
-       Expr.RefF(genTypeCont(None, None), x.shapeResolve.head.name))
+       Expr.RefF(NoType, x.shapeResolve.head.name))
 
     case x: ScMethodCall =>
       println("")
       Expr.Call(
-        genTypeCont(None, x.`type`()),
+        genType(x.`type`()),
         x.getInvokedExpr match {
           case y: ScGenericCall =>
             gen[Expr](y.referencedExpr)
@@ -172,7 +180,7 @@ object ASTGenerator extends App() with AST {
         },
         x.args.exprs.map(gen[Expr]))
     case x: ScGenericCall =>
-      Expr.Call(genTypeCont(None, x.`type`()),
+      Expr.Call(genType(x.`type`()),
         gen[Expr](x.referencedExpr),
         genTypeArgs(x),
         Seq.empty)
@@ -194,7 +202,7 @@ object ASTGenerator extends App() with AST {
     case x: ScConstructorPattern =>
       ConstructorPattern(x.ref.qualName, x.args.patterns.map(gen[CasePattern]))
     case x: ScTypedPattern =>
-      TypedPattern(x.name, genTypeCont(x.typePattern.map(_.typeElement), None))
+      TypedPattern(x.name, genType(x.typePattern.map(_.typeElement)))
     case x: ScReferencePattern =>
       ReferencePattern(x.name)
     case x: ScReferenceElement =>
@@ -206,12 +214,12 @@ object ASTGenerator extends App() with AST {
     case x: ScPatternDefinition =>
       Stmt.ValDef(
         x.bindings.head.name,
-        genTypeCont(x.typeElement, x.`type`()),
+        genType(x.typeElement),
         gen[Expr](x.expr.get))
     case x: ScVariableDefinition =>
       Stmt.VarDef(
         x.bindings.head.name,
-        genTypeCont(x.typeElement, x.`type`()),
+        genType(x.typeElement),
         gen[Expr](x.expr.get))
     case x: ScAssignStmt =>
       Expr.Assign(gen[Expr](x.getLExpression), gen[Expr](x.getRExpression.get))
@@ -230,11 +238,11 @@ object ASTGenerator extends App() with AST {
       val t =
         if (x.isVal) ValType
         else if (x.isVar) VarType
-        else NoType
-      ConstructParam(t, mod, x.name, genTypeCont(x.typeElement, x.`type`()))
+        else NoParamType
+      ConstructParam(t, mod, x.name, genType(x.typeElement))
 
     case x: ScParameter =>
-      DefParam(genTypeCont(x.typeElement, x.`type`()), x.name)
+      DefParam(genType(x.typeElement), x.name)
 
     case x =>
       println(s"No case for $x")

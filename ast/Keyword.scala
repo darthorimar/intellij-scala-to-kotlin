@@ -19,7 +19,7 @@ case object NoModifier extends ParamModifier
 trait ParamType extends Keyword
 case object ValType extends ParamType
 case object VarType extends ParamType
-case object NoType extends ParamType
+case object NoParamType extends ParamType
 
 sealed trait DefnType extends Keyword
 case object ClassDefn extends DefnType
