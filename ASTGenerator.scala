@@ -59,10 +59,12 @@ object ASTGenerator extends App() with AST {
   }
 
   def genType(t: ScType): Type = {
-    println(t.canonicalText, t.getClass.getSimpleName)
     t match {
       case x: ScParameterizedType if x.designator.canonicalText.startsWith(Types.FUNCTION_PREF) =>
-        FuncType(ProdType(x.typeArguments.init.map(genType)), genType(x.typeArguments.last))
+        if (x.typeArguments.init.length == 1)
+          FuncType(genType(x.typeArguments.head), genType(x.typeArguments.last))
+        else
+          FuncType(ProdType(x.typeArguments.init.map(genType)), genType(x.typeArguments.last))
       case x: ScParameterizedType =>
         PType(genType(x.designator), x.typeArguments.map(genType))
       case x =>
@@ -80,9 +82,9 @@ object ASTGenerator extends App() with AST {
   def genType(t: TypeResult): Type =
     t.map(genType).getOrElse(NoType)
 
-//  def realOrInfType(r: Option[ScTypeElement], t: TypeResult) =
-//    r.map(x => genType(x.`type`()))
-//      .getOrElse(genType(t))
+  //  def realOrInfType(r: Option[ScTypeElement], t: TypeResult) =
+  //    r.map(x => genType(x.`type`()))
+  //      .getOrElse(genType(t))
 
 
   def genAttrs(x: ScTypeDefinition): Seq[Attr] = {

@@ -11,10 +11,10 @@ case class FuncType(left: Type, right: Type) extends Type {
 
 case class PType(des: Type, params: Seq[Type]) extends Type {
   override def asKotlin: String =
-    des.asKotlin + params.map(_.asKotlin).mkString(des.asKotlin + "<", ", ", ">")
+    params.map(_.asKotlin).mkString(des.asKotlin + "<", ", ", ">")
 }
 
-case class NulableType(t: Type) extends Type {
+case class NullableType(t: Type) extends Type {
   override def asKotlin: String =
     t.asKotlin + "?"
 }
@@ -33,4 +33,5 @@ case object NoType extends Type {
 
 object Types {
   val FUNCTION_PREF = "_root_.scala.Function"
+  val OPTION = SimpleType("_root_.scala.Option")
 }

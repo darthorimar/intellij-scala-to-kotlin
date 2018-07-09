@@ -46,11 +46,6 @@ class BasicPass extends Pass {
         x.typeParams.map(pass[TypeParam]),
         params.map(pass[Expr])))
 
-    case PType(SimpleType(tn), Seq(t))
-      if tn == "_root_.scala.Option" || tn == "_root_.scala.Some" =>
-      Some(NulableType(pass[Type](t)))
-
-
     case _ => None
   }
 

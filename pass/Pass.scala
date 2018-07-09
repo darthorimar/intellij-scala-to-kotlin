@@ -14,7 +14,7 @@ trait Pass {
     parents.head
 
   final def pass[T](ast: AST): T = {
-    println(" " * parentsStack.size + ast.getClass.getSimpleName)
+//    println(" " * parentsStack.size + ast.getClass.getSimpleName)
     parentsStack = ast :: parentsStack
     val res = action(ast).getOrElse(copy(ast)).asInstanceOf[T]
     parentsStack = parentsStack.tail
@@ -113,6 +113,9 @@ trait Pass {
     case SimpleType(name) =>
       SimpleType(name)
 
+    case NullableType(name) =>
+      NullableType(pass[Type](name))
+
     case NoType =>
       NoType
 
@@ -147,6 +150,6 @@ trait Pass {
 
 object Pass {
   def applyPasses(ast: AST): AST = {
-    new BasicPass().pass[AST](ast)
+    new BasicPass().pass[AST](new TypePass().pass[AST](ast))
   }
 }
