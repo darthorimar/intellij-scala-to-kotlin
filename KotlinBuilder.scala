@@ -1,8 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter
 
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.ast.Stmt._
-import org.jetbrains.plugins.kotlinConverter.ast.Expr._
 
 import scala.collection.mutable
 
@@ -97,7 +95,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("(")
         gen(inner)
         str(")")
-      case Lambda(params, expr) =>
+      case LambdaExpr(ty, params, expr) =>
         str("{ ")
         rep(params, ", ") { case DefParam(ty, name) =>
           str(name)
@@ -105,12 +103,11 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(" -> ")
         gen(expr)
         str("}")
-      case Assign(left, right) =>
+      case AssignExpr(left, right) =>
         gen(left)
         str(" = ")
         gen(right)
-      case x@Call(ty, ref, typeParams, params) =>
-        println(x)
+      case CallExpr(ty, ref, typeParams, params) =>
         gen(ref)
         if (typeParams.nonEmpty) {
           str("<")
@@ -120,7 +117,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("(")
         rep(params, ", ")(gen)
         str(")")
-      case If(cond, trueB, falseB) =>
+      case IfExpr(ty, cond, trueB, falseB) =>
         str("if (")
         gen(cond)
         str(")")
@@ -129,17 +126,17 @@ class KotlinBuilder extends KotlinBuilderBase {
           str(" else ")
           gen(falseB)
         }
-      case Lit(ty, name) =>
+      case LitExpr(ty, name) =>
         str(name)
-      case UnderSc =>
+      case UnderScExpr(ty) =>
         str("it")
-      case Ref(ty, obj, ref) =>
+      case RefExpr(ty, obj, ref) =>
         opt(obj) { x => gen(x); str(".") }
         gen(ref)
 
-      case RefF(ty, name) =>
+      case RefFExpr(ty, name) =>
         str(name)
-      case Match(expr, clauses) =>
+      case MatchExpr(ty, expr, clauses) =>
         str("when(")
         gen(expr)
         str(") {")
@@ -151,7 +148,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         }
         str("}")
         unIndent()
-      case New(name, args) =>
+      case NewExpr(ty, name, args) =>
         str(name)
         str("(")
         rep(args, ", ")(gen)

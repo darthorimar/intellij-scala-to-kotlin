@@ -1,7 +1,5 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
-import org.jetbrains.plugins.kotlinConverter.ast.Expr._
-import org.jetbrains.plugins.kotlinConverter.ast.Stmt._
 import org.jetbrains.plugins.kotlinConverter.ast._
 
 trait Pass {
@@ -25,10 +23,10 @@ trait Pass {
 
   protected def copy(ast: AST): AST = ast match {
     case Defn(attrs, t, name, construct, supers, block) =>
-      Defn(attrs.map(pass[Attr]), t, name, construct.map(pass[Construct]), supers.map(pass[Super]), pass[Block](block))
+      Defn(attrs.map(pass[Attr]), t, name, construct.map(pass[Construct]), supers.map(pass[Super]), pass[BlockExpr](block))
 
     case Super(ty, construct) =>
-      Super(pass[Type](ty),construct.map(pass[Construct]))
+      Super(pass[Type](ty), construct.map(pass[Construct]))
     case EmptyConstruct => EmptyConstruct
 
     case ParamsConstruct(params) =>
@@ -44,13 +42,13 @@ trait Pass {
       VarDef(name, pass[Type](ty), pass[Expr](expr))
 
     case DefnDef(name, ty, args, body) =>
-      DefnDef(name, pass[Type](ty), args.map(pass[DefParam]), pass[Block](body))
+      DefnDef(name, pass[Type](ty), args.map(pass[DefParam]), pass[BlockExpr](body))
 
     case ImportDef(ref, names) =>
       ImportDef(ref, names)
 
     case FileDef(pckg, imports, defns) =>
-      FileDef(pckg, imports.map(pass[ImportDef]), defns.map(pass[Def]))
+      FileDef(pckg, imports.map(pass[ImportDef]), defns.map(pass[DefExpr]))
 
     case BinExpr(ty, op, left, right) =>
       BinExpr(pass[Type](ty), op, pass[Expr](left), pass[Expr](right))
@@ -58,23 +56,23 @@ trait Pass {
     case ParenExpr(inner) =>
       ParenExpr(pass[Expr](inner))
 
-    case Call(ty, ref, typeParams, params) =>
-      Call(pass[Type](ty), pass[Expr](ref), typeParams.map(pass[TypeParam]), params.map(pass[Expr]))
+    case CallExpr(ty, ref, typeParams, params) =>
+      CallExpr(pass[Type](ty), pass[Expr](ref), typeParams.map(pass[TypeParam]), params.map(pass[Expr]))
 
-    case Lit(ty, name) =>
-      Lit(pass[Type](ty), name)
+    case LitExpr(ty, name) =>
+      LitExpr(pass[Type](ty), name)
 
-    case UnderSc =>
-      UnderSc
+    case UnderScExpr(ty) =>
+      UnderScExpr(ty)
 
-    case Ref(ty, obj, ref) =>
-      Ref(pass[Type](ty), obj.map(pass[Expr]), pass[Expr](ref))
+    case RefExpr(ty, obj, ref) =>
+      RefExpr(pass[Type](ty), obj.map(pass[Expr]), pass[Expr](ref))
 
-    case RefF(ty, name) =>
-      RefF(pass[Type](ty), name)
+    case RefFExpr(ty, name) =>
+      RefFExpr(pass[Type](ty), name)
 
-    case Match(expr, clauses) =>
-      Match(pass[Expr](expr), clauses.map(pass[CaseClause]))
+    case MatchExpr(ty, expr, clauses) =>
+      MatchExpr(pass[Type](ty), pass[Expr](expr), clauses.map(pass[CaseClause]))
 
     case MultiBlock(stmts) =>
       MultiBlock(stmts.map(pass[Expr]))
@@ -85,23 +83,23 @@ trait Pass {
     case EmptyBlock =>
       EmptyBlock
 
-    case Assign(left, right) =>
-      Assign(pass[Expr](left), pass[Expr](right))
+    case AssignExpr(left, right) =>
+      AssignExpr(pass[Expr](left), pass[Expr](right))
 
-    case New(name, args) =>
-      New(name, args.map(pass[Expr]))
+    case NewExpr(ty, name, args) =>
+      NewExpr(pass[Type](ty), name, args.map(pass[Expr]))
 
-    case Lambda(params, expr) =>
-      Lambda(params.map(pass[DefParam]), pass[Expr](expr))
+    case LambdaExpr(ty, params, expr) =>
+      LambdaExpr(pass[Type](ty), params.map(pass[DefParam]), pass[Expr](expr))
 
-    case If(cond, trueB, falseB) =>
-      If(pass[Expr](cond), pass[Block](trueB), pass[Block](falseB))
+    case IfExpr(ty, cond, trueB, falseB) =>
+      IfExpr(pass[Type](ty), pass[Expr](cond), pass[BlockExpr](trueB), pass[BlockExpr](falseB))
 
-    case For(range, body) =>
-      For(pass[Expr](range), pass[Block](body))
+    case ForExpr(ty, range, body) =>
+      ForExpr(pass[Type](ty), pass[Expr](range), pass[BlockExpr](body))
 
-    case While(cond, body) =>
-      While(pass[Expr](cond), pass[Block](body))
+    case WhileExpr(ty, cond, body) =>
+      WhileExpr(pass[Type](ty), pass[Expr](cond), pass[BlockExpr](body))
 
     case PType(des, params) =>
       PType(pass[Type](des), params.map(pass[Type]))

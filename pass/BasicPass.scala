@@ -1,21 +1,18 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.ast.Expr._
-import org.jetbrains.plugins.kotlinConverter.ast.Stmt._
-import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
 
 class BasicPass extends Pass {
   override protected def action(ast: AST): Option[AST] = ast match {
     //Remove renault brackets for lambda like in seq.map {x => x * 2}
-    case MultiBlock(stmts) if stmts.size == 1 && stmts.head.isInstanceOf[Lambda] =>
+    case MultiBlock(stmts) if stmts.size == 1 && stmts.head.isInstanceOf[LambdaExpr] =>
       Some(SingleBlock(pass[Expr](stmts.head)))
 
     case ParamsConstruct(params)
       if parent.asInstanceOf[Defn].attrs.contains(CaseAttr) =>
       Some(ParamsConstruct(params.map {
         case ConstructParam(parType, mod, name, ty) =>
-          val t = if (parType == NoType) ValType else parType
+          val t = if (parType == NoParamType) ValType else parType
           val m = if (mod == NoModifier) PublModifier else mod
           ConstructParam(t, m, name, pass[Type](ty))
       }))
@@ -26,21 +23,21 @@ class BasicPass extends Pass {
       Some(defn.copy(attrs = handleAttrs(defn.attrs.toList)))
 
     //uncarry
-    case x@Call(_, _: Call, _, _) =>
+    case x@CallExpr(_, _: CallExpr, _, _) =>
       def collectParams(c: Expr): List[Expr] = c match {
-        case x: Call =>
+        case x: CallExpr =>
           collectParams(x.ref) ++ x.params.toList
         case _ => Nil
       }
 
-      def collectRef(c: Call): Expr = c.ref match {
-        case x: Call => collectRef(x)
+      def collectRef(c: CallExpr): Expr = c.ref match {
+        case x: CallExpr => collectRef(x)
         case _ => c.ref
       }
 
       val params = collectParams(x)
       val ref = collectRef(x)
-      Some(Call(
+      Some(CallExpr(
         pass[Type](x.ty),
         pass[Expr](ref),
         x.typeParams.map(pass[TypeParam]),

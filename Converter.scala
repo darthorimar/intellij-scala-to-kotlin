@@ -1,6 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter
 
-import org.jetbrains.plugins.kotlinConverter.ast.Stmt.FileDef
+import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.pass.Pass
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 
