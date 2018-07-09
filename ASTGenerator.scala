@@ -71,7 +71,8 @@ object ASTGenerator extends App() with AST {
   }
 
   def genType(t: Option[ScTypeElement]): Type =
-    t.map(x => genType(x.`type`().get)).getOrElse(NoType)
+    t.flatMap(_.`type`().toOption).map(genType)
+      .getOrElse(NoType)
 
   //  def genType(t: Option[ScType]): Type =
   //    t.map(genType).getOrElse(NoType)
@@ -157,16 +158,15 @@ object ASTGenerator extends App() with AST {
     case x: ScLiteral =>
       LitExpr(genType(x.`type`()), x.getText)
     case x: ScUnderscoreSection =>
-      UnderScExpr
+      UnderScExpr(NoType)
     case x: ScParenthesisedExpr =>
       ParenExpr(gen[Expr](x.innerElement.get))
     case x: ScReferenceExpression =>
       RefExpr(genType(x.`type`()),
         x.qualifier.map(gen[Expr]),
-        RefFExpr(NoType, x.shapeResolve.head.name))
+        RefFExpr(NoType, x.getReference.getCanonicalText))//.headOption.map(_.name).getOrElse("NONAME")))
 
     case x: ScMethodCall =>
-      println("")
       CallExpr(
         genType(x.`type`()),
         x.getInvokedExpr match {
