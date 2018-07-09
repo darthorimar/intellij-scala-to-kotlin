@@ -14,7 +14,7 @@ import org.jetbrains.plugins.scala.lang.psi.api.statements._
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.imports.{ScImportExpr, ScImportStmt}
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.templates.ScClassParents
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.{ScClass, ScObject, ScTrait, ScTypeDefinition}
-import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTemplateDefinitionImpl}
+import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTemplateDefinitionImpl, ScReferenceExpressionImpl}
 import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
 import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
 import org.jetbrains.plugins.scala.lang.psi.types.{ScParameterizedType, ScType}
@@ -140,8 +140,10 @@ object ASTGenerator extends App() with AST {
     case x: PsiClassWrapper =>
       gen[DefExpr](x.definition)
 
-    case x: ScFunction =>
+    case x: ScFunctionDeclaration =>
+      println(x.getModifierList.modifiers.mkString(" ---------- "))
       DefnDef(
+        Seq.empty,
         x.name,
         genType(x.`type`()),
         x.parameters.map(gen[DefParam]),
@@ -165,9 +167,18 @@ object ASTGenerator extends App() with AST {
     case x: ScParenthesisedExpr =>
       ParenExpr(gen[Expr](x.innerElement.get))
     case x: ScReferenceExpression =>
-      RefExpr(genType(x.`type`()),
-        x.qualifier.map(gen[Expr]),
-        RefFExpr(NoType, x.getReference.getCanonicalText))//.headOption.map(_.name).getOrElse("NONAME")))
+      val ref =
+        InvExpr(genType(x.`type`()),
+          x.qualifier.map(gen[Expr]),
+          RefExpr(NoType, x.getReference.getCanonicalText))
+      if (x.getReference.asInstanceOf[ScReferenceExpressionImpl].shapeResolve.map(_.element)
+        .exists(_.isInstanceOf[ScFunction]))
+        CallExpr(genType(x.`type`()),
+          ref,
+          Seq.empty,
+          Seq.empty
+        )
+      else ref
 
     case x: ScMethodCall =>
       CallExpr(
@@ -237,13 +248,12 @@ object ASTGenerator extends App() with AST {
 
     case x: ScClassParameter =>
       val mod =
-        if (x.isPrivate) PrivModifier
-        else if (x.isPublic) PublModifier
-        else NoModifier
+        if (x.isPrivate) PrivAttr
+        else PublAttr
       val t =
-        if (x.isVal) ValType
-        else if (x.isVar) VarType
-        else NoParamType
+        if (x.isVal) VarlKind
+        else if (x.isVar) VarKind
+        else NoMemberKind
       ConstructParam(t, mod, x.name, genType(x.typeElement))
 
     case x: ScParameter =>

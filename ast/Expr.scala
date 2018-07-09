@@ -13,8 +13,8 @@ case class ParenExpr(inner: Expr) extends Expr {
 case class CallExpr(ty: Type, ref: Expr, typeParams: Seq[TypeParam], params: Seq[Expr]) extends Expr
 case class LitExpr(ty: Type, name: String) extends Expr
 case class UnderScExpr(ty: Type) extends Expr
-case class RefExpr(ty: Type, obj: Option[Expr], ref: Expr) extends Expr
-case class RefFExpr(ty: Type, name: String) extends Expr
+case class InvExpr(ty: Type, obj: Option[Expr], ref: Expr) extends Expr
+case class RefExpr(ty: Type, name: String) extends Expr
 case class MatchExpr(ty: Type, expr: Expr, clauses: Seq[CaseClause]) extends Expr
 case class AssignExpr(left: Expr, right: Expr) extends Expr {
   override def ty: Type = SimpleType("Unit")
@@ -60,7 +60,7 @@ case class Defn(attrs: Seq[Attr],
 }
 case class ValDef(name: String, ty: Type, expr: Expr) extends DefExpr
 case class VarDef(name: String, ty: Type, expr: Expr) extends DefExpr
-case class DefnDef(name: String, ty: Type, args: Seq[DefParam], retType: Type, body: BlockExpr) extends DefExpr
+case class DefnDef(attrss: Seq[Attr], name: String, ty: Type, args: Seq[DefParam], retType: Type, body: BlockExpr) extends DefExpr
 case class ImportDef(ref: String, names: Seq[String]) extends DefExpr {
   override def ty: Type = NoType
 }

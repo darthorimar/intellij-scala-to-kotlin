@@ -8,8 +8,8 @@ class TypePass extends Pass {
       if tn == "_root_.scala.Option" || tn == "_root_.scala.Some" =>
       Some(NullableType(pass[Type](t)))
 
-    case x@RefFExpr(FuncType(_, PType(Types.OPTION,_)), "map") =>
-      Some(copy(x).asInstanceOf[RefFExpr].copy(name="let"))
+    case x@RefExpr(FuncType(_, PType(Types.OPTION,_)), "map") =>
+      Some(copy(x).asInstanceOf[RefExpr].copy(name="let"))
 
     case Types.STRING =>
       Some(SimpleType("String"))

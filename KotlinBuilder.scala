@@ -65,7 +65,8 @@ class KotlinBuilder extends KotlinBuilderBase {
         genType(ty)
         str(" = ")
         gen(expr)
-      case DefnDef(name, ty, args, retType, body) =>
+      case DefnDef(attrs, name, ty, args, retType, body) =>
+        rep(attrs, " ")(gen)
         str("fun ")
         str(name)
         str("(")
@@ -130,11 +131,11 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(name)
       case UnderScExpr(ty) =>
         str("it")
-      case RefExpr(ty, obj, ref) =>
+      case InvExpr(ty, obj, ref) =>
         opt(obj) { x => gen(x); str(".") }
         gen(ref)
 
-      case RefFExpr(ty, name) =>
+      case RefExpr(ty, name) =>
         str(name)
       case MatchExpr(ty, expr, clauses) =>
         str("when(")

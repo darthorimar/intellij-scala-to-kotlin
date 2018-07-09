@@ -14,8 +14,8 @@ class BasicPass extends Pass {
       if parent.asInstanceOf[Defn].attrs.contains(CaseAttr) =>
       Some(ParamsConstruct(params.map {
         case ConstructParam(parType, mod, name, ty) =>
-          val t = if (parType == NoParamType) ValType else parType
-          val m = if (mod == NoModifier) PublModifier else mod
+          val t = if (parType == NoMemberKind) VarlKind else parType
+          val m = if (mod == NoAttr) PublAttr else mod
           ConstructParam(t, m, name, pass[Type](ty))
       }))
 

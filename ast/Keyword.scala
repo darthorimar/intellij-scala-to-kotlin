@@ -6,14 +6,16 @@
 
   trait Attr extends Keyword
 
+  case object NoAttr extends Attr {
+    override def name: String = ""
+  }
+
   case object CaseAttr extends Attr {
     override def name: String = "case"
   }
-
   case object DataAttr extends Attr {
-    override def name: String = "case"
+    override def name: String = "data"
   }
-
   case object PublAttr extends Attr{
     override def name: String = "public"
   }
@@ -29,26 +31,19 @@
   case object FinalAttr extends Attr{
     override def name: String = "final"
   }
-
-  trait ParamModifier extends Keyword
-  case object PrivModifier extends ParamModifier{
-    override def name: String = "private"
-  }
-  case object PublModifier extends ParamModifier{
-    override def name: String = "public"
-  }
-  case object NoModifier extends ParamModifier{
-    override def name: String = ""
+  case object OverrideAttr extends Attr{
+    override def name: String = "override"
   }
 
-  trait ParamType extends Keyword
-  case object ValType extends ParamType {
+
+  trait MemberKind extends Keyword
+  case object VarlKind extends MemberKind {
     override def name: String = "val"
   }
-  case object VarType extends ParamType {
+  case object VarKind extends MemberKind {
     override def name: String = "var"
   }
-  case object NoParamType extends ParamType {
+  case object NoMemberKind extends MemberKind {
     override def name: String = ""
   }
 

@@ -41,8 +41,8 @@ trait Pass {
     case VarDef(name, ty, expr) =>
       VarDef(name, pass[Type](ty), pass[Expr](expr))
 
-    case DefnDef(name, ty, args, retType, body) =>
-      DefnDef(name, pass[Type](ty), args.map(pass[DefParam]), pass[Type](retType), pass[BlockExpr](body))
+    case DefnDef(attrss, name, ty, args, retType, body) =>
+      DefnDef(attrss, name, pass[Type](ty), args.map(pass[DefParam]), pass[Type](retType), pass[BlockExpr](body))
 
     case ImportDef(ref, names) =>
       ImportDef(ref, names)
@@ -65,11 +65,11 @@ trait Pass {
     case UnderScExpr(ty) =>
       UnderScExpr(ty)
 
-    case RefExpr(ty, obj, ref) =>
-      RefExpr(pass[Type](ty), obj.map(pass[Expr]), pass[Expr](ref))
+    case InvExpr(ty, obj, ref) =>
+      InvExpr(pass[Type](ty), obj.map(pass[Expr]), pass[Expr](ref))
 
-    case RefFExpr(ty, name) =>
-      RefFExpr(pass[Type](ty), name)
+    case RefExpr(ty, name) =>
+      RefExpr(pass[Type](ty), name)
 
     case MatchExpr(ty, expr, clauses) =>
       MatchExpr(pass[Type](ty), pass[Expr](expr), clauses.map(pass[CaseClause]))
