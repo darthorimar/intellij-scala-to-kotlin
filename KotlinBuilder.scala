@@ -65,7 +65,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         genType(ty)
         str(" = ")
         gen(expr)
-      case DefnDef(name, ty, args, body) =>
+      case DefnDef(name, ty, args, retType, body) =>
         str("fun ")
         str(name)
         str("(")
@@ -74,7 +74,7 @@ class KotlinBuilder extends KotlinBuilderBase {
           genType(ty)
         }
         str(")")
-        genType(ty)
+        genType(retType)
         str(" ")
         if (body.isSingle) str("=")
         gen(body)

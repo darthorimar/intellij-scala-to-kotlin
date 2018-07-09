@@ -60,7 +60,7 @@ case class Defn(attrs: Seq[Attr],
 }
 case class ValDef(name: String, ty: Type, expr: Expr) extends DefExpr
 case class VarDef(name: String, ty: Type, expr: Expr) extends DefExpr
-case class DefnDef(name: String, ty: Type, args: Seq[DefParam], body: BlockExpr) extends DefExpr
+case class DefnDef(name: String, ty: Type, args: Seq[DefParam], retType: Type, body: BlockExpr) extends DefExpr
 case class ImportDef(ref: String, names: Seq[String]) extends DefExpr {
   override def ty: Type = NoType
 }
