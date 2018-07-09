@@ -10,7 +10,8 @@ object Expr {
   case class Call(ty: TypeCont, ref: Expr, typeParams: Seq[TypeParam], params: Seq[Expr]) extends Expr
   case class Lit(ty: TypeCont, name: String) extends Expr
   case object UnderSc extends Expr
-  case class Ref(ty: TypeCont, name: String) extends Expr
+  case class Ref(ty: TypeCont, obj: Option[Expr], ref: Expr) extends Expr
+  case class RefF(ty: TypeCont, name: String) extends Expr
   case class Match(expr: Expr, clauses: Seq[CaseClause]) extends Expr
   case class Assign(left: Expr, right: Expr) extends Expr
   case class New(name: String, args: Seq[Expr]) extends Expr

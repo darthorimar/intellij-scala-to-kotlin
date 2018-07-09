@@ -3,6 +3,7 @@ package org.jetbrains.plugins.kotlinConverter.pass
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.ast.Expr._
 import org.jetbrains.plugins.kotlinConverter.ast.Stmt._
+import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
 
 class BasicPass extends Pass {
   override protected def action(ast: AST): Option[AST] = ast match {
@@ -45,6 +46,11 @@ class BasicPass extends Pass {
         x.typeParams.map(pass[TypeParam]),
         params.map(pass[Expr])))
 
+    case PType(SimpleType(tn), Seq(t))
+      if tn == "_root_.scala.Option" || tn == "_root_.scala.Some" =>
+      Some(NulableType(pass[Type](t)))
+//    case Ref(TypeCont(x, Some(SimpleType("_root_.scala.None.type"))),"None") =>
+//      Some(Ref(TypeCont(x, Some(SimpleType("_root_.scala.None.type"))), "null"))
     case _ => None
   }
 

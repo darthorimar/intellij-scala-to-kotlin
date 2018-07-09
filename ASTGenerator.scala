@@ -58,17 +58,23 @@ object ASTGenerator extends App() with AST {
       .map(z => TypeParam(z.getText))
   }
 
-  def genType(t: ScType): Type = t match {
-    case x: ScParameterizedType =>
-      FuncType(ProdType(x.typeArguments.init.map(genType)), genType(x.typeArguments.last))
-    case x => SimpleType(x.canonicalText)
+  def genType(t: ScType): Type = {
+    println(t.canonicalText, t.getClass.getSimpleName)
+    t match {
+      case x: ScParameterizedType if x.designator.canonicalText.startsWith("Function") =>
+        FuncType(ProdType(x.typeArguments.init.map(genType)), genType(x.typeArguments.last))
+      case x: ScParameterizedType =>
+        PType(genType(x.designator), x.typeArguments.map(genType))
+      case x =>
+        SimpleType(x.canonicalText)
+    }
   }
 
   def genTypeCont(real: Option[ScTypeElement], inf: TypeResult): TypeCont =
     genTypeCont(real, inf.toOption)
 
   def genTypeCont(real: Option[ScTypeElement], inf: Option[ScType]): TypeCont =
-    TypeCont(real.map(x => SimpleType(x.getText)), inf.map(genType))
+    TypeCont(real.map(x => genType(x.`type`().get)), inf.map(genType))
 
   def genAttrs(x: ScTypeDefinition): Seq[Attr] = {
     def attr(p: Boolean, a: Attr) =
@@ -147,7 +153,10 @@ object ASTGenerator extends App() with AST {
     case x: ScParenthesisedExpr =>
       Expr.ParenExpr(gen[Expr](x.innerElement.get))
     case x: ScReferenceExpression =>
-      Expr.Ref(genTypeCont(None, x.`type`()), x.getText)
+     Expr.Ref(genTypeCont(None, None),
+       x.qualifier.map(gen[Expr]),
+       Expr.RefF(genTypeCont(None, None), x.shapeResolve.head.name))
+
     case x: ScMethodCall =>
       println("")
       Expr.Call(

@@ -16,7 +16,7 @@ trait Pass {
     parents.head
 
   final def pass[T](ast: AST): T = {
-//    println(" " * parentsStack.size + ast.getClass.getSimpleName)
+    println(" " * parentsStack.size + ast.getClass.getSimpleName)
     parentsStack = ast :: parentsStack
     val res = action(ast).getOrElse(copy(ast)).asInstanceOf[T]
     parentsStack = parentsStack.tail
@@ -67,8 +67,11 @@ trait Pass {
     case UnderSc =>
       UnderSc
 
-    case Ref(ty, name) =>
-      Ref(pass[TypeCont](ty), name)
+    case Ref(ty, obj, ref) =>
+      Ref(pass[TypeCont](ty), obj.map(pass[Expr]), pass[Expr](ref))
+
+    case RefF(ty, name) =>
+      RefF(pass[TypeCont](ty), name)
 
     case Match(expr, clauses) =>
       Match(pass[Expr](expr), clauses.map(pass[CaseClause]))
@@ -101,10 +104,14 @@ trait Pass {
       While(pass[Expr](cond), pass[Block](body))
 
     case TypeCont(real, inferenced) =>
-      TypeCont(real, inferenced)
+      TypeCont(real.map(pass[Type]), inferenced.map(pass[Type]))
+
+    case PType(des, params) =>
+      PType(pass[Type](des), params.map(pass[Type]))
 
     case FuncType(left, right) =>
       FuncType(pass[Type](left), pass[Type](right))
+
     case ProdType(types) =>
       ProdType(types.map(pass[Type]))
 

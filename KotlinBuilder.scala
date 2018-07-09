@@ -24,7 +24,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         repNl(defns)(gen)
 
       case Defn(attrs, t, name, consruct, supers, block) =>
-        rep(attrs, " ") (gen)
+        rep(attrs, " ")(gen)
         if (attrs.nonEmpty) str(" ")
         gen(t)
         str(" ")
@@ -44,7 +44,7 @@ class KotlinBuilder extends KotlinBuilderBase {
 
       case ParamsConstruct(params) =>
         str("(")
-        rep(params, ", ") (gen)
+        rep(params, ", ")(gen)
         str(")")
 
       case ConstructParam(parType, mod, name, ty) =>
@@ -133,7 +133,11 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(name)
       case UnderSc =>
         str("it")
-      case Ref(ty, name) =>
+      case Ref(ty, obj, ref) =>
+        opt(obj) { x => gen(x); str(".") }
+        gen(ref)
+
+      case RefF(ty, name) =>
         str(name)
       case Match(expr, clauses) =>
         str("when(")
