@@ -17,10 +17,13 @@ class BasicPass extends Pass {
           ConstructParam(t, m, name, pass[Type](ty))
       }))
 
-    //handle def attrs
+
     case x: Defn =>
       val defn = copy(x).asInstanceOf[Defn]
-      Some(defn.copy(attrs = handleAttrs(defn.attrs.toList)))
+      val t =
+        if (x.t == TraitDefn) InterfaceDefn
+        else x.t
+      Some(defn.copy(attrs = handleAttrs(defn.attrs.toList), t = t))
 
     //uncarry
     case x@CallExpr(_, _: CallExpr, _, _) =>
@@ -46,8 +49,8 @@ class BasicPass extends Pass {
     case PType(SimpleType(tn), Seq(t))
       if tn == "_root_.scala.Option" || tn == "_root_.scala.Some" =>
       Some(NulableType(pass[Type](t)))
-//    case Ref(Type(x, Some(SimpleType("_root_.scala.None.type"))),"None") =>
-//      Some(Ref(Type(x, Some(SimpleType("_root_.scala.None.type"))), "null"))
+
+
     case _ => None
   }
 

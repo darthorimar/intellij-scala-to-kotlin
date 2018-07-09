@@ -5,6 +5,8 @@ trait AST
 case object EmptyAst extends AST with Expr with Attr with CasePattern with BlockExpr {
   override def stmts: Seq[Expr] = Seq.empty
   override def ty: Type = NoType
+
+  override def name: String = "NoName"
 }
 
 case class DefParam(ty: Type, name: String) extends AST

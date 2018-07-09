@@ -1,27 +1,62 @@
 package org.jetbrains.plugins.kotlinConverter.ast
 
-trait Keyword extends AST
+trait Keyword extends AST {
+  def name: String
+}
 
 trait Attr extends Keyword
 
-case object CaseAttr extends Attr
-case object PublAttr extends Attr
-case object PrivAttr extends Attr
-case object ProtAttr extends Attr
-case object OpenAttr extends Attr
-case object FinalAttr extends Attr
+case object CaseAttr extends Attr {
+  override def name: String = "data"
+}
+case object PublAttr extends Attr{
+  override def name: String = "public"
+}
+case object PrivAttr extends Attr{
+  override def name: String = "private"
+}
+case object ProtAttr extends Attr{
+  override def name: String = "protected"
+}
+case object OpenAttr extends Attr{
+  override def name: String = "open"
+}
+case object FinalAttr extends Attr{
+  override def name: String = "final"
+}
 
 trait ParamModifier extends Keyword
-case object PrivModifier extends ParamModifier
-case object PublModifier extends ParamModifier
-case object NoModifier extends ParamModifier
+case object PrivModifier extends ParamModifier{
+  override def name: String = "private"
+}
+case object PublModifier extends ParamModifier{
+  override def name: String = "public"
+}
+case object NoModifier extends ParamModifier{
+  override def name: String = ""
+}
 
 trait ParamType extends Keyword
-case object ValType extends ParamType
-case object VarType extends ParamType
-case object NoParamType extends ParamType
+case object ValType extends ParamType {
+  override def name: String = "val"
+}
+case object VarType extends ParamType {
+  override def name: String = "var"
+}
+case object NoParamType extends ParamType {
+  override def name: String = ""
+}
 
 sealed trait DefnType extends Keyword
-case object ClassDefn extends DefnType
-case object TraitDefn extends DefnType
-case object ObjDefn extends DefnType
+case object ClassDefn extends DefnType {
+  override def name: String = "class"
+}
+case object TraitDefn extends DefnType {
+  override def name: String = "trait"
+}
+case object InterfaceDefn extends DefnType {
+  override def name: String = "interface"
+}
+case object ObjDefn extends DefnType {
+  override def name: String = "object"
+}

@@ -24,7 +24,7 @@ class KotlinBuilder extends KotlinBuilderBase {
       case Defn(attrs, t, name, consruct, supers, block) =>
         rep(attrs, " ")(gen)
         if (attrs.nonEmpty) str(" ")
-        gen(t)
+        genKeyword(t)
         str(" ")
         str(name)
         opt(consruct)(gen)
@@ -188,24 +188,8 @@ class KotlinBuilder extends KotlinBuilderBase {
         genKeyword(x)
     }
 
-  def genKeyword(k: Keyword): Unit = k match {
-    case ClassDefn => str("class")
-    case TraitDefn => str("trait")
-    case ObjDefn => str("object")
-    case ValType => str("val")
-    case VarType => str("var")
-    case NoParamType =>
-    case PrivModifier => str("private")
-    case PublModifier => str("public")
-    case NoModifier =>
-    case CaseAttr => str("data")
-    case PublAttr => str("public")
-    case PrivAttr => str("private")
-    case ProtAttr => str("protected")
-    case OpenAttr => str("open")
-    case FinalAttr => str("final")
-  }
-
+  def genKeyword(k: Keyword): Unit =
+    str(k.name)
 
   def genType(t: Type, pref: Boolean = true): Unit = {
     if (pref) str(": ")
