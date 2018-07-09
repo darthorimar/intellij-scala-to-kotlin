@@ -120,7 +120,7 @@ object ASTGenerator extends App() with AST {
         x match {
           case _: ScClass => ClassDefn
           case _: ScTrait => TraitDefn
-          case _: ScObject => TraitDefn
+          case _: ScObject => ObjDefn
         },
         x.name,
         x match {

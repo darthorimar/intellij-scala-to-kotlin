@@ -10,23 +10,15 @@ class TypePass extends Pass {
 
     case x@RefFExpr(FuncType(_, PType(Types.OPTION,_)), "map") =>
       Some(copy(x).asInstanceOf[RefFExpr].copy(name="let"))
+
+    case Types.STRING =>
+      Some(SimpleType("String"))
+
+    case Types.SEQ =>
+      Some(SimpleType("List"))
+
     case _ => None
   }
 
-  private def handleAttrs(attrs: List[Attr]) = {
-    def comparator(attr: Attr) = attr match {
-      case PublAttr => 1
-      case PrivAttr => 1
-      case ProtAttr => 1
-      case OpenAttr => 2
-      case FinalAttr => 2
-      case CaseAttr => 3
-    }
-
-    (if (attrs.contains(FinalAttr)) attrs.filter(_ == FinalAttr)
-    else if (!attrs.contains(CaseAttr)) OpenAttr :: attrs
-    else attrs)
-      .sortBy(comparator)
-  }
 }
 

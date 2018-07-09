@@ -34,4 +34,6 @@ case object NoType extends Type {
 object Types {
   val FUNCTION_PREF = "_root_.scala.Function"
   val OPTION = SimpleType("_root_.scala.Option")
+  val STRING = SimpleType("_root_.scala.Predef.String")
+  val SEQ = SimpleType("scala.Seq")
 }

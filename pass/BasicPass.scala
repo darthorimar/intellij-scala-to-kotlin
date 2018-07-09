@@ -2,6 +2,8 @@ package org.jetbrains.plugins.kotlinConverter.pass
 
 import org.jetbrains.plugins.kotlinConverter.ast._
 
+import scala.collection.mutable
+
 class BasicPass extends Pass {
   override protected def action(ast: AST): Option[AST] = ast match {
     //Remove renault brackets for lambda like in seq.map {x => x * 2}
@@ -23,7 +25,7 @@ class BasicPass extends Pass {
       val t =
         if (x.t == TraitDefn) InterfaceDefn
         else x.t
-      Some(defn.copy(attrs = handleAttrs(defn.attrs.toList), t = t))
+      Some(defn.copy(attrs = handleAttrs(defn), t = t))
 
     //uncarry
     case x@CallExpr(_, _: CallExpr, _, _) =>
@@ -49,7 +51,10 @@ class BasicPass extends Pass {
     case _ => None
   }
 
-  private def handleAttrs(attrs: List[Attr]) = {
+  private def handleAttrs(x: Defn) = {
+    def attr(p: Boolean, a: Attr) =
+      if (p) Some(a) else None
+
     def comparator(attr: Attr) = attr match {
       case PublAttr => 1
       case PrivAttr => 1
@@ -57,11 +62,17 @@ class BasicPass extends Pass {
       case OpenAttr => 2
       case FinalAttr => 2
       case CaseAttr => 3
+      case DataAttr => 3
+      case _ => 4
     }
 
-    (if (attrs.contains(FinalAttr)) attrs.filter(_ == FinalAttr)
-    else if (!attrs.contains(CaseAttr)) OpenAttr :: attrs
-    else attrs)
+    (attr(x.attrs.contains(CaseAttr) && x.t == ClassDefn, DataAttr) ::
+      attr(!x.attrs.contains(FinalAttr) && x.t == ClassDefn && !x.attrs.contains(CaseAttr), OpenAttr) ::
+      attr(x.attrs.contains(PublAttr), PublAttr) ::
+      attr(x.attrs.contains(PrivAttr), PrivAttr) ::
+      attr(x.attrs.contains(ProtAttr), ProtAttr) ::
+      Nil)
+      .flatten
       .sortBy(comparator)
   }
 }
