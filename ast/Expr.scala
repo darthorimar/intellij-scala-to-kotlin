@@ -2,7 +2,7 @@ package org.jetbrains.plugins.kotlinConverter.ast
 
 import org.jetbrains.plugins.kotlinConverter.ast
 
-trait Expr extends AST {
+sealed trait Expr extends AST {
   def ty: Type
 }
 
@@ -13,8 +13,11 @@ case class ParenExpr(inner: Expr) extends Expr {
 case class CallExpr(ty: Type, ref: Expr, typeParams: Seq[TypeParam], params: Seq[Expr]) extends Expr
 case class LitExpr(ty: Type, name: String) extends Expr
 case class UnderScExpr(ty: Type) extends Expr
-case class InvExpr(ty: Type, obj: Option[Expr], ref: Expr) extends Expr
-case class RefExpr(ty: Type, name: String) extends Expr
+case class InvExpr(ty: Type, obj: Option[Expr], ref: String) extends Expr
+case class PostExpr(obj: Expr, op: String) extends Expr {
+  override def ty: Type = NoType//todo fix
+}
+//case class RefExpr(ty: Type, name: String) extends Expr
 case class MatchExpr(ty: Type, expr: Expr, clauses: Seq[CaseClause]) extends Expr
 case class AssignExpr(left: Expr, right: Expr) extends Expr {
   override def ty: Type = SimpleType("Unit")
@@ -27,7 +30,7 @@ case class ForExpr(ty: Type, range: Expr, body: BlockExpr) extends Expr
 case class WhileExpr(ty: Type, cond: Expr, body: BlockExpr) extends Expr
 
 
-trait BlockExpr extends Expr {
+sealed trait BlockExpr extends Expr {
   def stmts: Seq[Expr]
   def isSingle: Boolean = stmts.size == 1
   def isEmpty: Boolean = stmts.isEmpty
@@ -49,7 +52,7 @@ case object EmptyBlock extends  BlockExpr {
   override def ty: Type = NoType
 }
 
-trait DefExpr extends Expr
+sealed trait DefExpr extends Expr
 case class Defn(attrs: Seq[Attr],
                 t: DefnType,
                 name: String,

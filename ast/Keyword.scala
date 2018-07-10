@@ -1,10 +1,10 @@
   package org.jetbrains.plugins.kotlinConverter.ast
 
-  trait Keyword extends AST {
+  sealed trait Keyword extends AST {
     def name: String
   }
 
-  trait Attr extends Keyword
+  sealed trait Attr extends Keyword
 
   case object NoAttr extends Attr {
     override def name: String = ""
@@ -36,7 +36,7 @@
   }
 
 
-  trait MemberKind extends Keyword
+  sealed trait MemberKind extends Keyword
   case object VarlKind extends MemberKind {
     override def name: String = "val"
   }

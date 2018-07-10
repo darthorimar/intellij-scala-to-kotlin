@@ -140,8 +140,8 @@ object ASTGenerator extends App() with AST {
     case x: PsiClassWrapper =>
       gen[DefExpr](x.definition)
 
-    case x: ScFunctionDeclaration =>
-      println(x.getModifierList.modifiers.mkString(" ---------- "))
+    case x: ScFunction =>
+      //TODO get override modifier
       DefnDef(
         Seq.empty,
         x.name,
@@ -170,7 +170,7 @@ object ASTGenerator extends App() with AST {
       val ref =
         InvExpr(genType(x.`type`()),
           x.qualifier.map(gen[Expr]),
-          RefExpr(NoType, x.getReference.getCanonicalText))
+          x.getReference.getCanonicalText)
       if (x.getReference.asInstanceOf[ScReferenceExpressionImpl].shapeResolve.map(_.element)
         .exists(_.isInstanceOf[ScFunction]))
         CallExpr(genType(x.`type`()),
@@ -259,8 +259,8 @@ object ASTGenerator extends App() with AST {
     case x: ScParameter =>
       DefParam(genType(x.typeElement), x.name)
 
-    case x =>
-      println(s"No case for $x")
-      EmptyAst
+//    case x =>
+//      println(s"No case for $x")
+//      EmptyAst
   }).asInstanceOf[T]
 }

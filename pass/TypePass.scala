@@ -1,5 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
+import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.ast._
 
 class TypePass extends Pass {
@@ -8,9 +9,10 @@ class TypePass extends Pass {
       if tn == "_root_.scala.Option" || tn == "_root_.scala.Some" =>
       Some(NullableType(pass[Type](t)))
 
-    case x@RefExpr(FuncType(_, PType(Types.OPTION,_)), "map") =>
-      Some(copy(x).asInstanceOf[RefExpr].copy(name="let"))
-
+//    case x@RefExpr(FuncType(_, PType(Types.OPTION,_)), "map") =>
+//      Some(copy(x).asInstanceOf[RefExpr].copy(name="let"))
+    case InvExpr(ty@FuncType(_, PType(Types.OPTION, _)), obj, "map") =>
+      Some(InvExpr(pass[Type](ty), obj.map(x => pass[Expr](PostExpr(x, "?"))), "let"))
     case Types.STRING =>
       Some(SimpleType("String"))
 

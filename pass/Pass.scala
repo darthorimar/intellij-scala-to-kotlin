@@ -66,10 +66,7 @@ trait Pass {
       UnderScExpr(ty)
 
     case InvExpr(ty, obj, ref) =>
-      InvExpr(pass[Type](ty), obj.map(pass[Expr]), pass[Expr](ref))
-
-    case RefExpr(ty, name) =>
-      RefExpr(pass[Type](ty), name)
+      InvExpr(pass[Type](ty), obj.map(pass[Expr]),ref)
 
     case MatchExpr(ty, expr, clauses) =>
       MatchExpr(pass[Type](ty), pass[Expr](expr), clauses.map(pass[CaseClause]))
@@ -79,6 +76,9 @@ trait Pass {
 
     case SingleBlock(stmt) =>
       SingleBlock(pass[Expr](stmt))
+
+    case PostExpr(obj, op) =>
+      PostExpr(pass[Expr](obj), op)
 
     case EmptyBlock =>
       EmptyBlock
@@ -142,8 +142,7 @@ trait Pass {
 
     case WildcardPattern =>
       WildcardPattern
-
-    case EmptyAst => EmptyAst
+//    case EmptyAst => EmptyAst
     case x: Keyword => x
   }
 }

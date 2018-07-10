@@ -127,16 +127,20 @@ class KotlinBuilder extends KotlinBuilderBase {
           str(" else ")
           gen(falseB)
         }
+      case PostExpr(obj,op) =>
+        gen(obj)
+        str(op)
+
       case LitExpr(ty, name) =>
         str(name)
       case UnderScExpr(ty) =>
         str("it")
       case InvExpr(ty, obj, ref) =>
         opt(obj) { x => gen(x); str(".") }
-        gen(ref)
+        str(ref)
 
-      case RefExpr(ty, name) =>
-        str(name)
+//      case RefExpr(ty, name) =>
+//        str(name)
       case MatchExpr(ty, expr, clauses) =>
         str("when(")
         gen(expr)
@@ -183,8 +187,8 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(ty)
       case CaseAttr =>
         str("data")
-      case EmptyAst =>
-        str(" EPMTY_AST ")
+//      case EmptyAst =>
+//        str(" EPMTY_AST ")
       case x: Keyword =>
         genKeyword(x)
     }
