@@ -116,9 +116,14 @@ class KotlinBuilder extends KotlinBuilderBase {
           rep(typeParams, ", ")(gen)
           str(">")
         }
-        str("(")
-        rep(params, ", ")(gen)
-        str(")")
+        if (params.size == 1 && params.head.isInstanceOf[LambdaExpr]) {
+          str(" ")
+          gen(params.head)
+        } else {
+          str("(")
+          rep(params, ", ")(gen)
+          str(")")
+        }
       case IfExpr(ty, cond, trueB, falseB) =>
         str("if (")
         gen(cond)
