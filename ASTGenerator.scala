@@ -207,6 +207,9 @@ object ASTGenerator extends App() with AST {
         case y: ScGenericCall =>
           call(y.asInstanceOf[ScReferenceExpression]).copy(typeParams = genTypeArgs(y))
       }
+    case x: ScGenericCall =>
+      gen[CallExpr](x.referencedExpr)
+        .copy(typeParams = genTypeArgs(x))
     //      CallExpr(
     //        genType(x.`type`()),
     //        x.getInvokedExpr match {

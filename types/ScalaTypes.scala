@@ -8,7 +8,8 @@ object ScalaTypes {
   val NONE = SimpleType("_root_.scala.None")
   val STRING = SimpleType("_root_.scala.Predef.String")
   val JAVA_STRING = SimpleType("_root_.java.lang.String")
-  val SEQ = SimpleType("scala.Seq")
+  val SEQ = SimpleType("_root_.scala.collection.Seq")
+  val SEQ2 = SimpleType("scala.Seq")
 
   val FUNCTION_PREFFIX = "_root_.scala.Function"
 }

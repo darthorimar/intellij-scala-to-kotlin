@@ -18,6 +18,13 @@ class CollectionPass extends Pass {
 
     case CallExpr(ty, _, Some(obj), "get", _, _) =>
       Some(PostExpr(pass[Type](ty), pass[Expr](obj), "!!"))
+
+    case CallExpr(ty, funcTy, None, "Seq", typeParams, args) =>
+      Some(CallExpr(pass[Type](ty), pass[Type](funcTy), None, "listOf", typeParams, args.map(pass[Expr])))
+
+    case CallExpr(ty, funcTy, Some(InvExpr(_,_, "Seq")), "empty", typeParams, Seq()) =>
+      Some(CallExpr(pass[Type](ty), pass[Type](funcTy), None, "emptyList", typeParams, Seq()))
+
     //
     //    case CallExpr(FuncType(_, t),InvExpr(ty, Some(obj), "getOrElse"), _, Seq(p)) if obj.ty.isInstanceOf[NullableType] =>
     //      Some(BinExpr(pass[Type](t), BinOp("?:"), obj, pass[Expr](p)))

@@ -13,7 +13,7 @@ class TypePass extends Pass {
     case ScalaTypes.STRING | ScalaTypes.JAVA_STRING =>
       Some(SimpleType("String"))
 
-    case ScalaTypes.SEQ =>
+    case ScalaTypes.SEQ | ScalaTypes.SEQ2 =>
       Some(SimpleType("List"))
 
     case _ => None
