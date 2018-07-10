@@ -167,47 +167,50 @@ object ASTGenerator extends App() with AST {
       UnderScExpr(NoType)
     case x: ScParenthesisedExpr =>
       ParenExpr(gen[Expr](x.innerElement.get))
-//    case x: ScReferenceExpression =>
-//      val ref =
-//        InvExpr(genType(x.`type`()),
-//          x.qualifier.map(gen[Expr]),
-//          x.getReference.getCanonicalText)
-//      if (x.getReference.asInstanceOf[ScReferenceExpressionImpl].shapeResolve.map(_.element)
-//        .exists(_.isInstanceOf[ScFunction]))
-//        CallExpr(genType(x.`type`()),
-//          ref,
-//          Seq.empty,
-//          Seq.empty
-//        )
-//      else ref
+    case x: ScReferenceExpression =>
+      if (x.getReference.asInstanceOf[ScReferenceExpressionImpl].shapeResolve.map(_.element)
+        .exists(_.isInstanceOf[ScFunction]))
+        CallExpr(genType(x.`type`()),
+          x.qualifier.map(gen[Expr]),
+          x.refName,
+          Seq.empty,
+          Seq.empty
+        )
+      else InvExpr(genType(x.`type`()),
+        x.qualifier.map(gen[Expr]),
+        x.getReference.getCanonicalText)
 
     case x: ScMethodCall =>
+      def call(r: ScReferenceExpression) =
+        CallExpr(genType(r.`type`()),
+          r.qualifier.map(gen[Expr]),
+          r.refName,
+          Seq.empty,
+          x.args.exprs.map(gen[Expr]))
+
       x.getInvokedExpr match {
         case y: ScReferenceExpression =>
-         CallExpr(genType(y.`type`()),
-           y.qualifier.map(gen[Expr]),
-           y.refName,
-           Seq.empty,
-           x.args.exprs.map(gen[Expr])
-         )
+          call(y)
+        case y: ScGenericCall =>
+          call(y.asInstanceOf[ScReferenceExpression]).copy(typeParams = genTypeArgs(y))
       }
-//      CallExpr(
-//        genType(x.`type`()),
-//        x.getInvokedExpr match {
-//          case y: ScGenericCall =>
-//            gen[Expr](y.referencedExpr)
-//          case y => gen[Expr](y)
-//        },
-//        x.getInvokedExpr match {
-//          case y: ScGenericCall => genTypeArgs(y)
-//          case _ => Seq.empty
-//        },
-//        x.args.exprs.map(gen[Expr]))
-//    case x: ScGenericCall =>
-//      CallExpr(genType(x.`type`()),
-//        gen[Expr](x.referencedExpr),
-//        genTypeArgs(x),
-//        Seq.empty)
+    //      CallExpr(
+    //        genType(x.`type`()),
+    //        x.getInvokedExpr match {
+    //          case y: ScGenericCall =>
+    //            gen[Expr](y.referencedExpr)
+    //          case y => gen[Expr](y)
+    //        },
+    //        x.getInvokedExpr match {
+    //          case y: ScGenericCall => genTypeArgs(y)
+    //          case _ => Seq.empty
+    //        },
+    //        x.args.exprs.map(gen[Expr]))
+    //    case x: ScGenericCall =>
+    //      CallExpr(genType(x.`type`()),
+    //        gen[Expr](x.referencedExpr),
+    //        genTypeArgs(x),
+    //        Seq.empty)
     case x: ScIfStmt =>
       IfExpr(
         genType(x.`type`()),
@@ -269,8 +272,8 @@ object ASTGenerator extends App() with AST {
     case x: ScParameter =>
       DefParam(genType(x.typeElement), x.name)
 
-//    case x =>
-//      println(s"No case for $x")
-//      EmptyAst
+    //    case x =>
+    //      println(s"No case for $x")
+    //      EmptyAst
   }).asInstanceOf[T]
 }
