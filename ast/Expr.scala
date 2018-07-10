@@ -10,7 +10,7 @@ case class BinExpr(ty: Type, op: BinOp, left: Expr, right: Expr) extends Expr
 case class ParenExpr(inner: Expr) extends Expr {
   override def ty: Type = inner.ty
 }
-case class CallExpr(ty: Type, ref: Expr, typeParams: Seq[TypeParam], params: Seq[Expr]) extends Expr
+case class CallExpr(ty: Type, obj: Option[Expr], ref: String, typeParams: Seq[TypeParam], params: Seq[Expr]) extends Expr
 case class LitExpr(ty: Type, name: String) extends Expr
 case class UnderScExpr(ty: Type) extends Expr
 case class InvExpr(ty: Type, obj: Option[Expr], ref: String) extends Expr
@@ -66,3 +66,12 @@ case class ImportDef(ref: String, names: Seq[String]) extends DefExpr {
   override def ty: Type = NoType
 }
 
+
+sealed trait CasePattern extends Expr {
+  override def ty: Type = NoType
+}
+case class LitPattern(lit: LitExpr) extends CasePattern
+case class ConstructorPattern(ref: String, args: Seq[CasePattern])  extends CasePattern
+case class TypedPattern(ref: String, override val ty: Type) extends CasePattern
+case class ReferencePattern(ref: String) extends CasePattern
+case object WildcardPattern extends CasePattern

@@ -108,8 +108,9 @@ class KotlinBuilder extends KotlinBuilderBase {
         gen(left)
         str(" = ")
         gen(right)
-      case CallExpr(ty, ref, typeParams, params) =>
-        gen(ref)
+      case CallExpr(ty, obj, ref, typeParams, params) =>
+        opt(obj) {x =>gen(x); str(".") }
+        str(ref)
         if (typeParams.nonEmpty) {
           str("<")
           rep(typeParams, ", ")(gen)

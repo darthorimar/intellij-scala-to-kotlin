@@ -167,38 +167,47 @@ object ASTGenerator extends App() with AST {
       UnderScExpr(NoType)
     case x: ScParenthesisedExpr =>
       ParenExpr(gen[Expr](x.innerElement.get))
-    case x: ScReferenceExpression =>
-      val ref =
-        InvExpr(genType(x.`type`()),
-          x.qualifier.map(gen[Expr]),
-          x.getReference.getCanonicalText)
-      if (x.getReference.asInstanceOf[ScReferenceExpressionImpl].shapeResolve.map(_.element)
-        .exists(_.isInstanceOf[ScFunction]))
-        CallExpr(genType(x.`type`()),
-          ref,
-          Seq.empty,
-          Seq.empty
-        )
-      else ref
+//    case x: ScReferenceExpression =>
+//      val ref =
+//        InvExpr(genType(x.`type`()),
+//          x.qualifier.map(gen[Expr]),
+//          x.getReference.getCanonicalText)
+//      if (x.getReference.asInstanceOf[ScReferenceExpressionImpl].shapeResolve.map(_.element)
+//        .exists(_.isInstanceOf[ScFunction]))
+//        CallExpr(genType(x.`type`()),
+//          ref,
+//          Seq.empty,
+//          Seq.empty
+//        )
+//      else ref
 
     case x: ScMethodCall =>
-      CallExpr(
-        genType(x.`type`()),
-        x.getInvokedExpr match {
-          case y: ScGenericCall =>
-            gen[Expr](y.referencedExpr)
-          case y => gen[Expr](y)
-        },
-        x.getInvokedExpr match {
-          case y: ScGenericCall => genTypeArgs(y)
-          case _ => Seq.empty
-        },
-        x.args.exprs.map(gen[Expr]))
-    case x: ScGenericCall =>
-      CallExpr(genType(x.`type`()),
-        gen[Expr](x.referencedExpr),
-        genTypeArgs(x),
-        Seq.empty)
+      x.getInvokedExpr match {
+        case y: ScReferenceExpression =>
+         CallExpr(genType(y.`type`()),
+           y.qualifier.map(gen[Expr]),
+           y.refName,
+           Seq.empty,
+           x.args.exprs.map(gen[Expr])
+         )
+      }
+//      CallExpr(
+//        genType(x.`type`()),
+//        x.getInvokedExpr match {
+//          case y: ScGenericCall =>
+//            gen[Expr](y.referencedExpr)
+//          case y => gen[Expr](y)
+//        },
+//        x.getInvokedExpr match {
+//          case y: ScGenericCall => genTypeArgs(y)
+//          case _ => Seq.empty
+//        },
+//        x.args.exprs.map(gen[Expr]))
+//    case x: ScGenericCall =>
+//      CallExpr(genType(x.`type`()),
+//        gen[Expr](x.referencedExpr),
+//        genTypeArgs(x),
+//        Seq.empty)
     case x: ScIfStmt =>
       IfExpr(
         genType(x.`type`()),

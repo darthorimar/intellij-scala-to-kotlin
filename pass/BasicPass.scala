@@ -27,26 +27,26 @@ class BasicPass extends Pass {
         else x.t
       Some(defn.copy(attrs = handleAttrs(defn), t = t))
 
-    //uncarry
-    case x@CallExpr(_, _: CallExpr, _, _) =>
-      def collectParams(c: Expr): List[Expr] = c match {
-        case x: CallExpr =>
-          collectParams(x.ref) ++ x.params.toList
-        case _ => Nil
-      }
-
-      def collectRef(c: CallExpr): Expr = c.ref match {
-        case x: CallExpr => collectRef(x)
-        case _ => c.ref
-      }
-
-      val params = collectParams(x)
-      val ref = collectRef(x)
-      Some(CallExpr(
-        pass[Type](x.ty),
-        pass[Expr](ref),
-        x.typeParams.map(pass[TypeParam]),
-        params.map(pass[Expr])))
+//    //uncarry
+//    case x@CallExpr(_, _: CallExpr, _, _) =>
+//      def collectParams(c: Expr): List[Expr] = c match {
+//        case x: CallExpr =>
+//          collectParams(x.ref) ++ x.params.toList
+//        case _ => Nil
+//      }
+//
+//      def collectRef(c: CallExpr): Expr = c.ref match {
+//        case x: CallExpr => collectRef(x)
+//        case _ => c.ref
+//      }
+//
+//      val params = collectParams(x)
+//      val ref = collectRef(x)
+//      Some(CallExpr(
+//        pass[Type](x.ty),
+//        pass[Expr](ref),
+//        x.typeParams.map(pass[TypeParam]),
+//        params.map(pass[Expr])))
 
     case _ => None
   }
