@@ -3,6 +3,7 @@ package org.jetbrains.plugins.kotlinConverter
 import com.intellij.psi.{PsiClass, PsiCodeBlock, PsiElement, PsiStatement}
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.types.ScalaTypes
 import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.lang.psi.api.base._
@@ -60,7 +61,7 @@ object ASTGenerator extends App() with AST {
 
   def genType(t: ScType): Type = {
     t match {
-      case x: ScParameterizedType if x.designator.canonicalText.startsWith(Types.FUNCTION_PREF) =>
+      case x: ScParameterizedType if x.designator.canonicalText.startsWith(ScalaTypes.FUNCTION_PREFFIX) =>
         if (x.typeArguments.init.length == 1)
           FuncType(genType(x.typeArguments.head), genType(x.typeArguments.last))
         else

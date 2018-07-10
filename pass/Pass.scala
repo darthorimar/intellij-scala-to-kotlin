@@ -77,8 +77,8 @@ trait Pass {
     case SingleBlock(stmt) =>
       SingleBlock(pass[Expr](stmt))
 
-    case PostExpr(obj, op) =>
-      PostExpr(pass[Expr](obj), op)
+    case PostExpr(ty, obj, op) =>
+      PostExpr(ty, pass[Expr](obj), op)
 
     case EmptyBlock =>
       EmptyBlock

@@ -127,7 +127,7 @@ class KotlinBuilder extends KotlinBuilderBase {
           str(" else ")
           gen(falseB)
         }
-      case PostExpr(obj,op) =>
+      case PostExpr(ty, obj,op) =>
         gen(obj)
         str(op)
 

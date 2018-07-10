@@ -14,9 +14,7 @@ case class CallExpr(ty: Type, ref: Expr, typeParams: Seq[TypeParam], params: Seq
 case class LitExpr(ty: Type, name: String) extends Expr
 case class UnderScExpr(ty: Type) extends Expr
 case class InvExpr(ty: Type, obj: Option[Expr], ref: String) extends Expr
-case class PostExpr(obj: Expr, op: String) extends Expr {
-  override def ty: Type = NoType//todo fix
-}
+case class PostExpr(ty: Type, obj: Expr, op: String) extends Expr
 //case class RefExpr(ty: Type, name: String) extends Expr
 case class MatchExpr(ty: Type, expr: Expr, clauses: Seq[CaseClause]) extends Expr
 case class AssignExpr(left: Expr, right: Expr) extends Expr {
