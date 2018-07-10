@@ -169,24 +169,37 @@ object ASTGenerator extends App() with AST {
       ParenExpr(gen[Expr](x.innerElement.get))
     case x: ScReferenceExpression =>
       if (x.getReference.asInstanceOf[ScReferenceExpressionImpl].shapeResolve.map(_.element)
-        .exists(_.isInstanceOf[ScFunction]))
-        CallExpr(genType(x.`type`()),
+        .exists(_.isInstanceOf[ScFunction])) {
+        val t = genType (x.`type`())
+        val retType = t match {
+          case FuncType(_, r) => r
+          case r => r
+        }
+        CallExpr(retType,
+          t,
           x.qualifier.map(gen[Expr]),
           x.refName,
           Seq.empty,
-          Seq.empty
-        )
+          Seq.empty)
+      }
       else InvExpr(genType(x.`type`()),
         x.qualifier.map(gen[Expr]),
         x.getReference.getCanonicalText)
 
     case x: ScMethodCall =>
-      def call(r: ScReferenceExpression) =
-        CallExpr(genType(r.`type`()),
+      def call(r: ScReferenceExpression) = {
+        val t = genType (x.`type`())
+        val retType = t match {
+          case FuncType(_, r) => r
+          case r => r
+        }
+        CallExpr(retType,
+          t,
           r.qualifier.map(gen[Expr]),
           r.refName,
           Seq.empty,
           x.args.exprs.map(gen[Expr]))
+      }
 
       x.getInvokedExpr match {
         case y: ScReferenceExpression =>

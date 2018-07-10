@@ -56,8 +56,13 @@ trait Pass {
     case ParenExpr(inner) =>
       ParenExpr(pass[Expr](inner))
 
-    case CallExpr(ty, obj, ref, typeParams, params) =>
-      CallExpr(pass[Type](ty), obj.map(pass[Expr]), ref, typeParams.map(pass[TypeParam]), params.map(pass[Expr]))
+    case CallExpr(ty, funcTy, obj, ref, typeParams, params) =>
+      CallExpr(pass[Type](ty),
+        pass[Type](funcTy),
+        obj.map(pass[Expr]),
+        ref,
+        typeParams.map(pass[TypeParam]),
+        params.map(pass[Expr]))
 
     case LitExpr(ty, name) =>
       LitExpr(pass[Type](ty), name)

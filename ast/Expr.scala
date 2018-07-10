@@ -10,7 +10,7 @@ case class BinExpr(ty: Type, op: BinOp, left: Expr, right: Expr) extends Expr
 case class ParenExpr(inner: Expr) extends Expr {
   override def ty: Type = inner.ty
 }
-case class CallExpr(ty: Type, obj: Option[Expr], ref: String, typeParams: Seq[TypeParam], params: Seq[Expr]) extends Expr
+case class CallExpr(ty: Type, funcTy: Type, obj: Option[Expr], ref: String, typeParams: Seq[TypeParam], params: Seq[Expr]) extends Expr
 case class LitExpr(ty: Type, name: String) extends Expr
 case class UnderScExpr(ty: Type) extends Expr
 case class InvExpr(ty: Type, obj: Option[Expr], ref: String) extends Expr
