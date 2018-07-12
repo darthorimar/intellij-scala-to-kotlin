@@ -99,10 +99,46 @@ class BasicPass extends Pass {
             implicit val newContext: Context =
               context.asInstanceOf[Context]
                 .copy(renames = context.asInstanceOf[Context].renames + (ref -> valExpr.name))
-            ExprWhenClause(BinExpr(KotlinTypes.BOOLEAN, BinOp("is"), LitExpr(NoType, ""), TypeExpr(patternTy)), pass[Expr](e))
+            ExprWhenClause(BinExpr(KotlinTypes.BOOLEAN, BinOp("is"), LitExpr(NoType, ""), TypeExpr(patternTy)), pass[Expr](e)) //todo fix space
         }
-        val whenExpr = kotlinConverter.ast.WhenExpr(ty, Some(LitExpr(newExpr.ty, valExpr.name)), whenClauses)
+        val whenExpr = WhenExpr(ty, Some(LitExpr(newExpr.ty, valExpr.name)), whenClauses)
         Some(MultiBlock(Seq(valExpr, whenExpr)))
+
+      case MatchExpr(ty, expr, clauses) =>
+        val newExpr = pass[Expr](expr)
+        val valExpr = ValDef("match$", newExpr.ty, newExpr)
+        val valLit = RefExpr(newExpr.ty, None, valExpr.name, Seq.empty, false)
+        val whenExpr = clauses
+          .reverse
+          .foldLeft(EmptyBlock: Expr) {
+            case (acc, MatchCaseClause(LitPatternMatch(lit), e, guard)) =>
+              val litCheck =
+                BinExpr(KotlinTypes.BOOLEAN, BinOp("=="), lit, valLit)
+              guard match {
+                case Some(g) =>
+                  IfExpr(ty, BinExpr(KotlinTypes.BOOLEAN, BinOp("&&"), litCheck, g), pass[Expr](e), acc)
+                case None => IfExpr(ty, litCheck, pass[Expr](e), acc)
+              }
+
+            case (acc, MatchCaseClause(ReferencePatternMatch(ref), e, guard)) =>
+              implicit val newContext: Context =
+                context.asInstanceOf[Context]
+                  .copy(renames = context.asInstanceOf[Context].renames + (ref -> valLit.ref))
+              guard match {
+                case Some(g) =>
+                  IfExpr(ty, g, pass[Expr](e), acc)
+                case None => pass[Expr](e)
+              }
+
+            //          case (acc, MatchCaseClause(TypedPatternMatch(ref, patternTy), e, guard)) =>
+            //            guard match {
+            //              case Some(g) =>
+            //                IfExpr(ty, g, pass[Expr](e), acc)
+            //              case None => pass[Expr](e)
+            //            }
+          }
+        Some(MultiBlock(Seq(valExpr, whenExpr)))
+
 
       case _ => None
     }

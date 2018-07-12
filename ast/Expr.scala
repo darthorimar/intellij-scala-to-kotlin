@@ -24,7 +24,7 @@ case class AssignExpr(left: Expr, right: Expr) extends Expr {
 case class NewExpr(ty: Type, name: String, args: Seq[Expr]) extends Expr
 case class LambdaExpr(ty: Type, params: Seq[DefParam], expr: Expr) extends Expr
 case class ThrowExpr(ty: Type, expr: Expr) extends Expr
-case class IfExpr(ty: Type, cond: Expr, trueB: BlockExpr, falseB: BlockExpr) extends Expr
+case class IfExpr(ty: Type, cond: Expr, trueB: Expr, falseB: Expr) extends Expr
 case class ForExpr(ty: Type, range: Expr, body: BlockExpr) extends Expr
 case class WhileExpr(ty: Type, cond: Expr, body: BlockExpr) extends Expr
 case class TypeExpr(ty: Type) extends Expr

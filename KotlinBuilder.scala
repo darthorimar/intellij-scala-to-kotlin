@@ -1,6 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter
 
-import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.ast.{EmptyBlock, _}
 
 import scala.collection.mutable
 
@@ -137,7 +137,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         gen(cond)
         str(")")
         gen(trueB)
-        if (falseB.stmts.nonEmpty) {
+        if (falseB != EmptyBlock) {
           str(" else ")
           gen(falseB)
         }
