@@ -1,9 +1,11 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
+import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.pass.Pass.PasssContext
 
 trait Pass {
-  protected def action(ast: AST): Option[AST]
+  protected def action(ast: AST)(implicit context: PasssContext): Option[AST]
 
   private var parentsStack = List.empty[AST]
 
@@ -13,7 +15,7 @@ trait Pass {
   protected def parent: AST =
     parents.head
 
-  final def pass[T](ast: AST): T = {
+  final def pass[T](ast: AST)(implicit context: PasssContext): T = {
     //    println(" " * parentsStack.size + ast.getClass.getSimpleName)
     parentsStack = ast :: parentsStack
     val res = action(ast).getOrElse(copy(ast)).asInstanceOf[T]
@@ -21,7 +23,7 @@ trait Pass {
     res
   }
 
-  protected def copy(ast: AST): AST = ast match {
+  protected def copy(ast: AST)(implicit context: PasssContext): AST = ast match {
     case Defn(attrs, t, name, construct, supers, block) =>
       Defn(attrs.map(pass[Attr]), t, name, construct.map(pass[Construct]), supers.map(pass[Super]), pass[BlockExpr](block))
 
@@ -56,10 +58,23 @@ trait Pass {
     case ParenExpr(inner) =>
       ParenExpr(pass[Expr](inner))
 
+    case TypeExpr(ty) =>
+      TypeExpr(pass[Type](ty))
+
     case CallExpr(ty, ref, params) =>
       CallExpr(pass[Type](ty),
         pass[Expr](ref),
         params.map(pass[Expr]))
+
+    case WhenExpr(ty, expr, clauses) =>
+      WhenExpr(pass[Type](ty), expr.map(pass[Expr]), clauses.map(pass[WhenClause]))
+
+    case ElseWhenClause(expr) =>
+      ElseWhenClause(pass[Expr](expr))
+
+    case ExprWhenClause(clause, expr) =>
+      ExprWhenClause(pass[Expr](clause), pass[Expr](expr))
+
 
     case LitExpr(ty, name) =>
       LitExpr(pass[Type](ty), name)
@@ -124,8 +139,8 @@ trait Pass {
     case DefParam(ty, name) =>
       DefParam(pass[Type](ty), name)
 
-    case MatchCaseClause(pattern, expr) =>
-      MatchCaseClause(pattern, pass[Expr](expr))
+    case MatchCaseClause(pattern, expr, guard) =>
+      MatchCaseClause(pattern, pass[Expr](expr), guard.map(pass[Expr]))
 
     case TypeParam(ty) =>
       TypeParam(ty)
@@ -147,6 +162,7 @@ trait Pass {
     //    case EmptyAst => EmptyAst
     case x: Keyword => x
   }
+  def emptyContext: PasssContext
 }
 
 object Pass {
@@ -155,6 +171,8 @@ object Pass {
       new TypePass,
       new BasicPass,
       new CollectionPass)
-    passes.foldLeft(ast)((a, p) => p.pass[AST](a))
+    passes.foldLeft(ast)((a, p) => p.pass[AST](a)(p.emptyContext))
   }
+  trait PasssContext
 }
+

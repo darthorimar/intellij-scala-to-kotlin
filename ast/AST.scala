@@ -29,3 +29,16 @@ case class Super(ty: Type, construct: Option[Construct]) extends AST
 case class FileDef(pckg: String, imports: Seq[ImportDef], defns: Seq[DefExpr]) extends AST
 
 case class BinOp(name: String) extends AST
+
+sealed trait MatchCasePattern extends AST
+
+case class LitPatternMatch(lit: LitExpr) extends MatchCasePattern
+case class ConstructorPatternMatch(ref: String, args: Seq[MatchCasePattern])  extends MatchCasePattern
+case class TypedPatternMatch(ref: String, ty: Type) extends MatchCasePattern
+case class ReferencePatternMatch(ref: String) extends MatchCasePattern
+case object WildcardPatternMatch extends MatchCasePattern
+
+sealed trait WhenClause extends AST
+
+case class ExprWhenClause(clause: Expr, expr: Expr) extends WhenClause
+case class ElseWhenClause(expr: Expr) extends WhenClause

@@ -109,6 +109,9 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(" = ")
         gen(right)
 
+      case TypeExpr(ty) =>
+        genType(ty, false)
+
       case CallExpr(ty, ref, params) =>
         gen(ref)
         if (params.size == 1 && params.head.isInstanceOf[LambdaExpr]) {
@@ -147,16 +150,21 @@ class KotlinBuilder extends KotlinBuilderBase {
       case UnderScExpr(ty) =>
         str("it")
 
-      case MatchExpr(ty, expr, clauses) =>
+      case WhenExpr(ty, expr, clauses) =>
         str("when(")
-        gen(expr)
+        gen(expr.get) //todo fix
         str(") {")
         indent()
-        repNl(clauses) { case MatchCaseClause(pattern, expr) =>
-          gen(pattern)
-          str(" -> ")
-          gen(expr)
+        repNl(clauses) {
+          case ExprWhenClause(clause, expr) =>
+            gen(clause)
+            str(" -> ")
+            gen(expr)
+          case ElseWhenClause(expr) =>
+            str("else -> ")
+            gen(expr)
         }
+
         str("}")
         unIndent()
       case NewExpr(ty, name, args) =>
@@ -175,20 +183,6 @@ class KotlinBuilder extends KotlinBuilderBase {
       case EmptyBlock =>
       case BinOp(name) =>
         str(name)
-      case LitPatternMatch(lit) =>
-        gen(lit)
-      case ReferencePatternMatch(ref) =>
-        str(ref)
-      case WildcardPatternMatch =>
-        str("else")
-      case ConstructorPatternMatch(ref, args) =>
-        str(ref)
-        str("(")
-        rep(args, ", ")(gen)
-        str(")")
-      case TypedPatternMatch(ref, ty) => //todo use ref
-        str("is ")
-        genType(ty, false)
       case TypeParam(ty) =>
         str(ty)
       case CaseAttr =>
