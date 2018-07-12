@@ -53,9 +53,12 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(name)
         genType(ty)
 
-      case ValDef(name, ty, expr) =>
+      case ValDef(destructors, ty, expr) =>
         str("val ")
-        str(name)
+        if (destructors.size == 1) {
+          gen(destructors.head)
+        } else
+          rep(destructors, ", ")(gen)
         genType(ty)
         str(" = ")
         gen(expr)
@@ -65,6 +68,15 @@ class KotlinBuilder extends KotlinBuilderBase {
         genType(ty)
         str(" = ")
         gen(expr)
+
+      case LitDestructor(lit: LitExpr) =>
+        gen(lit)
+      case RefDestructor(ref: String) =>
+        str(ref)
+      case WildcardDestructor =>
+        str("_")
+
+
       case DefnDef(attrs, name, ty, args, retType, body) =>
         rep(attrs, " ")(gen)
         str("fun ")

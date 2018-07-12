@@ -223,7 +223,9 @@ object ASTGenerator extends App() with AST {
     case x: ScFunctionExpr =>
       LambdaExpr(genType(x.`type`()), x.parameters.map(gen[DefParam]), gen[Expr](x.result.get))
     case x: ScCaseClause =>
-      MatchCaseClause(gen[MatchCasePattern](x.pattern.get), gen[Expr](x.expr.get), x.guard.map(y => gen[Expr](y.expr.get)))
+      MatchCaseClause(gen[MatchCasePattern](x.pattern.get),
+        x.expr.map(gen[Expr]).getOrElse(EmptyBlock),
+        x.guard.flatMap(_.expr).map(gen[Expr]))
 
     case x: ScLiteralPattern =>
       LitPatternMatch(gen[LitExpr](x.getLiteral))
@@ -241,7 +243,9 @@ object ASTGenerator extends App() with AST {
       WildcardPatternMatch
     case x: ScPatternDefinition =>
       ValDef(
-        x.bindings.head.name,
+        x.bindings.map  {
+          case y: ScReferencePattern => RefDestructor(y.name)
+        },
         genType(x.typeElement),
         gen[Expr](x.expr.get))
     case x: ScVariableDefinition =>

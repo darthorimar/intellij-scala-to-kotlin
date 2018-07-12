@@ -42,3 +42,17 @@ sealed trait WhenClause extends AST
 
 case class ExprWhenClause(clause: Expr, expr: Expr) extends WhenClause
 case class ElseWhenClause(expr: Expr) extends WhenClause
+
+trait Destructor extends AST {
+  def name: String
+}
+
+case class LitDestructor(lit: LitExpr) extends Destructor {
+  override def name: String = lit.name
+}
+case class RefDestructor(ref: String) extends Destructor {
+  override def name: String = ref
+}
+case object WildcardDestructor extends Destructor {
+  override def name: String = "_"
+}
