@@ -1,5 +1,7 @@
 package org.jetbrains.plugins.kotlinConverter.ast
 
+import scala.meta.Enumerator.Guard
+
 trait AST
 
 //case object EmptyAst extends AST with Expr with Attr with CasePattern with BlockExpr {
@@ -10,8 +12,8 @@ trait AST
 //}
 
 case class DefParam(ty: Type, name: String) extends AST
-case class CaseClause(pattern: CasePattern, expr: Expr) extends AST
-
+case class MatchCaseClause(pattern: MatchCasePattern, expr: Expr, guard: Option[Expr]) extends AST
+//case class WhenCaseClause(pattern: WhenCasePattern, expr: Expr) extends AST
 
 
 

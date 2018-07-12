@@ -16,7 +16,8 @@ case class UnderScExpr(ty: Type) extends Expr
 case class RefExpr(ty: Type, obj: Option[Expr], ref: String, typeParams: Seq[TypeParam], isFunc: Boolean)
   extends Expr
 case class PostExpr(ty: Type, obj: Expr, op: String) extends Expr
-case class MatchExpr(ty: Type, expr: Expr, clauses: Seq[CaseClause]) extends Expr
+case class MatchExpr(ty: Type, expr: Expr, clauses: Seq[MatchCaseClause]) extends Expr
+//case class WhenExpr(ty: Type, expr: Option[Expr], clauses: Seq[WhenCaseClause]) extends Expr
 case class AssignExpr(left: Expr, right: Expr) extends Expr {
   override def ty: Type = SimpleType("Unit")
 }
@@ -67,11 +68,12 @@ case class ImportDef(ref: String, names: Seq[String]) extends DefExpr {
 }
 
 
-sealed trait CasePattern extends Expr {
-  override def ty: Type = NoType
-}
-case class LitPattern(lit: LitExpr) extends CasePattern
-case class ConstructorPattern(ref: String, args: Seq[CasePattern])  extends CasePattern
-case class TypedPattern(ref: String, override val ty: Type) extends CasePattern
-case class ReferencePattern(ref: String) extends CasePattern
-case object WildcardPattern extends CasePattern
+sealed trait MatchCasePattern extends AST
+
+case class LitPatternMatch(lit: LitExpr) extends MatchCasePattern
+case class ConstructorPatternMatch(ref: String, args: Seq[MatchCasePattern])  extends MatchCasePattern
+case class TypedPatternMatch(ref: String, ty: Type) extends MatchCasePattern
+case class ReferencePatternMatch(ref: String) extends MatchCasePattern
+case object WildcardPatternMatch extends MatchCasePattern
+//
+//sealed trait WhenCasePattern extends AST

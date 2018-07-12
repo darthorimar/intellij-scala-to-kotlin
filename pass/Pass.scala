@@ -71,7 +71,7 @@ trait Pass {
       RefExpr(pass[Type](ty), obj.map(pass[Expr]), ref, typeParams.map(pass[TypeParam]), isFunc)
 
     case MatchExpr(ty, expr, clauses) =>
-      MatchExpr(pass[Type](ty), pass[Expr](expr), clauses.map(pass[CaseClause]))
+      MatchExpr(pass[Type](ty), pass[Expr](expr), clauses.map(pass[MatchCaseClause]))
 
     case MultiBlock(stmts) =>
       MultiBlock(stmts.map(pass[Expr]))
@@ -124,26 +124,26 @@ trait Pass {
     case DefParam(ty, name) =>
       DefParam(pass[Type](ty), name)
 
-    case CaseClause(pattern, expr) =>
-      CaseClause(pattern, pass[Expr](expr))
+    case MatchCaseClause(pattern, expr) =>
+      MatchCaseClause(pattern, pass[Expr](expr))
 
     case TypeParam(ty) =>
       TypeParam(ty)
 
-    case LitPattern(lit) =>
-      LitPattern(lit)
+    case LitPatternMatch(lit) =>
+      LitPatternMatch(lit)
 
-    case ConstructorPattern(ref, args) =>
-      ConstructorPattern(ref, args.map(pass))
+    case ConstructorPatternMatch(ref, args) =>
+      ConstructorPatternMatch(ref, args.map(pass))
 
-    case TypedPattern(ref, ty) =>
-      TypedPattern(ref, pass[Type](ty))
+    case TypedPatternMatch(ref, ty) =>
+      TypedPatternMatch(ref, pass[Type](ty))
 
-    case ReferencePattern(ref) =>
-      ReferencePattern(ref)
+    case ReferencePatternMatch(ref) =>
+      ReferencePatternMatch(ref)
 
-    case WildcardPattern =>
-      WildcardPattern
+    case WildcardPatternMatch =>
+      WildcardPatternMatch
     //    case EmptyAst => EmptyAst
     case x: Keyword => x
   }

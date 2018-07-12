@@ -152,7 +152,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         gen(expr)
         str(") {")
         indent()
-        repNl(clauses) { case CaseClause(pattern, expr) =>
+        repNl(clauses) { case MatchCaseClause(pattern, expr) =>
           gen(pattern)
           str(" -> ")
           gen(expr)
@@ -175,18 +175,18 @@ class KotlinBuilder extends KotlinBuilderBase {
       case EmptyBlock =>
       case BinOp(name) =>
         str(name)
-      case LitPattern(lit) =>
+      case LitPatternMatch(lit) =>
         gen(lit)
-      case ReferencePattern(ref) =>
+      case ReferencePatternMatch(ref) =>
         str(ref)
-      case WildcardPattern =>
+      case WildcardPatternMatch =>
         str("else")
-      case ConstructorPattern(ref, args) =>
+      case ConstructorPatternMatch(ref, args) =>
         str(ref)
         str("(")
         rep(args, ", ")(gen)
         str(")")
-      case TypedPattern(ref, ty) => //todo use ref
+      case TypedPatternMatch(ref, ty) => //todo use ref
         str("is ")
         genType(ty, false)
       case TypeParam(ty) =>

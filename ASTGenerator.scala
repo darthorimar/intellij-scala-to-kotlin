@@ -170,7 +170,7 @@ object ASTGenerator extends App() with AST {
     case x: ScBlockExpr if x.hasCaseClauses =>
         LambdaExpr(genType(x.`type`()),
           Seq.empty,
-          MatchExpr(genType(x.`type`()), UnderScExpr(NoType), x.caseClauses.get.caseClauses.map(gen[CaseClause])))
+          MatchExpr(genType(x.`type`()), UnderScExpr(NoType), x.caseClauses.get.caseClauses.map(gen[MatchCaseClause])))
 
     case x: ScBlock =>
       if (x.hasRBrace || x.statements.size > 1)
@@ -219,25 +219,27 @@ object ASTGenerator extends App() with AST {
     //    case x: ScThrowStmt =>
     //         Throw(gen[Expr](x.body.get))
     case x: ScMatchStmt =>
-      MatchExpr(genType(x.`type`()), gen[Expr](x.expr.get), x.caseClauses.map(gen[CaseClause]))
+      MatchExpr(genType(x.`type`()), gen[Expr](x.expr.get), x.caseClauses.map(gen[MatchCaseClause]))
     case x: ScFunctionExpr =>
       LambdaExpr(genType(x.`type`()), x.parameters.map(gen[DefParam]), gen[Expr](x.result.get))
     case x: ScCaseClause =>
-      CaseClause(gen[CasePattern](x.pattern.get), gen[Expr](x.expr.get))
+
+      MatchCaseClause(gen[MatchCasePattern](x.pattern.get), gen[Expr](x.expr.get), x.guard.map(gen[Expr]))
+
     case x: ScLiteralPattern =>
-      LitPattern(gen[LitExpr](x.getLiteral))
+      LitPatternMatch(gen[LitExpr](x.getLiteral))
     case x: ScConstructorPattern =>
-      ConstructorPattern(x.ref.qualName, x.args.patterns.map(gen[CasePattern]))
+      ConstructorPatternMatch(x.ref.qualName, x.args.patterns.map(gen[MatchCasePattern]))
     case x: ScTypedPattern =>
-      TypedPattern(x.name, genType(x.typePattern.map(_.typeElement)))
+      TypedPatternMatch(x.name, genType(x.typePattern.map(_.typeElement)))
     case x: ScReferencePattern =>
-      ReferencePattern(x.name)
+      ReferencePatternMatch(x.name)
     case x: ScReferenceElement =>
-      ReferencePattern(x.refName)
+      ReferencePatternMatch(x.refName)
     case x: ScStableReferenceElementPattern =>
-      ReferencePattern(x.getReferenceExpression.get.refName)
+      ReferencePatternMatch(x.getReferenceExpression.get.refName)
     case _: ScWildcardPattern =>
-      WildcardPattern
+      WildcardPatternMatch
     case x: ScPatternDefinition =>
       ValDef(
         x.bindings.head.name,

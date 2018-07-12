@@ -48,6 +48,7 @@ class BasicPass extends Pass {
         pass[Expr](ref),
         params.map(pass[Expr])))
 
+    //a.call --> a.call()
     case x@CallExpr(ty, ref, params)
       if params.exists {
         case y: RefExpr if y.isFunc => true
