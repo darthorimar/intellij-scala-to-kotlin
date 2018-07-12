@@ -167,6 +167,11 @@ object ASTGenerator extends App() with AST {
         genType(x.returnType),
         genFunctionBody(x))
 
+    case x: ScBlockExpr if x.hasCaseClauses =>
+        LambdaExpr(genType(x.`type`()),
+          Seq.empty,
+          MatchExpr(genType(x.`type`()), UnderScExpr(NoType), x.caseClauses.get.caseClauses.map(gen[CaseClause])))
+
     case x: ScBlock =>
       if (x.hasRBrace || x.statements.size > 1)
         MultiBlock(x.statements.map(gen[Expr]))
@@ -203,33 +208,8 @@ object ASTGenerator extends App() with AST {
         x.args.exprs.map(gen[Expr]))
 
     case x: ScGenericCall =>
-      println("Hi")
       gen[RefExpr](x.referencedExpr).copy(typeParams = genTypeArgs(x))
-//      RefExpr(
-//        genType(x.`type`()),
-//        Some(gen[Expr](x.referencedExpr)),
-//        "",
-//        genTypeArgs(x),
-//        )
-//      gen[CallExpr](x.referencedExpr)
-//        .copy(typeParams = genTypeArgs(x))
-//    //      CallExpr(
-    //        genType(x.`type`()),
-    //        x.getInvokedExpr match {
-    //          case y: ScGenericCall =>
-    //            gen[Expr](y.referencedExpr)
-    //          case y => gen[Expr](y)
-    //        },
-    //        x.getInvokedExpr match {
-    //          case y: ScGenericCall => genTypeArgs(y)
-    //          case _ => Seq.empty
-    //        },
-    //        x.args.exprs.map(gen[Expr]))
-    //    case x: ScGenericCall =>
-    //      CallExpr(genType(x.`type`()),
-    //        gen[Expr](x.referencedExpr),
-    //        genTypeArgs(x),
-    //        Seq.empty)
+
     case x: ScIfStmt =>
       IfExpr(
         genType(x.`type`()),
