@@ -101,9 +101,9 @@ class KotlinBuilder extends KotlinBuilderBase {
         rep(params, ", ") { case DefParam(ty, name) =>
           str(name)
         }
-        str(" -> ")
+        if (params.nonEmpty) str(" -> ")
         gen(expr)
-        str("}")
+        str(" }")
       case AssignExpr(left, right) =>
         gen(left)
         str(" = ")

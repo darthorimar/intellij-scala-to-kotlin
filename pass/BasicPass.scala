@@ -1,5 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
+import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.ast._
 
 import scala.collection.mutable
@@ -27,26 +28,43 @@ class BasicPass extends Pass {
         else x.t
       Some(defn.copy(attrs = handleAttrs(defn), t = t))
 
-//    //uncarry
-//    case x@CallExpr(_, _: CallExpr, _, _) =>
-//      def collectParams(c: Expr): List[Expr] = c match {
-//        case x: CallExpr =>
-//          collectParams(x.ref) ++ x.params.toList
-//        case _ => Nil
-//      }
-//
-//      def collectRef(c: CallExpr): Expr = c.ref match {
-//        case x: CallExpr => collectRef(x)
-//        case _ => c.ref
-//      }
-//
-//      val params = collectParams(x)
-//      val ref = collectRef(x)
-//      Some(CallExpr(
-//        pass[Type](x.ty),
-//        pass[Expr](ref),
-//        x.typeParams.map(pass[TypeParam]),
-//        params.map(pass[Expr])))
+    //uncarry
+    case x@CallExpr(_, _: CallExpr, _) =>
+      def collectParams(c: Expr): List[Expr] = c match {
+        case x: CallExpr =>
+          collectParams(x.ref) ++ x.params.toList
+        case _ => Nil
+      }
+
+      def collectRef(c: CallExpr): Expr = c.ref match {
+        case x: CallExpr => collectRef(x)
+        case _ => c.ref
+      }
+
+      val params = collectParams(x)
+      val ref = collectRef(x)
+      Some(CallExpr(
+        pass[Type](x.ty),
+        pass[Expr](ref),
+        params.map(pass[Expr])))
+
+    case x@CallExpr(ty, ref, params)
+      if params.exists {
+        case y: RefExpr if y.isFunc => true
+        case _ => false
+      } =>
+
+      Some(
+        CallExpr(
+          pass[Type](ty),
+          pass[Expr](ref),
+          params.map {
+            case y: RefExpr if y.isFunc =>
+              LambdaExpr(
+                ty,
+                Seq.empty,
+                CallExpr(pass[Type](y.ty), pass[Expr](y), Seq(UnderScExpr(y.ty))))
+          }))
 
     case _ => None
   }
