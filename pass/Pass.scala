@@ -14,7 +14,7 @@ trait Pass {
     parents.head
 
   final def pass[T](ast: AST): T = {
-//    println(" " * parentsStack.size + ast.getClass.getSimpleName)
+    //    println(" " * parentsStack.size + ast.getClass.getSimpleName)
     parentsStack = ast :: parentsStack
     val res = action(ast).getOrElse(copy(ast)).asInstanceOf[T]
     parentsStack = parentsStack.tail
@@ -56,12 +56,9 @@ trait Pass {
     case ParenExpr(inner) =>
       ParenExpr(pass[Expr](inner))
 
-    case CallExpr(ty, funcTy, obj, ref, typeParams, params) =>
+    case CallExpr(ty, ref, params) =>
       CallExpr(pass[Type](ty),
-        pass[Type](funcTy),
-        obj.map(pass[Expr]),
-        ref,
-        typeParams.map(pass[TypeParam]),
+        pass[Expr](ref),
         params.map(pass[Expr]))
 
     case LitExpr(ty, name) =>
@@ -70,8 +67,8 @@ trait Pass {
     case UnderScExpr(ty) =>
       UnderScExpr(ty)
 
-    case InvExpr(ty, obj, ref) =>
-      InvExpr(pass[Type](ty), obj.map(pass[Expr]),ref)
+    case RefExpr(ty, obj, ref, typeParams, isFunc) =>
+      RefExpr(pass[Type](ty), obj.map(pass[Expr]), ref, typeParams.map(pass[TypeParam]), isFunc)
 
     case MatchExpr(ty, expr, clauses) =>
       MatchExpr(pass[Type](ty), pass[Expr](expr), clauses.map(pass[CaseClause]))
@@ -147,7 +144,7 @@ trait Pass {
 
     case WildcardPattern =>
       WildcardPattern
-//    case EmptyAst => EmptyAst
+    //    case EmptyAst => EmptyAst
     case x: Keyword => x
   }
 }
@@ -158,6 +155,6 @@ object Pass {
       new TypePass,
       new BasicPass,
       new CollectionPass)
-    passes.foldLeft(ast) ((a, p) => p.pass[AST](a))
+    passes.foldLeft(ast)((a, p) => p.pass[AST](a))
   }
 }

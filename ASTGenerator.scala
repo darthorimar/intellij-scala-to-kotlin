@@ -17,9 +17,11 @@ import org.jetbrains.plugins.scala.lang.psi.api.toplevel.templates.ScClassParent
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.{ScClass, ScObject, ScTrait, ScTypeDefinition}
 import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTemplateDefinitionImpl, ScReferenceExpressionImpl}
 import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
+import org.jetbrains.plugins.scala.lang.psi.impl.toplevel.typedef.TypeDefinitionMembers
 import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
 import org.jetbrains.plugins.scala.lang.psi.types.{ScParameterizedType, ScType}
 import org.jetbrains.plugins.scala.lang.psi.types.result.TypeResult
+import org.jetbrains.plugins.scala.lang.refactoring.util.ScalaNamesUtil
 import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
 
 import scala.collection.immutable
@@ -31,7 +33,7 @@ object ASTGenerator extends App() with AST {
       file.findChildrenByType(ScalaElementTypes.FUNCTION_DEFINITION)
     val functionDecls =
       file.findChildrenByType(ScalaElementTypes.FUNCTION_DECLARATION)
-    functionDefns ++ functionDecls ++ file.getClasses
+    functionDefns ++ functionDecls ++ file.typeDefinitions
   }
 
   def exprToBlock(expr: Option[Expr]): BlockExpr =
@@ -116,6 +118,22 @@ object ASTGenerator extends App() with AST {
     case x: ScImportExpr =>
       ImportDef(x.reference.map(_.getText).get, x.importedNames)
     case x: ScTypeDefinition =>
+      val construct = x match {
+        case y: ScClass => Some(y.constructor.map(gen[Construct]).getOrElse(EmptyConstruct))
+        case _ => None
+      }
+      //      construct.map {
+      //        case ParamsConstruct(params) =>
+      //          params.map(_.name)
+      //        case _ => Seq.empty
+      //      }
+      //        .toSeq
+      //        .flatten
+      //        .filter { name =>
+      //          val t = TypeDefinitionMembers.getSignatures(x).forName(ScalaNamesUtil.clean(name))._1
+      //          t
+      //          true
+      //        }
       Defn(
         genAttrs(x),
         x match {
@@ -124,10 +142,7 @@ object ASTGenerator extends App() with AST {
           case _: ScObject => ObjDefn
         },
         x.name,
-        x match {
-          case y: ScClass => Some(y.constructor.map(gen[Construct]).getOrElse(EmptyConstruct))
-          case _ => None
-        },
+        construct,
         x.extendsBlock
           .findChildrenByType(ScalaElementTypes.CLASS_PARENTS)
           .flatMap { case y: ScClassParents =>
@@ -143,6 +158,7 @@ object ASTGenerator extends App() with AST {
 
     case x: ScFunction =>
       //TODO get override modifier
+      //      x.superSignatures
       DefnDef(
         Seq.empty,
         x.name,
@@ -168,49 +184,36 @@ object ASTGenerator extends App() with AST {
     case x: ScParenthesisedExpr =>
       ParenExpr(gen[Expr](x.innerElement.get))
     case x: ScReferenceExpression =>
-      if (x.getReference.asInstanceOf[ScReferenceExpressionImpl].shapeResolve.map(_.element)
-        .exists(_.isInstanceOf[ScFunction])) {
-        val t = genType (x.`type`())
-        val retType = t match {
-          case FuncType(_, r) => r
-          case r => r
-        }
-        CallExpr(retType,
-          t,
-          x.qualifier.map(gen[Expr]),
-          x.refName,
-          Seq.empty,
-          Seq.empty)
-      }
-      else InvExpr(genType(x.`type`()),
+      val isFunc =
+        x.getReference.asInstanceOf[ScReferenceExpressionImpl]
+          .shapeResolve
+          .map(_.element)
+          .exists(_.isInstanceOf[ScFunction])
+      RefExpr(
+        genType(x.`type`()),
         x.qualifier.map(gen[Expr]),
-        x.getReference.getCanonicalText)
+        x.refName,
+        Seq.empty,
+        isFunc)
 
     case x: ScMethodCall =>
-      def call(r: ScReferenceExpression) = {
-        val t = genType (x.`type`())
-        val retType = t match {
-          case FuncType(_, r) => r
-          case r => r
-        }
-        CallExpr(retType,
-          t,
-          r.qualifier.map(gen[Expr]),
-          r.refName,
-          Seq.empty,
-          x.args.exprs.map(gen[Expr]))
-      }
+      CallExpr(
+        genType(x.`type`()),
+        gen[Expr](x.getInvokedExpr),
+        x.args.exprs.map(gen[Expr]))
 
-      x.getInvokedExpr match {
-        case y: ScReferenceExpression =>
-          call(y)
-        case y: ScGenericCall =>
-          call(y.asInstanceOf[ScReferenceExpression]).copy(typeParams = genTypeArgs(y))
-      }
     case x: ScGenericCall =>
-      gen[CallExpr](x.referencedExpr)
-        .copy(typeParams = genTypeArgs(x))
-    //      CallExpr(
+      println("Hi")
+      gen[RefExpr](x.referencedExpr).copy(typeParams = genTypeArgs(x))
+//      RefExpr(
+//        genType(x.`type`()),
+//        Some(gen[Expr](x.referencedExpr)),
+//        "",
+//        genTypeArgs(x),
+//        )
+//      gen[CallExpr](x.referencedExpr)
+//        .copy(typeParams = genTypeArgs(x))
+//    //      CallExpr(
     //        genType(x.`type`()),
     //        x.getInvokedExpr match {
     //          case y: ScGenericCall =>

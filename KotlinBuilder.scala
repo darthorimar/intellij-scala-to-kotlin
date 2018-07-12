@@ -108,14 +108,9 @@ class KotlinBuilder extends KotlinBuilderBase {
         gen(left)
         str(" = ")
         gen(right)
-      case CallExpr(ty, funcTy, obj, ref, typeParams, params) =>
-        opt(obj) {x =>gen(x); str(".") }
-        str(ref)
-        if (typeParams.nonEmpty) {
-          str("<")
-          rep(typeParams, ", ")(gen)
-          str(">")
-        }
+
+      case CallExpr(ty, ref, params) =>
+        gen(ref)
         if (params.size == 1 && params.head.isInstanceOf[LambdaExpr]) {
           str(" ")
           gen(params.head)
@@ -124,6 +119,16 @@ class KotlinBuilder extends KotlinBuilderBase {
           rep(params, ", ")(gen)
           str(")")
         }
+
+      case RefExpr(ty, obj, ref, typeParams, isFunc) =>
+        opt(obj) { x => gen(x); str(".") }
+        str(ref)
+        if (typeParams.nonEmpty) {
+          str("<")
+          rep(typeParams, ", ")(gen)
+          str(">")
+        }
+
       case IfExpr(ty, cond, trueB, falseB) =>
         str("if (")
         gen(cond)
@@ -133,7 +138,7 @@ class KotlinBuilder extends KotlinBuilderBase {
           str(" else ")
           gen(falseB)
         }
-      case PostExpr(ty, obj,op) =>
+      case PostExpr(ty, obj, op) =>
         gen(obj)
         str(op)
 
@@ -141,12 +146,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(name)
       case UnderScExpr(ty) =>
         str("it")
-      case InvExpr(ty, obj, ref) =>
-        opt(obj) { x => gen(x); str(".") }
-        str(ref)
 
-//      case RefExpr(ty, name) =>
-//        str(name)
       case MatchExpr(ty, expr, clauses) =>
         str("when(")
         gen(expr)
@@ -193,8 +193,8 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(ty)
       case CaseAttr =>
         str("data")
-//      case EmptyAst =>
-//        str(" EPMTY_AST ")
+      //      case EmptyAst =>
+      //        str(" EPMTY_AST ")
       case x: Keyword =>
         genKeyword(x)
     }
