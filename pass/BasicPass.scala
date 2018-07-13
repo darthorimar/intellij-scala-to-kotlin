@@ -112,9 +112,15 @@ class BasicPass extends Pass {
         val valExpr = ValDef(Seq(RefDestructor("match")), newExpr.ty, newExpr)
         val valLit = RefExpr(newExpr.ty, None, valExpr.destructors.head.name, Seq.empty, false)
 
+        val defaultValue =
+          clauses.find(_.pattern == WildcardPatternMatch) match {
+            case Some(clause) => clause.expr
+            case None => Exprs.nullLit
+          }
         val whenExpr = clauses
+          .takeWhile(_.expr != WildcardPatternMatch)
           .reverse
-          .foldLeft(Exprs.nullLit: Expr) {
+          .foldLeft(defaultValue) {
             case (acc, MatchCaseClause(LitPatternMatch(lit), e, guard)) =>
               val litCheck =
                 BinExpr(KotlinTypes.BOOLEAN, BinOp("=="), lit, valLit)
@@ -144,9 +150,6 @@ class BasicPass extends Pass {
                   IfExpr(ty, BinExpr(KotlinTypes.BOOLEAN, BinOp("&&"), typeCheck, g), pass[Expr](e), acc)
                 case None => IfExpr(ty, typeCheck, pass[Expr](e), acc)
               }
-
-//            case (acc, MatchCaseClause(WildcardPatternMatch, e, guard)) =>
-
 
             case (acc, MatchCaseClause(c@ConstructorPatternMatch(constrRef, _), e, guard)) =>
               def collectConstructors(constructors: Seq[(String, ConstructorPatternMatch)]): (Seq[ValDef], Seq[Expr], Seq[(String, ConstructorPatternMatch)]) = {
@@ -216,7 +219,6 @@ class BasicPass extends Pass {
 
           }
         Some(MultiBlock(Seq(valExpr, whenExpr)))
-
 
       case _ => None
     }
