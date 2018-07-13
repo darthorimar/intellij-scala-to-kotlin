@@ -57,9 +57,12 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("val ")
         if (destructors.size == 1) {
           gen(destructors.head)
-        } else
+        } else {
+          str("(")
           rep(destructors, ", ")(gen)
-        genType(ty)
+          str(")")
+        }
+        if (ty != NoType) genType(ty)
         str(" = ")
         gen(expr)
       case VarDef(name, ty, expr) =>
@@ -108,13 +111,20 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("(")
         gen(inner)
         str(")")
-      case LambdaExpr(ty, params, expr) =>
+      case LambdaExpr(ty, params, expr,needBraces) =>
         str("{ ")
+        if (needBraces) str("(")
         rep(params, ", ") { case DefParam(ty, name) =>
           str(name)
         }
+        if (needBraces) str(")")
         if (params.nonEmpty) str(" -> ")
-        gen(expr)
+        expr match {
+          case b: BlockExpr =>
+            repNl(b.stmts)(gen)
+          case _ =>
+            gen(expr)
+        }
         str(" }")
       case AssignExpr(left, right) =>
         gen(left)

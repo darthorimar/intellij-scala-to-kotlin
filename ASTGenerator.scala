@@ -170,7 +170,8 @@ object ASTGenerator extends App() with AST {
     case x: ScBlockExpr if x.hasCaseClauses =>
         LambdaExpr(genType(x.`type`()),
           Seq.empty,
-          MatchExpr(genType(x.`type`()), UnderScExpr(NoType), x.caseClauses.get.caseClauses.map(gen[MatchCaseClause])))
+          MatchExpr(genType(x.`type`()), UnderScExpr(NoType), x.caseClauses.get.caseClauses.map(gen[MatchCaseClause])),
+          false)
 
     case x: ScBlock =>
       if (x.hasRBrace || x.statements.size > 1)
@@ -221,7 +222,7 @@ object ASTGenerator extends App() with AST {
     case x: ScMatchStmt =>
       MatchExpr(genType(x.`type`()), gen[Expr](x.expr.get), x.caseClauses.map(gen[MatchCaseClause]))
     case x: ScFunctionExpr =>
-      LambdaExpr(genType(x.`type`()), x.parameters.map(gen[DefParam]), gen[Expr](x.result.get))
+      LambdaExpr(genType(x.`type`()), x.parameters.map(gen[DefParam]), gen[Expr](x.result.get), false)
     case x: ScCaseClause =>
       MatchCaseClause(gen[MatchCasePattern](x.pattern.get),
         x.expr.map(gen[Expr]).getOrElse(EmptyBlock),

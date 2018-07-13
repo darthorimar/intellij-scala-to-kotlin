@@ -106,8 +106,8 @@ trait Pass {
     case NewExpr(ty, name, args) =>
       NewExpr(pass[Type](ty), name, args.map(pass[Expr]))
 
-    case LambdaExpr(ty, params, expr) =>
-      LambdaExpr(pass[Type](ty), params.map(pass[DefParam]), pass[Expr](expr))
+    case LambdaExpr(ty, params, expr, needBraces) =>
+      LambdaExpr(pass[Type](ty), params.map(pass[DefParam]), pass[Expr](expr), needBraces)
 
     case IfExpr(ty, cond, trueB, falseB) =>
       IfExpr(pass[Type](ty), pass[Expr](cond), pass[BlockExpr](trueB), pass[BlockExpr](falseB))
@@ -162,6 +162,7 @@ trait Pass {
     //    case EmptyAst => EmptyAst
     case x: Keyword => x
   }
+
   def emptyContext: PasssContext
 }
 
@@ -173,6 +174,8 @@ object Pass {
       new CollectionPass)
     passes.foldLeft(ast)((a, p) => p.pass[AST](a)(p.emptyContext))
   }
+
   trait PasssContext
+
 }
 
