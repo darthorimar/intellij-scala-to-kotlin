@@ -143,47 +143,43 @@ class BasicPass extends Pass {
                 case None => IfExpr(ty, typeCheck, pass[Expr](e), acc)
               }
 
-            case (acc, MatchCaseClause(ConstructorPatternMatch(constrRef, args), e, guard)) =>
+            case (acc, MatchCaseClause(c@ConstructorPatternMatch(constrRef, args), e, guard)) =>
 
-              def gen(patterns: Seq[MatchCasePattern], ref: String, expr: Expr): Expr = {
-                val (destructors, conds, extra) =
-                  patterns.map {
-                    case LitPatternMatch(lit) =>
-                      (LitDestructor(lit), None, None)
+              def a(constructors: Seq[(String, ConstructorPatternMatch)]): (Seq[ValDef], Seq[Expr]) = {
+                val (vals, conds) = constructors.map { case (r, ConstructorPatternMatch(_, patterns)) =>
+                  val (destructors, conds, refs) = patterns.map {
+                    case LitPatternMatch(litPattern) =>
+                      (LitDestructor(litPattern), None, None)
                     case ReferencePatternMatch(ref) =>
                       (RefDestructor(ref), None, None)
                     case WildcardPatternMatch =>
                       (WildcardDestructor, None, None)
-                    case ConstructorPatternMatch(ref, args) =>
-                      val block =
-                        gen(args, ref, expr)
+                    case c@ConstructorPatternMatch(ref, _) =>
                       val local = localName
-                      (RefDestructor(localName),
-                        Some(Exprs.is(LitExpr(ty, ref), ty)),
-                        Some(ref -> local, block))
-                    case TypedPatternMatch(ref, ty) =>
+                      (RefDestructor(local),
+                        Some(Exprs.is(LitExpr(ty, local), SimpleType(ref))),
+                        Some(ref -> local))
+                    case TypedPatternMatch(ref, tyPattern) =>
                       (RefDestructor(ref),
-                        Some(Exprs.is(LitExpr(ty, ref), ty)),
+                        Some(Exprs.is(LitExpr(tyPattern, ref), tyPattern)),
                         None)
                   }.unzip3
-
-                val (nameMappings, blocks) = extra.flatten.unzip
-
-                implicit val newContext: Context =
-                  context.asInstanceOf[Context]
-                    .copy(renames = context.asInstanceOf[Context].renames ++ nameMappings)
-                val cond =
-                  if (conds.flatten.nonEmpty) conds.flatten.reduceLeft(Exprs.and)
-                  else LitExpr(KotlinTypes.BOOLEAN, "true")
-
-                val destValExpr = ValDef(destructors, NoType, valLit)
-                MultiBlock(Seq(
-                  destValExpr,
-                  IfExpr(ty, cond, pass[Expr](expr), expr)
-                ))
+                  (ValDef(destructors, NoType, RefExpr(NoType, None, r, Seq.empty, false)),
+                    conds.flatten)
+                }.unzip
+                (vals, conds.flatten)
               }
 
-              gen(args, constrRef, e)
+              def b(c: Seq[(String,ConstructorPatternMatch)]) = {
+                val (vals, conds) = a(c)
+                val cond =
+                  if (conds.nonEmpty) conds.reduceLeft(Exprs.and)
+                  else LitExpr(KotlinTypes.BOOLEAN, "true")
+                val ifCond = IfExpr(NoType, cond, EmptyBlock, EmptyBlock)
+                LambdaExpr(NoType, Seq.empty, MultiBlock(vals :+ ifCond))
+              }
+
+             b(Seq((valExpr.destructors.head.name, c)))
 
           }
         Some(MultiBlock(Seq(valExpr, whenExpr)))
