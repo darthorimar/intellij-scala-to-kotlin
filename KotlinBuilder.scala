@@ -65,12 +65,27 @@ class KotlinBuilder extends KotlinBuilderBase {
         if (ty != NoType) genType(ty)
         str(" = ")
         gen(expr)
+      case LazyValDef(name, ty, expr) =>
+        str("val ")
+        str(name)
+        str(" by lazy ")
+        gen(expr)
       case VarDef(name, ty, expr) =>
         str("var ")
         str(name)
         genType(ty)
         str(" = ")
         gen(expr)
+
+      case ReturnExpr(label, expr) =>
+        str("return")
+        opt(label){l =>
+          str("@")
+          str(l)
+        }
+        str(" ")
+        opt(expr)(gen)
+
 
       case LitDestructor(lit: LitExpr) =>
         gen(lit)
@@ -173,9 +188,13 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("it")
 
       case WhenExpr(ty, expr, clauses) =>
-        str("when(")
-        gen(expr.get) //todo fix
-        str(") {")
+        str("when")
+        opt(expr) {e =>
+          str(" (")
+          gen(e)
+          str(")")
+        }
+        str(" {")
         indent()
         repNl(clauses) {
           case ExprWhenClause(clause, expr) =>

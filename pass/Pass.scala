@@ -24,6 +24,9 @@ trait Pass {
   }
 
   protected def copy(ast: AST)(implicit context: PasssContext): AST = ast match {
+    case ReturnExpr(label, expr) =>
+      ReturnExpr(label, expr.map(pass[Expr]))
+
     case Defn(attrs, t, name, construct, supers, block) =>
       Defn(attrs.map(pass[Attr]), t, name, construct.map(pass[Construct]), supers.map(pass[Super]), pass[BlockExpr](block))
 
@@ -39,6 +42,9 @@ trait Pass {
 
     case ValDef(name, ty, expr) =>
       ValDef(name, pass[Type](ty), pass[Expr](expr))
+
+    case LazyValDef(name, ty, expr) =>
+      LazyValDef(name, pass[Type](ty), pass[Expr](expr))
 
     case VarDef(name, ty, expr) =>
       VarDef(name, pass[Type](ty), pass[Expr](expr))
@@ -148,8 +154,8 @@ trait Pass {
     case LitPatternMatch(lit) =>
       LitPatternMatch(lit)
 
-    case ConstructorPatternMatch(ref, args) =>
-      ConstructorPatternMatch(ref, args.map(pass))
+    case ConstructorPatternMatch(ref, args,repr) =>
+      ConstructorPatternMatch(ref, args.map(pass), repr)
 
     case TypedPatternMatch(ref, ty) =>
       TypedPatternMatch(ref, pass[Type](ty))

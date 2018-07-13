@@ -231,7 +231,7 @@ object ASTGenerator extends App() with AST {
     case x: ScLiteralPattern =>
       LitPatternMatch(gen[LitExpr](x.getLiteral))
     case x: ScConstructorPattern =>
-      ConstructorPatternMatch(x.ref.qualName, x.args.patterns.map(gen[MatchCasePattern]))
+      ConstructorPatternMatch(x.ref.qualName, x.args.patterns.map(gen[MatchCasePattern]), x.getText)
     case x: ScTypedPattern =>
       TypedPatternMatch(x.name, genType(x.typePattern.map(_.typeElement)))
     case x: ScReferencePattern =>
@@ -269,7 +269,7 @@ object ASTGenerator extends App() with AST {
         if (x.isPrivate) PrivAttr
         else PublAttr
       val t =
-        if (x.isVal) VarlKind
+        if (x.isVal) ValKind
         else if (x.isVar) VarKind
         else NoMemberKind
       ConstructParam(t, mod, x.name, genType(x.typeElement))

@@ -37,7 +37,7 @@
 
 
   sealed trait MemberKind extends Keyword
-  case object VarlKind extends MemberKind {
+  case object ValKind extends MemberKind {
     override def name: String = "val"
   }
   case object VarKind extends MemberKind {

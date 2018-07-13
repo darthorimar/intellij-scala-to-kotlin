@@ -1,6 +1,7 @@
 package org.jetbrains.plugins.kotlinConverter.ast
 
 import org.jetbrains.plugins.kotlinConverter.ast
+import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 
 sealed trait Expr extends AST {
   def ty: Type
@@ -27,6 +28,9 @@ case class ThrowExpr(ty: Type, expr: Expr) extends Expr
 case class IfExpr(ty: Type, cond: Expr, trueB: Expr, falseB: Expr) extends Expr
 case class ForExpr(ty: Type, range: Expr, body: BlockExpr) extends Expr
 case class WhileExpr(ty: Type, cond: Expr, body: BlockExpr) extends Expr
+case class ReturnExpr(label: Option[String], expr: Option[Expr]) extends Expr {
+  override def ty: Type = KotlinTypes.NOTHING
+}
 case class TypeExpr(ty: Type) extends Expr
 
 sealed trait BlockExpr extends Expr {
@@ -61,6 +65,7 @@ case class Defn(attrs: Seq[Attr],
   override def ty: Type = NoType
 }
 case class ValDef(destructors: Seq[Destructor], ty: Type, expr: Expr) extends DefExpr
+case class LazyValDef(name: String, ty: Type, expr: Expr) extends DefExpr
 case class VarDef(name: String, ty: Type, expr: Expr) extends DefExpr
 case class DefnDef(attrss: Seq[Attr], name: String, ty: Type, args: Seq[DefParam], retType: Type, body: BlockExpr) extends DefExpr
 case class ImportDef(ref: String, names: Seq[String]) extends DefExpr {
