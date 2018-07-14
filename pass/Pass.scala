@@ -1,5 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
+import com.intellij.formatting.BlockEx
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.pass.Pass.PasssContext
@@ -16,7 +17,6 @@ trait Pass {
     parents.head
 
   final def pass[T](ast: AST)(implicit context: PasssContext): T = {
-    //    println(" " * parentsStack.size + ast.getClass.getSimpleName)
     parentsStack = ast :: parentsStack
     val res = action(ast).getOrElse(copy(ast)).asInstanceOf[T]
     parentsStack = parentsStack.tail
@@ -28,7 +28,7 @@ trait Pass {
       ReturnExpr(label, expr.map(pass[Expr]))
 
     case Defn(attrs, t, name, construct, supers, block) =>
-      Defn(attrs.map(pass[Attr]), t, name, construct.map(pass[Construct]), supers.map(pass[Super]), pass[BlockExpr](block))
+      Defn(attrs.map(pass[Attr]), t, name, construct.map(pass[Construct]), supers.map(pass[Super]), block.map(pass[BlockExpr]))
 
     case Super(ty, construct) =>
       Super(pass[Type](ty), construct.map(pass[Construct]))
@@ -50,7 +50,7 @@ trait Pass {
       VarDef(name, pass[Type](ty), pass[Expr](expr))
 
     case DefnDef(attrss, name, ty, args, retType, body) =>
-      DefnDef(attrss, name, pass[Type](ty), args.map(pass[DefParam]), pass[Type](retType), pass[Expr](body))
+      DefnDef(attrss, name, pass[Type](ty), args.map(pass[DefParam]), pass[Type](retType), body.map(pass[Expr]))
 
     case ImportDef(ref, names) =>
       ImportDef(ref, names)
@@ -94,17 +94,11 @@ trait Pass {
     case MatchExpr(ty, expr, clauses) =>
       MatchExpr(pass[Type](ty), pass[Expr](expr), clauses.map(pass[MatchCaseClause]))
 
-    case MultiBlock(stmts) =>
-      MultiBlock(stmts.map(pass[Expr]))
-
-    case SingleBlock(stmt) =>
-      SingleBlock(pass[Expr](stmt))
+    case BlockExpr(exprs) =>
+      BlockExpr(exprs.map(pass[Expr]))
 
     case PostExpr(ty, obj, op) =>
       PostExpr(ty, pass[Expr](obj), op)
-
-    case EmptyBlock =>
-      EmptyBlock
 
     case AssignExpr(left, right) =>
       AssignExpr(pass[Expr](left), pass[Expr](right))
@@ -116,7 +110,7 @@ trait Pass {
       LambdaExpr(pass[Type](ty), params.map(pass[DefParam]), pass[Expr](expr), needBraces)
 
     case IfExpr(ty, cond, trueB, falseB) =>
-      IfExpr(pass[Type](ty), pass[Expr](cond), pass[BlockExpr](trueB), pass[BlockExpr](falseB))
+      IfExpr(pass[Type](ty), pass[Expr](cond), pass[Expr](trueB), falseB.map(pass[Expr]))
 
     case ForExpr(ty, range, body) =>
       ForExpr(pass[Type](ty), pass[Expr](range), pass[BlockExpr](body))
@@ -154,7 +148,7 @@ trait Pass {
     case LitPatternMatch(lit) =>
       LitPatternMatch(lit)
 
-    case ConstructorPatternMatch(ref, args,repr) =>
+    case ConstructorPatternMatch(ref, args, repr) =>
       ConstructorPatternMatch(ref, args.map(pass[MatchCasePattern]), repr)
 
     case TypedPatternMatch(ref, ty) =>
@@ -165,7 +159,7 @@ trait Pass {
 
     case WildcardPatternMatch =>
       WildcardPatternMatch
-    //    case EmptyAst => EmptyAst
+
     case x: Keyword => x
   }
 

@@ -25,7 +25,7 @@ case class AssignExpr(left: Expr, right: Expr) extends Expr {
 case class NewExpr(ty: Type, name: String, args: Seq[Expr]) extends Expr
 case class LambdaExpr(ty: Type, params: Seq[DefParam], expr: Expr, needBraces: Boolean) extends Expr
 case class ThrowExpr(ty: Type, expr: Expr) extends Expr
-case class IfExpr(ty: Type, cond: Expr, trueB: Expr, falseB: Expr) extends Expr
+case class IfExpr(ty: Type, cond: Expr, trueB: Expr, falseB: Option[Expr]) extends Expr
 case class ForExpr(ty: Type, range: Expr, body: BlockExpr) extends Expr
 case class WhileExpr(ty: Type, cond: Expr, body: BlockExpr) extends Expr
 case class ReturnExpr(label: Option[String], expr: Option[Expr]) extends Expr {
@@ -33,27 +33,12 @@ case class ReturnExpr(label: Option[String], expr: Option[Expr]) extends Expr {
 }
 case class TypeExpr(ty: Type) extends Expr
 
-sealed trait BlockExpr extends Expr {
-  def stmts: Seq[Expr]
-  def isSingle: Boolean = stmts.size == 1
-  def isEmpty: Boolean = stmts.isEmpty
-}
-case class SingleBlock(stmt: Expr) extends BlockExpr {
-  override def stmts: Seq[Expr] = Seq(stmt)
-
-  override def ty: Type = stmt.ty
-}
-case class MultiBlock(stmts: Seq[Expr]) extends BlockExpr {
-  override def ty: Type =
-    if (isEmpty) NoType
-    else stmts.last.ty
-}
-
-case object EmptyBlock extends  BlockExpr {
-  override def stmts: Seq[Expr] = Seq.empty
-
+case class BlockExpr(exprs: Seq[Expr]) extends Expr {
+  def isSingle: Boolean = exprs.size == 1
+  def isEmpty: Boolean = exprs.isEmpty
   override def ty: Type = NoType
 }
+
 
 sealed trait DefExpr extends Expr
 case class Defn(attrs: Seq[Attr],
@@ -61,7 +46,7 @@ case class Defn(attrs: Seq[Attr],
                 name: String,
                 construct: Option[Construct],
                 supers: Seq[Super],
-                block: BlockExpr) extends DefExpr {
+                body: Option[Expr]) extends DefExpr {
   override def ty: Type = NoType
 }
 case class ValDef(destructors: Seq[MatchCasePattern], expr: Expr) extends DefExpr {
@@ -69,7 +54,7 @@ case class ValDef(destructors: Seq[MatchCasePattern], expr: Expr) extends DefExp
 }
 case class LazyValDef(name: String, ty: Type, expr: Expr) extends DefExpr
 case class VarDef(name: String, ty: Type, expr: Expr) extends DefExpr
-case class DefnDef(attrs: Seq[Attr], name: String, ty: Type, args: Seq[DefParam], retType: Type, body: Expr) extends DefExpr
+case class DefnDef(attrs: Seq[Attr], name: String, ty: Type, args: Seq[DefParam], retType: Type, body: Option[Expr]) extends DefExpr
 case class ImportDef(ref: String, names: Seq[String]) extends DefExpr {
   override def ty: Type = NoType
 }

@@ -27,7 +27,7 @@ import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
 
 import scala.collection.immutable
 
-object ASTGenerator extends App() with AST {
+object ASTGenerator extends {
   private def genDefinitions(file: ScalaFile): Seq[PsiElement] = {
     println(file.typeDefinitions.mkString(", "))
     val functionDefns =
@@ -37,22 +37,15 @@ object ASTGenerator extends App() with AST {
     functionDefns ++ functionDecls ++ file.typeDefinitions
   }
 
-  def exprToBlock(expr: Option[Expr]): BlockExpr =
-    expr.map {
-      case y: BlockExpr => y
-      case y => SingleBlock(y)
-    }.getOrElse(EmptyBlock)
 
-  private def genFunctionBody(fun: ScFunction): BlockExpr = fun match {
+
+  private def genFunctionBody(fun: ScFunction): Option[Expr] = fun match {
     case x: ScFunctionDefinition =>
-      exprToBlock(x.body.map(gen[Expr]))
+      x.body.map(gen[Expr])
     case _: ScFunctionDeclaration =>
-      EmptyBlock
+      None
   }
 
-  private def multiOrEmptyBlock(defs: Seq[DefExpr]): BlockExpr =
-    if (defs.isEmpty) EmptyBlock
-    else MultiBlock(defs)
 
   def genTypeArgs(genCall: ScGenericCall): Seq[TypeParam] = {
     genCall.typeArgs.
@@ -80,16 +73,12 @@ object ASTGenerator extends App() with AST {
     t.flatMap(_.`type`().toOption).map(genType)
       .getOrElse(NoType)
 
-  //  def genType(t: Option[ScType]): Type =
-  //    t.map(genType).getOrElse(NoType)
-
   def genType(t: TypeResult): Type =
     t.map(genType).getOrElse(NoType)
 
-  //  def realOrInfType(r: Option[ScTypeElement], t: TypeResult) =
-  //    r.map(x => genType(x.`type`()))
-  //      .getOrElse(genType(t))
-
+  def blockOrEmpty(exprs: Seq[Expr]): Option[BlockExpr] =
+    if (exprs.nonEmpty) Some(BlockExpr(exprs))
+    else None
 
   def genAttrs(x: ScMember): Seq[Attr] = {
     def attr(p: Boolean, a: Attr) =
@@ -122,8 +111,10 @@ object ASTGenerator extends App() with AST {
             case _ => true
           }
           .map(gen[DefExpr]))
+
     case x: ScImportExpr =>
       ImportDef(x.reference.map(_.getText).get, x.importedNames)
+
     case x: ScTypeDefinition =>
       val construct = x match {
         case y: ScClass => Some(y.constructor.map(gen[Construct]).getOrElse(EmptyConstruct))
@@ -143,7 +134,7 @@ object ASTGenerator extends App() with AST {
                 genType(p.`type`()),
                 Seq.empty,
                 genType(p.`type`()),
-                RefExpr(genType(p.`type`()), None, p.name, Seq.empty, false))
+                Some(RefExpr(genType(p.`type`()), None, p.name, Seq.empty, false)))
             }
           case _ => Seq.empty
         }
@@ -165,7 +156,7 @@ object ASTGenerator extends App() with AST {
                 Super(genType(z.typeElement.`type`()), None)
               }
           },
-        multiOrEmptyBlock(
+        blockOrEmpty(
           overrideConstuctParamsDefs ++ x.extendsBlock.members.map(gen[DefExpr])))
     case x: PsiClassWrapper =>
       gen[DefExpr](x.definition)
@@ -186,12 +177,7 @@ object ASTGenerator extends App() with AST {
         false)
 
     case x: ScBlock =>
-      if (x.hasRBrace || x.statements.size > 1)
-        MultiBlock(x.statements.map(gen[Expr]))
-      else if (x.statements.isEmpty)
-        EmptyBlock
-      else
-        SingleBlock(gen[Expr](x.statements.head))
+     BlockExpr(x.exprs.map(gen[Expr]))
 
     case x: ScInfixExpr =>
       BinExpr(genType(x.`type`()), BinOp(x.operation.getText), gen[Expr](x.left), gen[Expr](x.right))
@@ -227,17 +213,17 @@ object ASTGenerator extends App() with AST {
       IfExpr(
         genType(x.`type`()),
         gen[Expr](x.condition.get),
-        exprToBlock(x.thenBranch.map(gen[Expr])),
-        exprToBlock(x.elseBranch.map(gen[Expr])))
-    //    case x: ScThrowStmt =>
-    //         Throw(gen[Expr](x.body.get))
+        gen[Expr](x.thenBranch.get),
+        x.elseBranch.map(gen[Expr]))
+
     case x: ScMatchStmt =>
       MatchExpr(genType(x.`type`()), gen[Expr](x.expr.get), x.caseClauses.map(gen[MatchCaseClause]))
     case x: ScFunctionExpr =>
       LambdaExpr(genType(x.`type`()), x.parameters.map(gen[DefParam]), gen[Expr](x.result.get), false)
+
     case x: ScCaseClause =>
       MatchCaseClause(gen[MatchCasePattern](x.pattern.get),
-        x.expr.map(gen[Expr]).getOrElse(EmptyBlock),
+        x.expr.map(gen[Expr]).get,//todo fix
         x.guard.flatMap(_.expr).map(gen[Expr]))
 
     case x: ScLiteralPattern =>
@@ -286,8 +272,5 @@ object ASTGenerator extends App() with AST {
     case x: ScParameter =>
       DefParam(genType(x.typeElement), x.name)
 
-    //    case x =>
-    //      println(s"No case for $x")
-    //      EmptyAst
   }).asInstanceOf[T]
 }

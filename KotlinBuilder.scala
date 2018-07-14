@@ -1,6 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter
 
-import org.jetbrains.plugins.kotlinConverter.ast.{EmptyBlock, _}
+import org.jetbrains.plugins.kotlinConverter.ast. _
 
 import scala.collection.mutable
 
@@ -33,7 +33,7 @@ class KotlinBuilder extends KotlinBuilderBase {
           rep(supers, ", ")(gen)
         }
         str(" ")
-        gen(block)
+        opt(block)(gen)
 
       case Super(ty, construct) =>
         genType(ty, false)
@@ -101,8 +101,11 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(")")
         genType(retType)
         str(" ")
-        if (!body.isInstanceOf[BlockExpr]) str("=")
-        gen(body)
+        opt(body){ b =>
+          if (!b.isInstanceOf[BlockExpr]) str("=")
+          gen(b)
+        }
+
       case ImportDef(reference, names) =>
         repNl(names) { n =>
           str("import ")
@@ -130,7 +133,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         if (params.nonEmpty) str(" -> ")
         expr match {
           case b: BlockExpr =>
-            repNl(b.stmts)(gen)
+            repNl(b.exprs)(gen)
           case _ =>
             gen(expr)
         }
@@ -168,9 +171,9 @@ class KotlinBuilder extends KotlinBuilderBase {
         gen(cond)
         str(")")
         gen(trueB)
-        if (falseB != EmptyBlock) {
+        opt(falseB) { b =>
           str(" else ")
-          gen(falseB)
+          gen(b)
         }
       case PostExpr(ty, obj, op) =>
         gen(obj)
@@ -207,15 +210,14 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("(")
         rep(args, ", ")(gen)
         str(")")
-      case SingleBlock(stmt) =>
-        gen(stmt)
-      case MultiBlock(stmts) =>
+
+      case BlockExpr(stmts) =>
         str("{")
         indent()
         repNl(stmts)(gen)
         unIndent()
         str("}")
-      case EmptyBlock =>
+
       case BinOp(name) =>
         str(name)
       case TypeParam(ty) =>
@@ -226,6 +228,7 @@ class KotlinBuilder extends KotlinBuilderBase {
       //        str(" EPMTY_AST ")
       case x: Keyword =>
         genKeyword(x)
+      case _ =>
     }
 
   def genKeyword(k: Keyword): Unit =
