@@ -50,7 +50,7 @@ trait Pass {
       VarDef(name, pass[Type](ty), pass[Expr](expr))
 
     case DefnDef(attrss, name, ty, args, retType, body) =>
-      DefnDef(attrss, name, pass[Type](ty), args.map(pass[DefParam]), pass[Type](retType), pass[BlockExpr](body))
+      DefnDef(attrss, name, pass[Type](ty), args.map(pass[DefParam]), pass[Type](retType), pass[Expr](body))
 
     case ImportDef(ref, names) =>
       ImportDef(ref, names)

@@ -101,7 +101,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(")")
         genType(retType)
         str(" ")
-        if (body.isSingle) str("=")
+        if (!body.isInstanceOf[BlockExpr]) str("=")
         gen(body)
       case ImportDef(reference, names) =>
         repNl(names) { n =>

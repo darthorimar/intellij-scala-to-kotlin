@@ -5,6 +5,7 @@ import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.types.ScalaTypes
 import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
+import org.jetbrains.plugins.scala.lang.psi.ScalaPsiUtil
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.lang.psi.api.base._
 import org.jetbrains.plugins.scala.lang.psi.api.base.patterns._
@@ -128,6 +129,25 @@ object ASTGenerator extends App() with AST {
         case y: ScClass => Some(y.constructor.map(gen[Construct]).getOrElse(EmptyConstruct))
         case _ => None
       }
+
+      val overrideConstuctParamsDefs =
+        x match {
+          case y: ScClass => y.constructor.toSeq.collect {
+            case z: ScPrimaryConstructor =>
+              z.parameters
+                .filter(p => ScalaPsiUtil.superValsSignatures(p).nonEmpty)
+          }.flatten
+            .map { case p: ScClassParameter =>
+              DefnDef(Seq(PublAttr, OverrideAttr),
+                p.name,
+                genType(p.`type`()),
+                Seq.empty,
+                genType(p.`type`()),
+                RefExpr(genType(p.`type`()), None, p.name, Seq.empty, false))
+            }
+          case _ => Seq.empty
+        }
+
       Defn(
         genAttrs(x),
         x match {
@@ -146,7 +166,7 @@ object ASTGenerator extends App() with AST {
               }
           },
         multiOrEmptyBlock(
-          x.extendsBlock.members.map(gen[DefExpr])))
+          overrideConstuctParamsDefs ++ x.extendsBlock.members.map(gen[DefExpr])))
     case x: PsiClassWrapper =>
       gen[DefExpr](x.definition)
 
