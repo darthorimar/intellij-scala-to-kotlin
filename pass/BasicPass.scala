@@ -30,6 +30,8 @@ class BasicPass extends Pass {
             ConstructParam(t, m, name, pass[Type](ty))
         }))
 
+      case x:DefnDef =>
+        Some(x.copy(attrs = sortAttrs(x.attrs)))
 
       case x: Defn =>
         val defn = copy(x).asInstanceOf[Defn]
@@ -79,12 +81,11 @@ class BasicPass extends Pass {
             }))
 
       // val destructing in a case of nested constructors
-      case ValDef(destructors, expr)
-        if destructors.exists {
-          case _: ConstructorPatternMatch => true
-          case _ => false
-        } =>
-
+      //      case ValDef(destructors, expr)
+      //        if destructors.exists {
+      //          case _: ConstructorPatternMatch => true
+      //          case _ => false
+      //        } =>
 
 
       // match expr to when one
@@ -252,7 +253,19 @@ class BasicPass extends Pass {
     def attr(p: Boolean, a: Attr) =
       if (p) Some(a) else None
 
-    def comparator(attr: Attr) = attr match {
+    val attrs =
+      (attr(x.attrs.contains(CaseAttr) && x.t == ClassDefn, DataAttr) ::
+        attr(!x.attrs.contains(FinalAttr) && x.t == ClassDefn && !x.attrs.contains(CaseAttr), OpenAttr) ::
+        attr(x.attrs.contains(PublAttr), PublAttr) ::
+        attr(x.attrs.contains(PrivAttr), PrivAttr) ::
+        attr(x.attrs.contains(ProtAttr), ProtAttr) ::
+        Nil)
+        .flatten
+    sortAttrs(attrs)
+  }
+
+  private def sortAttrs(attrs: Seq[Attr]) =
+    attrs.sortBy {
       case PublAttr => 1
       case PrivAttr => 1
       case ProtAttr => 1
@@ -260,22 +273,11 @@ class BasicPass extends Pass {
       case FinalAttr => 2
       case CaseAttr => 3
       case DataAttr => 3
-      case _ => 4
+      case OverrideAttr => 4
+      case _ => 5
     }
-
-    (attr(x.attrs.contains(CaseAttr) && x.t == ClassDefn, DataAttr) ::
-      attr(!x.attrs.contains(FinalAttr) && x.t == ClassDefn && !x.attrs.contains(CaseAttr), OpenAttr) ::
-      attr(x.attrs.contains(PublAttr), PublAttr) ::
-      attr(x.attrs.contains(PrivAttr), PrivAttr) ::
-      attr(x.attrs.contains(ProtAttr), ProtAttr) ::
-      Nil)
-      .flatten
-      .sortBy(comparator)
-  }
 
   override def emptyContext: PasssContext = Context(Map.empty)
 }
 
 case class Context(renames: Map[String, String]) extends PasssContext
-
-def generateMatch

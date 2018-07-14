@@ -90,6 +90,7 @@ class KotlinBuilder extends KotlinBuilderBase {
 
       case DefnDef(attrs, name, ty, args, retType, body) =>
         rep(attrs, " ")(gen)
+        if (attrs.nonEmpty) str(" ")
         str("fun ")
         str(name)
         str("(")

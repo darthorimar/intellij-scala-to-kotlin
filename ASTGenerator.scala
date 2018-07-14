@@ -14,7 +14,7 @@ import org.jetbrains.plugins.scala.lang.psi.api.statements.params.{ScClassParame
 import org.jetbrains.plugins.scala.lang.psi.api.statements._
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.imports.{ScImportExpr, ScImportStmt}
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.templates.ScClassParents
-import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.{ScClass, ScObject, ScTrait, ScTypeDefinition}
+import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef._
 import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTemplateDefinitionImpl, ScReferenceExpressionImpl}
 import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
 import org.jetbrains.plugins.scala.lang.psi.impl.toplevel.typedef.TypeDefinitionMembers
@@ -90,17 +90,23 @@ object ASTGenerator extends App() with AST {
   //      .getOrElse(genType(t))
 
 
-  def genAttrs(x: ScTypeDefinition): Seq[Attr] = {
+  def genAttrs(x: ScMember): Seq[Attr] = {
     def attr(p: Boolean, a: Attr) =
       if (p) Some(a) else None
 
-    (attr(x.isCase, CaseAttr) ::
-      attr(x.isPrivate, PrivAttr) ::
+    val memberAttrs = (attr(x.isPrivate, PrivAttr) ::
       attr(x.isPublic, PublAttr) ::
       attr(x.isProtected, ProtAttr) ::
       attr(x.hasFinalModifier, FinalAttr) ::
-      Nil
-      ).flatten
+      Nil).flatten
+    val extraAttrs = x match {
+      case y: ScFunction =>
+        attr(y.superSignatures.nonEmpty, OverrideAttr).toSeq
+      case y: ScTypeDefinition =>
+        attr(y.isCase, CaseAttr).toSeq
+      case _ => Seq.empty
+    }
+    memberAttrs ++ extraAttrs
   }
 
   def gen[T](psi: PsiElement): T = (psi match {
@@ -122,18 +128,6 @@ object ASTGenerator extends App() with AST {
         case y: ScClass => Some(y.constructor.map(gen[Construct]).getOrElse(EmptyConstruct))
         case _ => None
       }
-      //      construct.map {
-      //        case ParamsConstruct(params) =>
-      //          params.map(_.name)
-      //        case _ => Seq.empty
-      //      }
-      //        .toSeq
-      //        .flatten
-      //        .filter { name =>
-      //          val t = TypeDefinitionMembers.getSignatures(x).forName(ScalaNamesUtil.clean(name))._1
-      //          t
-      //          true
-      //        }
       Defn(
         genAttrs(x),
         x match {
@@ -157,10 +151,8 @@ object ASTGenerator extends App() with AST {
       gen[DefExpr](x.definition)
 
     case x: ScFunction =>
-      //TODO get override modifier
-      //      x.superSignatures
       DefnDef(
-        Seq.empty,
+        genAttrs(x),
         x.name,
         genType(x.`type`()),
         x.parameters.map(gen[DefParam]),
@@ -168,10 +160,10 @@ object ASTGenerator extends App() with AST {
         genFunctionBody(x))
 
     case x: ScBlockExpr if x.hasCaseClauses =>
-        LambdaExpr(genType(x.`type`()),
-          Seq.empty,
-          MatchExpr(genType(x.`type`()), UnderScExpr(NoType), x.caseClauses.get.caseClauses.map(gen[MatchCaseClause])),
-          false)
+      LambdaExpr(genType(x.`type`()),
+        Seq.empty,
+        MatchExpr(genType(x.`type`()), UnderScExpr(NoType), x.caseClauses.get.caseClauses.map(gen[MatchCaseClause])),
+        false)
 
     case x: ScBlock =>
       if (x.hasRBrace || x.statements.size > 1)
