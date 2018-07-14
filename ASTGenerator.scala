@@ -228,8 +228,10 @@ object ASTGenerator extends {
 
     case x: ScLiteralPattern =>
       LitPatternMatch(gen[LitExpr](x.getLiteral))
+    case x: ScNamingPattern =>
+      gen[ConstructorPatternMatch](x.named).copy(label = Some(x.name))
     case x: ScConstructorPattern =>
-      ConstructorPatternMatch(x.ref.qualName, x.args.patterns.map(gen[MatchCasePattern]), x.getText)
+      ConstructorPatternMatch(x.ref.qualName, x.args.patterns.map(gen[MatchCasePattern]), None, x.getText)
     case x: ScTypedPattern =>
       TypedPatternMatch(x.name, genType(x.typePattern.map(_.typeElement)))
     case x: ScReferencePattern =>

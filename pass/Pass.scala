@@ -148,8 +148,8 @@ trait Pass {
     case LitPatternMatch(lit) =>
       LitPatternMatch(lit)
 
-    case ConstructorPatternMatch(ref, args, repr) =>
-      ConstructorPatternMatch(ref, args.map(pass[MatchCasePattern]), repr)
+    case ConstructorPatternMatch(ref, args, label,  repr) =>
+      ConstructorPatternMatch(ref, args.map(pass[MatchCasePattern]), label, repr)
 
     case TypedPatternMatch(ref, ty) =>
       TypedPatternMatch(ref, pass[Type](ty))

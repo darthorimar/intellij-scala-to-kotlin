@@ -113,7 +113,7 @@ class BasicPass extends Pass {
           }
         }
 
-        val caseClasses = badClauses.map { case MatchCaseClause(pattern@ConstructorPatternMatch(_, _, repr), _, _) =>
+        val caseClasses = badClauses.map { case MatchCaseClause(pattern@ConstructorPatternMatch(_, _, _, repr), _, _) =>
           val name = Utils.escapeName(s"${repr}_data")
           val vals = collectVals(pattern)
           Defn(Seq(DataAttr),
@@ -125,7 +125,7 @@ class BasicPass extends Pass {
         }
 
         def collectConstructors(constructors: Seq[(String, ConstructorPatternMatch)]): (Seq[ValDef], Seq[Expr], Seq[(String, ConstructorPatternMatch)]) = {
-          val (vals, conds, refs) = constructors.map { case (r, ConstructorPatternMatch(_, patterns, _)) =>
+          val (vals, conds, refs) = constructors.map { case (r, ConstructorPatternMatch(_, patterns, _, _)) =>
             val (destructors, conds, refs) = patterns.map {
               case LitPatternMatch(litPattern) =>
                 (LitPatternMatch(litPattern), None, None)
@@ -133,8 +133,8 @@ class BasicPass extends Pass {
                 (ReferencePatternMatch(ref), None, None)
               case WildcardPatternMatch =>
                 (WildcardPatternMatch, None, None)
-              case c@ConstructorPatternMatch(ref, _, _) =>
-                val local = localName //todo use name from pattern
+              case c@ConstructorPatternMatch(ref, _, label, _) =>
+                val local = label.getOrElse(localName) //todo use name from pattern
                 (ReferencePatternMatch(local),
                   Some(Exprs.is(LitExpr(ty, local), SimpleType(ref))),
                   Some(local -> c))
@@ -167,7 +167,7 @@ class BasicPass extends Pass {
         }
 
         val lazyDefs = badClauses.map {
-          case MatchCaseClause(pattern@ConstructorPatternMatch(ref, args, repr), expr, guard) =>
+          case MatchCaseClause(pattern@ConstructorPatternMatch(ref, _, _, repr), expr, guard) =>
             val params = collectVals(pattern).map(v => RefExpr(NoType, None, v.name, Seq.empty, false))
             val callContructor =
               CallExpr(NoType,
@@ -226,7 +226,7 @@ class BasicPass extends Pass {
                   .copy(renames = context.asInstanceOf[Context].renames + (ref -> valExpr.destructors.head.name))
               ExprWhenClause(addGuardExpr(Exprs.is(valRef, patternTy), guard.map(pass[Expr])), pass[Expr](e))
 
-            case MatchCaseClause(pattern@ConstructorPatternMatch(ref, args, repr), e, _) =>
+            case MatchCaseClause(pattern@ConstructorPatternMatch(ref, args, _, repr), e, _) =>
               val lazyRef = RefExpr(NoType, None, Utils.escapeName(repr), Seq.empty, false)
               val notEqulasExpr = BinExpr(KotlinTypes.BOOLEAN, BinOp("!="), lazyRef, Exprs.nullLit)
               val vals = collectVals(pattern)
