@@ -5,10 +5,12 @@ import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.pass.ScopeVal.scoped
 
 
 class BasicPass extends Pass {
-  val renamesVal: ScopeVal[Renames] = new ScopeVal[Renames](Renames(Map.empty))
+  val renamesVal = new ScopeVal[Renames](Renames(Map.empty))
+  val namerVal = new ScopeVal[LocalNamer](new LocalNamer)
 
   override protected def action(ast: AST): Option[AST] = {
     ast match {
@@ -29,7 +31,11 @@ class BasicPass extends Pass {
         }))
 
       case x: DefnDef =>
-        Some(copy(x).asInstanceOf[DefnDef].copy(attrs = sortAttrs(x.attrs)))
+        scoped(
+          namerVal.set(new LocalNamer)
+        ) {
+          Some(copy(x).asInstanceOf[DefnDef].copy(attrs = sortAttrs(x.attrs)))
+        }
 
       case x: Defn =>
         val defn = copy(x).asInstanceOf[Defn]
@@ -93,7 +99,7 @@ class BasicPass extends Pass {
         }
 
         val newExpr = pass[Expr](expr)
-        val valExpr = ValDef(Seq(ReferencePatternMatch("match")), newExpr)
+        val valExpr = ValDef(Seq(ReferencePatternMatch(namerVal.get.newName("match"))), newExpr)
         val valRef = RefExpr(newExpr.ty, None, valExpr.destructors.head.name, Seq.empty, false)
 
         def collectVals(constructorPatternMatch: ConstructorPatternMatch): Seq[ConstructParam] = {
@@ -132,7 +138,7 @@ class BasicPass extends Pass {
               case WildcardPatternMatch =>
                 (WildcardPatternMatch, None, None)
               case c@ConstructorPatternMatch(ref, _, label, _) =>
-                val local = label.getOrElse(localName) //todo use name from pattern
+                val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
                 (ReferencePatternMatch(local),
                   Some(Exprs.is(LitExpr(ty, local), SimpleType(ref))),
                   Some(local -> c))
@@ -240,12 +246,6 @@ class BasicPass extends Pass {
     }
   }
 
-  var id: Int = 0
-
-  def localName: String = {
-    id += 1
-    "l" + id
-  }
 
   private def handleAttrs(x: Defn) = {
     def attr(p: Boolean, a: Attr) =
