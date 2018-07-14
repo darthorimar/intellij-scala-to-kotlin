@@ -3,10 +3,9 @@ package org.jetbrains.plugins.kotlinConverter.pass
 import com.intellij.formatting.BlockEx
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.pass.Pass.PasssContext
 
 trait Pass {
-  protected def action(ast: AST)(implicit context: PasssContext): Option[AST]
+  protected def action(ast: AST): Option[AST]
 
   private var parentsStack = List.empty[AST]
 
@@ -16,14 +15,14 @@ trait Pass {
   protected def parent: AST =
     parents.head
 
-  final def pass[T](ast: AST)(implicit context: PasssContext): T = {
+  final def pass[T](ast: AST): T = {
     parentsStack = ast :: parentsStack
     val res = action(ast).getOrElse(copy(ast)).asInstanceOf[T]
     parentsStack = parentsStack.tail
     res
   }
-
-  protected def copy(ast: AST)(implicit context: PasssContext): AST = ast match {
+  
+  protected def copy(ast: AST): AST = ast match {
     case ReturnExpr(label, expr) =>
       ReturnExpr(label, expr.map(pass[Expr]))
 
@@ -162,8 +161,6 @@ trait Pass {
 
     case x: Keyword => x
   }
-
-  def emptyContext: PasssContext
 }
 
 object Pass {
@@ -172,10 +169,7 @@ object Pass {
       new TypePass,
       new BasicPass,
       new CollectionPass)
-    passes.foldLeft(ast)((a, p) => p.pass[AST](a)(p.emptyContext))
+    passes.foldLeft(ast)((a, p) => p.pass[AST](a))
   }
-
-  trait PasssContext
-
 }
 

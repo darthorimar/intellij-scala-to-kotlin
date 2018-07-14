@@ -1,13 +1,10 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
-import org.gradle.model.internal.manage.schema.extract.ScalarTypes
-import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.types._
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.pass.Pass.PasssContext
 
 class TypePass extends Pass {
-  override protected def action(ast: AST)(implicit context: PasssContext): Option[AST] = ast match {
+  override protected def action(ast: AST): Option[AST] = ast match {
     case PType(t, Seq(i)) if TypeUtils.isOption(t) =>
       Some(NullableType(pass[Type](i)))
 
@@ -19,7 +16,5 @@ class TypePass extends Pass {
 
     case _ => None
   }
-
-  override def emptyContext: PasssContext = new PasssContext {}
 }
 

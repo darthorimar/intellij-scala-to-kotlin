@@ -2,11 +2,9 @@ package org.jetbrains.plugins.kotlinConverter.pass
 
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.pass.Pass.PasssContext
-import org.jetbrains.plugins.kotlinConverter.types._
 
 class CollectionPass extends Pass {
-  override protected def action(ast: AST)(implicit context: PasssContext): Option[AST] = ast match {
+  override protected def action(ast: AST): Option[AST] = ast match {
     // Some(x) --> x
     case CallExpr(NullableType(_), RefExpr(_, None, "Some", _, _), Seq(v)) =>
       Some(pass[Expr](v))
@@ -42,7 +40,5 @@ class CollectionPass extends Pass {
 
     case _ => None
   }
-
-  override def emptyContext: PasssContext = new PasssContext {}
 }
 

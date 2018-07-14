@@ -5,17 +5,15 @@ import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.pass.Pass.PasssContext
-import org.jetbrains.plugins.scala.lang.dependency.DependencyKind.Reference
 
-import scala.collection.mutable
-import scala.util.Random
 
 class BasicPass extends Pass {
-  override protected def action(ast: AST)(implicit context: PasssContext): Option[AST] = {
+  val renamesVal: ScopeVal[Renames] = new ScopeVal[Renames](Renames(Map.empty))
+
+  override protected def action(ast: AST): Option[AST] = {
     ast match {
-      case x: RefExpr if context.asInstanceOf[Context].renames.contains(x.ref) =>
-        Some(x.copy(ref = context.asInstanceOf[Context].renames(x.ref)))
+      case x: RefExpr if renamesVal.call(_.renames.contains(x.ref)) =>
+        Some(x.copy(ref = renamesVal.get.renames(x.ref)))
 
       //Remove renault brackets for lambda like in seq.map {x => x * 2}
       case BlockExpr(stmts) if stmts.size == 1 && stmts.head.isInstanceOf[LambdaExpr] =>
@@ -30,7 +28,7 @@ class BasicPass extends Pass {
             ConstructParam(t, m, name, pass[Type](ty))
         }))
 
-      case x:DefnDef =>
+      case x: DefnDef =>
         Some(copy(x).asInstanceOf[DefnDef].copy(attrs = sortAttrs(x.attrs)))
 
       case x: Defn =>
@@ -212,19 +210,19 @@ class BasicPass extends Pass {
               }
 
             case MatchCaseClause(ReferencePatternMatch(ref), e, guard) =>
-              implicit val newContext: Context =
-                context.asInstanceOf[Context]
-                  .copy(renames = context.asInstanceOf[Context].renames + (ref -> valRef.ref))
-              guard match {
-                case Some(g) => ExprWhenClause(pass[Expr](g), pass[Expr](e))
-                case None => ExprWhenClause(Exprs.trueLit, pass[Expr](e))
+              ScopeVal.scoped(
+                renamesVal.updated(_.add(ref -> valRef.ref))) {
+                guard match {
+                  case Some(g) => ExprWhenClause(pass[Expr](g), pass[Expr](e))
+                  case None => ExprWhenClause(Exprs.trueLit, pass[Expr](e))
+                }
               }
 
             case MatchCaseClause(TypedPatternMatch(ref, patternTy), e, guard) =>
-              implicit val newContext: Context =
-                context.asInstanceOf[Context]
-                  .copy(renames = context.asInstanceOf[Context].renames + (ref -> valExpr.destructors.head.name))
-              ExprWhenClause(addGuardExpr(Exprs.is(valRef, patternTy), guard.map(pass[Expr])), pass[Expr](e))
+              ScopeVal.scoped(
+                renamesVal.updated(_.add(ref -> valExpr.destructors.head.name))) {
+                ExprWhenClause(addGuardExpr(Exprs.is(valRef, patternTy), guard.map(pass[Expr])), pass[Expr](e))
+              }
 
             case MatchCaseClause(pattern@ConstructorPatternMatch(ref, args, _, repr), e, _) =>
               val lazyRef = RefExpr(NoType, None, Utils.escapeName(repr), Seq.empty, false)
@@ -276,8 +274,5 @@ class BasicPass extends Pass {
       case OverrideAttr => 4
       case _ => 5
     }
-
-  override def emptyContext: PasssContext = Context(Map.empty)
 }
 
-case class Context(renames: Map[String, String]) extends PasssContext
