@@ -30,29 +30,27 @@ case class FileDef(pckg: String, imports: Seq[ImportDef], defns: Seq[DefExpr]) e
 
 case class BinOp(name: String) extends AST
 
-sealed trait MatchCasePattern extends AST
+sealed trait MatchCasePattern extends AST {
+  def name: String
+}
 
-case class LitPatternMatch(lit: LitExpr) extends MatchCasePattern
-case class ConstructorPatternMatch(ref: String, args: Seq[MatchCasePattern], repr: String)  extends MatchCasePattern
-case class TypedPatternMatch(ref: String, ty: Type) extends MatchCasePattern
-case class ReferencePatternMatch(ref: String) extends MatchCasePattern
-case object WildcardPatternMatch extends MatchCasePattern
+case class LitPatternMatch(lit: LitExpr) extends MatchCasePattern {
+  override def name: String = lit.name
+}
+case class ConstructorPatternMatch(ref: String, args: Seq[MatchCasePattern], repr: String)  extends MatchCasePattern {
+  override def name: String = repr
+}
+case class TypedPatternMatch(ref: String, ty: Type) extends MatchCasePattern {
+  override def name: String = s"$ref: $ty"
+}
+case class ReferencePatternMatch(ref: String) extends MatchCasePattern {
+  override def name: String = ref
+}
+case object WildcardPatternMatch extends MatchCasePattern {
+  override def name: String = "_"
+}
 
 sealed trait WhenClause extends AST
 
 case class ExprWhenClause(clause: Expr, expr: Expr) extends WhenClause
 case class ElseWhenClause(expr: Expr) extends WhenClause
-
-trait Destructor extends AST {
-  def name: String
-}
-
-case class LitDestructor(lit: LitExpr) extends Destructor {
-  override def name: String = lit.name
-}
-case class RefDestructor(ref: String) extends Destructor {
-  override def name: String = ref
-}
-case object WildcardDestructor extends Destructor {
-  override def name: String = "_"
-}

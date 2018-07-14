@@ -64,7 +64,9 @@ case class Defn(attrs: Seq[Attr],
                 block: BlockExpr) extends DefExpr {
   override def ty: Type = NoType
 }
-case class ValDef(destructors: Seq[Destructor], ty: Type, expr: Expr) extends DefExpr
+case class ValDef(destructors: Seq[MatchCasePattern], expr: Expr) extends DefExpr {
+  override def ty: Type = KotlinTypes.NOTHING
+}
 case class LazyValDef(name: String, ty: Type, expr: Expr) extends DefExpr
 case class VarDef(name: String, ty: Type, expr: Expr) extends DefExpr
 case class DefnDef(attrss: Seq[Attr], name: String, ty: Type, args: Seq[DefParam], retType: Type, body: BlockExpr) extends DefExpr

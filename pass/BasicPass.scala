@@ -6,6 +6,7 @@ import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.pass.Pass.PasssContext
+import org.jetbrains.plugins.scala.lang.dependency.DependencyKind.Reference
 
 import scala.collection.mutable
 import scala.util.Random
@@ -77,14 +78,23 @@ class BasicPass extends Pass {
                   false)
             }))
 
+      // val destructing in a case of nested constructors
+      case ValDef(destructors, expr)
+        if destructors.exists {
+          case _: ConstructorPatternMatch => true
+          case _ => false
+        } =>
 
+
+
+      // match expr to when one
       case MatchExpr(ty, expr, clauses) =>
         val badClauses = clauses.collect {
           case x@MatchCaseClause(_: ConstructorPatternMatch, _, _) => x
         }
 
         val newExpr = pass[Expr](expr)
-        val valExpr = ValDef(Seq(RefDestructor("match")), newExpr.ty, newExpr)
+        val valExpr = ValDef(Seq(ReferencePatternMatch("match")), newExpr)
         val valRef = RefExpr(newExpr.ty, None, valExpr.destructors.head.name, Seq.empty, false)
 
         def collectVals(constructorPatternMatch: ConstructorPatternMatch): Seq[ConstructParam] = {
@@ -117,22 +127,22 @@ class BasicPass extends Pass {
           val (vals, conds, refs) = constructors.map { case (r, ConstructorPatternMatch(_, patterns, _)) =>
             val (destructors, conds, refs) = patterns.map {
               case LitPatternMatch(litPattern) =>
-                (LitDestructor(litPattern), None, None)
+                (LitPatternMatch(litPattern), None, None)
               case ReferencePatternMatch(ref) =>
-                (RefDestructor(ref), None, None)
+                (ReferencePatternMatch(ref), None, None)
               case WildcardPatternMatch =>
-                (WildcardDestructor, None, None)
+                (WildcardPatternMatch, None, None)
               case c@ConstructorPatternMatch(ref, _, _) =>
                 val local = localName //todo use name from pattern
-                (RefDestructor(local),
+                (ReferencePatternMatch(local),
                   Some(Exprs.is(LitExpr(ty, local), SimpleType(ref))),
                   Some(local -> c))
               case TypedPatternMatch(ref, tyPattern) =>
-                (RefDestructor(ref),
+                (ReferencePatternMatch(ref),
                   Some(Exprs.is(LitExpr(tyPattern, ref), tyPattern)),
                   None)
             }.unzip3
-            (ValDef(destructors, NoType, RefExpr(NoType, None, r, Seq.empty, false)),
+            (ValDef(destructors, RefExpr(NoType, None, r, Seq.empty, false)),
               conds.flatten,
               refs.flatten)
           }.unzip3
@@ -219,7 +229,7 @@ class BasicPass extends Pass {
               val lazyRef = RefExpr(NoType, None, Utils.escapeName(repr), Seq.empty, false)
               val notEqulasExpr = BinExpr(KotlinTypes.BOOLEAN, BinOp("!="), lazyRef, Exprs.nullLit)
               val vals = collectVals(pattern)
-              val valDef = ValDef(vals.map(p => RefDestructor(p.name)), NoType, lazyRef)
+              val valDef = ValDef(vals.map(p => ReferencePatternMatch(p.name)), lazyRef)
               val body = MultiBlock(Seq(valDef, e))
               ExprWhenClause(notEqulasExpr, body)
 
@@ -267,3 +277,5 @@ class BasicPass extends Pass {
 }
 
 case class Context(renames: Map[String, String]) extends PasssContext
+
+def generateMatch

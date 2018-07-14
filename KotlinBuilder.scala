@@ -53,7 +53,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(name)
         genType(ty)
 
-      case ValDef(destructors, ty, expr) =>
+      case ValDef(destructors, expr) =>
         str("val ")
         if (destructors.size == 1) {
           gen(destructors.head)
@@ -62,7 +62,6 @@ class KotlinBuilder extends KotlinBuilderBase {
           rep(destructors, ", ")(gen)
           str(")")
         }
-        if (ty != NoType) genType(ty)
         str(" = ")
         gen(expr)
       case LazyValDef(name, ty, expr) =>
@@ -79,21 +78,15 @@ class KotlinBuilder extends KotlinBuilderBase {
 
       case ReturnExpr(label, expr) =>
         str("return")
-        opt(label){l =>
+        opt(label) { l =>
           str("@")
           str(l)
         }
         str(" ")
         opt(expr)(gen)
 
-
-      case LitDestructor(lit: LitExpr) =>
-        gen(lit)
-      case RefDestructor(ref: String) =>
-        str(ref)
-      case WildcardDestructor =>
-        str("_")
-
+      case p: MatchCasePattern =>
+        str(p.name)
 
       case DefnDef(attrs, name, ty, args, retType, body) =>
         rep(attrs, " ")(gen)
@@ -126,7 +119,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("(")
         gen(inner)
         str(")")
-      case LambdaExpr(ty, params, expr,needBraces) =>
+      case LambdaExpr(ty, params, expr, needBraces) =>
         str("{ ")
         if (needBraces) str("(")
         rep(params, ", ") { case DefParam(ty, name) =>
@@ -189,7 +182,7 @@ class KotlinBuilder extends KotlinBuilderBase {
 
       case WhenExpr(ty, expr, clauses) =>
         str("when")
-        opt(expr) {e =>
+        opt(expr) { e =>
           str(" (")
           gen(e)
           str(")")

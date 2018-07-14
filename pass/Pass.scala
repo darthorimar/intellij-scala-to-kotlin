@@ -40,8 +40,8 @@ trait Pass {
     case ConstructParam(parType, mod, name, ty) =>
       ConstructParam(parType, mod, name, pass[Type](ty))
 
-    case ValDef(name, ty, expr) =>
-      ValDef(name, pass[Type](ty), pass[Expr](expr))
+    case ValDef(destructors, expr) =>
+      ValDef(destructors.map(pass[MatchCasePattern]), pass[Expr](expr))
 
     case LazyValDef(name, ty, expr) =>
       LazyValDef(name, pass[Type](ty), pass[Expr](expr))
@@ -155,7 +155,7 @@ trait Pass {
       LitPatternMatch(lit)
 
     case ConstructorPatternMatch(ref, args,repr) =>
-      ConstructorPatternMatch(ref, args.map(pass), repr)
+      ConstructorPatternMatch(ref, args.map(pass[MatchCasePattern]), repr)
 
     case TypedPatternMatch(ref, ty) =>
       TypedPatternMatch(ref, pass[Type](ty))

@@ -244,10 +244,7 @@ object ASTGenerator extends App() with AST {
       WildcardPatternMatch
     case x: ScPatternDefinition =>
       ValDef(
-        x.bindings.map  {
-          case y: ScReferencePattern => RefDestructor(y.name)
-        },
-        genType(x.typeElement),
+        x.pList.patterns.map(gen[MatchCasePattern]),
         gen[Expr](x.expr.get))
     case x: ScVariableDefinition =>
       VarDef(
