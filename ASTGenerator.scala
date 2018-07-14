@@ -20,7 +20,7 @@ import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTem
 import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
 import org.jetbrains.plugins.scala.lang.psi.impl.toplevel.typedef.TypeDefinitionMembers
 import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
-import org.jetbrains.plugins.scala.lang.psi.types.{ScParameterizedType, ScType}
+import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScParameterizedType, ScType}
 import org.jetbrains.plugins.scala.lang.psi.types.result.TypeResult
 import org.jetbrains.plugins.scala.lang.refactoring.util.ScalaNamesUtil
 import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
@@ -91,7 +91,7 @@ object ASTGenerator extends {
       Nil).flatten
     val extraAttrs = x match {
       case y: ScFunction =>
-        attr(y.superSignatures.nonEmpty, OverrideAttr).toSeq
+        attr(y.superSignatures.exists(!_.isInstanceOf[PhysicalSignature]), OverrideAttr).toSeq
       case y: ScTypeDefinition =>
         attr(y.isCase, CaseAttr).toSeq
       case _ => Seq.empty

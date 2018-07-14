@@ -31,14 +31,14 @@ class BasicPass extends Pass {
         }))
 
       case x:DefnDef =>
-        Some(x.copy(attrs = sortAttrs(x.attrs)))
+        Some(copy(x).asInstanceOf[DefnDef].copy(attrs = sortAttrs(x.attrs)))
 
       case x: Defn =>
         val defn = copy(x).asInstanceOf[Defn]
         val t =
           if (x.t == TraitDefn) InterfaceDefn
           else x.t
-        Some(defn.copy(attrs = handleAttrs(defn), t = t))
+        Some(copy(defn).asInstanceOf[Defn].copy(attrs = handleAttrs(defn), t = t))
 
       //uncarry
       case x@CallExpr(_, _: CallExpr, _) =>
