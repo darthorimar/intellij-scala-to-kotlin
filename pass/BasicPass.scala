@@ -64,8 +64,15 @@ class BasicPass extends Pass {
           pass[Expr](ref),
           params.map(pass[Expr])))
 
-      //a.call --> a.call()
-      case x@CallExpr(ty, ref, params)
+      case x@RefExpr(ty, obj, ref, typeParams, true)
+        if (parent match {
+          case CallExpr(_, r, _) if r == x => false
+          case _ => true
+        }) =>
+        Some(CallExpr(ty, copy(x).asInstanceOf[RefExpr], Seq.empty))
+
+      //a.foo(f) --> a.foo{f(it)}
+      case CallExpr(ty, ref, params)
         if params.exists {
           case y: RefExpr if y.isFunc => true
           case _ => false
