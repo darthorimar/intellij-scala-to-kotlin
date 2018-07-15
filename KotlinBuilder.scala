@@ -221,7 +221,7 @@ class KotlinBuilder extends KotlinBuilderBase {
       case BinOp(name) =>
         str(name)
       case TypeParam(ty) =>
-        str(ty)
+        genType(ty, false)
       case CaseAttr =>
         str("data")
       //      case EmptyAst =>

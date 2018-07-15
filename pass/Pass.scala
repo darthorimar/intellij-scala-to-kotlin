@@ -142,7 +142,7 @@ trait Pass {
       MatchCaseClause(pattern, pass[Expr](expr), guard.map(pass[Expr]))
 
     case TypeParam(ty) =>
-      TypeParam(ty)
+      TypeParam(pass[Type](ty))
 
     case LitPatternMatch(lit) =>
       LitPatternMatch(lit)

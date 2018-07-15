@@ -7,6 +7,9 @@ object Exprs {
   def is(expr: Expr, ty: Type) =
     BinExpr(KotlinTypes.BOOLEAN, BinOp("is"), expr, TypeExpr(ty))
 
+  def as(expr: Expr, ty: Type) =
+    BinExpr(KotlinTypes.BOOLEAN, BinOp("as"), expr, TypeExpr(ty))
+
   def and(left: Expr, right: Expr) =
     BinExpr(KotlinTypes.BOOLEAN, BinOp("&&"), left, right)
 

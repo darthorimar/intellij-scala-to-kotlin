@@ -1,6 +1,7 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
 import org.jetbrains.plugins.kotlinConverter
+import org.jetbrains.plugins.kotlinConverter.Exprs
 import org.jetbrains.plugins.kotlinConverter.ast._
 
 class CollectionPass extends Pass {
@@ -35,8 +36,12 @@ class CollectionPass extends Pass {
         RefExpr(pass[Type](refTy), None, "listOf", typeParams.map(pass[TypeParam]), true),
         params.map(pass[Expr])))
 
-    //    case CallExpr(ty, Some(RefExpr(_, _, "Seq")), "empty", typeParams, Seq()) =>
-    //      Some(CallExpr(pass[Type](ty), pass[Type](funcTy), None, "emptyList", typeParams, Seq()))
+
+    case RefExpr(refTy, Some(obj), "asInstanceOf", Seq(TypeParam(ty)), false) =>
+      Some(ParenExpr(Exprs.as(pass[Expr](obj), pass[Type](ty))))
+
+    case RefExpr(refTy, Some(obj), "isInstanceOf", Seq(TypeParam(ty)), false) =>
+      Some(ParenExpr(Exprs.is(pass[Expr](obj), pass[Type](ty))))
 
     case _ => None
   }

@@ -51,7 +51,7 @@ object ASTGenerator extends {
       map(_.typeArgs)
       .toSeq
       .flatten
-      .map(z => TypeParam(z.getText))
+      .map(z => TypeParam(genType(z.`type`())))
   }
 
   def genType(t: ScType): Type = {
