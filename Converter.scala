@@ -10,7 +10,6 @@ object Converter {
     val ast = ASTGenerator.gen[FileDef](file)
     println(prettyPrint(ast))
     val newAst = Pass.applyPasses(ast)
-    println(newAst)
     builder.gen(newAst)
     builder.text
   }

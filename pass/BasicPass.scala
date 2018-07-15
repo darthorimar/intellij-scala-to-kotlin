@@ -5,12 +5,12 @@ import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.pass.ScopeVal.scoped
+import org.jetbrains.plugins.kotlinConverter.pass.ScopedVal.scoped
 
 
 class BasicPass extends Pass {
-  val renamesVal = new ScopeVal[Renames](Renames(Map.empty))
-  val namerVal = new ScopeVal[LocalNamer](new LocalNamer)
+  val renamesVal = new ScopedVal[Renames](Renames(Map.empty))
+  val namerVal = new ScopedVal[LocalNamer](new LocalNamer)
 
   override protected def action(ast: AST): Option[AST] = {
     ast match {
@@ -216,7 +216,7 @@ class BasicPass extends Pass {
               }
 
             case MatchCaseClause(ReferencePatternMatch(ref), e, guard) =>
-              ScopeVal.scoped(
+              ScopedVal.scoped(
                 renamesVal.updated(_.add(ref -> valRef.ref))) {
                 guard match {
                   case Some(g) => ExprWhenClause(pass[Expr](g), pass[Expr](e))
@@ -225,7 +225,7 @@ class BasicPass extends Pass {
               }
 
             case MatchCaseClause(TypedPatternMatch(ref, patternTy), e, guard) =>
-              ScopeVal.scoped(
+              ScopedVal.scoped(
                 renamesVal.updated(_.add(ref -> valExpr.destructors.head.name))) {
                 ExprWhenClause(addGuardExpr(Exprs.is(valRef, patternTy), guard.map(pass[Expr])), pass[Expr](e))
               }

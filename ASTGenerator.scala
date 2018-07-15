@@ -29,7 +29,6 @@ import scala.collection.immutable
 
 object ASTGenerator extends {
   private def genDefinitions(file: ScalaFile): Seq[PsiElement] = {
-    println(file.typeDefinitions.mkString(", "))
     val functionDefns =
       file.findChildrenByType(ScalaElementTypes.FUNCTION_DEFINITION)
     val functionDecls =
