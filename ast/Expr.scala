@@ -36,10 +36,9 @@ case class TryExpr(tryBlock: Expr, finallyBlock: Option[Expr]) extends Expr {
 }
 case class TypeExpr(ty: Type) extends Expr
 
-case class BlockExpr(exprs: Seq[Expr]) extends Expr {
+case class BlockExpr(ty: Type, exprs: Seq[Expr]) extends Expr {
   def isSingle: Boolean = exprs.size == 1
   def isEmpty: Boolean = exprs.isEmpty
-  override def ty: Type = NoType
 }
 
 

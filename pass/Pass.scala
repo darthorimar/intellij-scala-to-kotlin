@@ -99,8 +99,8 @@ trait Pass {
     case MatchExpr(ty, expr, clauses) =>
       MatchExpr(pass[Type](ty), pass[Expr](expr), clauses.map(pass[MatchCaseClause]))
 
-    case BlockExpr(exprs) =>
-      BlockExpr(exprs.map(pass[Expr]))
+    case BlockExpr(ty, exprs) =>
+      BlockExpr(pass[Type](ty), exprs.map(pass[Expr]))
 
     case PostExpr(ty, obj, op) =>
       PostExpr(ty, pass[Expr](obj), op)

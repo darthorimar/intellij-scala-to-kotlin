@@ -75,7 +75,7 @@ object ASTGenerator extends {
     t.map(genType).getOrElse(NoType)
 
   def blockOrEmpty(exprs: Seq[Expr]): Option[BlockExpr] =
-    if (exprs.nonEmpty) Some(BlockExpr(exprs))
+    if (exprs.nonEmpty) Some(BlockExpr(exprs.last.ty, exprs))
     else None
 
   def genAttrs(x: ScMember): Seq[Attr] = {
@@ -179,7 +179,7 @@ object ASTGenerator extends {
         false)
 
     case x: ScBlock =>
-      BlockExpr(x.exprs.map(gen[Expr]))
+      BlockExpr(genType(x.`type`()), x.statements.map(gen[Expr]))
 
     case x: ScInfixExpr =>
       BinExpr(genType(x.`type`()), x.operation.getText, gen[Expr](x.left), gen[Expr](x.right))

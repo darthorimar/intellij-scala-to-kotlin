@@ -8,6 +8,7 @@ object Converter {
   def convert(file: ScalaFile): String = {
     val builder = new KotlinBuilder
     val ast = ASTGenerator.gen[FileDef](file)
+    println(Utils.prettyPrint(ast))
     val newAst = Pass.applyPasses(ast)
     builder.gen(newAst)
     builder.text

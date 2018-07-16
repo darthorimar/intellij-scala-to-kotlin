@@ -249,14 +249,14 @@ class KotlinBuilder extends KotlinBuilderBase {
     }
 
   def genAsBlock(e: Expr): Unit = e match {
-    case BlockExpr(exprs) =>
+    case BlockExpr(ty, exprs) =>
       str("{")
       indent()
       repNl(exprs)(gen)
       unIndent()
       str("}")
     case _ =>
-      genAsBlock(BlockExpr(Seq(e)))
+      genAsBlock(BlockExpr(NoType, Seq(e)))
   }
 
   def genKeyword(k: Keyword): Unit =

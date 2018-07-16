@@ -26,7 +26,7 @@ class BasicPass extends Pass {
         Some(x.copy(ref = renamesVal.get.renames(x.ref)))
 
       //Remove renault brackets for lambda like in seq.map {x => x * 2}
-      case BlockExpr(stmts) if stmts.size == 1 && stmts.head.isInstanceOf[LambdaExpr] =>
+      case BlockExpr(_, stmts) if stmts.size == 1 && stmts.head.isInstanceOf[LambdaExpr] =>
         Some(pass[Expr](stmts.head))
 
       case ParamsConstruct(params)
@@ -38,12 +38,18 @@ class BasicPass extends Pass {
             ConstructParam(t, m, name, pass[Type](ty))
         }))
 
-      //sort fun attrs
+      //sort fun attrs, add return to the funcito end
       case x: DefnDef =>
         scoped(
           namerVal.set(new LocalNamer)
         ) {
-          Some(copy(x).asInstanceOf[DefnDef].copy(attrs = sortAttrs(x.attrs)))
+          val newDef = copy(x).asInstanceOf[DefnDef]
+          def handleBody(body: Expr) = body match {
+            case BlockExpr(ty, stmts) =>
+              BlockExpr(ty, stmts.init :+ ReturnExpr(None, Some(stmts.last)))
+            case b => b
+          }
+          Some(newDef.copy(attrs = sortAttrs(x.attrs), body = x.body.map(handleBody)))
         }
 
       case x: Defn =>
@@ -184,7 +190,7 @@ class BasicPass extends Pass {
               IfExpr(NoType, conditionParts.reduceLeft(Exprs.and), trueBlock, None)
             else trueBlock
 
-          BlockExpr(valDefns :+ ifCond)
+          BlockExpr(ifCond.ty, valDefns :+ ifCond)
         }
 
         val lazyDefs = expandedClauses.collect {
@@ -203,7 +209,7 @@ class BasicPass extends Pass {
             }
 
             val innerBody = handleConstructors(Seq((valRef.ref, pattern)), finalExpr)
-            val body = BlockExpr(Seq(
+            val body = BlockExpr(NoType, Seq(
               IfExpr(
                 NoType,
                 Exprs.is(valRef, SimpleType(ref)),
@@ -252,12 +258,12 @@ class BasicPass extends Pass {
               val notEqulasExpr = BinExpr(KotlinTypes.BOOLEAN, "!=", lazyRef, Exprs.nullLit)
               val vals = collectVals(pattern)
               val valDef = ValDef(vals.map(p => ReferencePatternMatch(p.name)), lazyRef)
-              val body = BlockExpr(Seq(valDef, e))
+              val body = BlockExpr(e.ty, Seq(valDef, e))
               ExprWhenClause(notEqulasExpr, body)
 
           }
         val whenExpr = WhenExpr(NoType, None, whenClauses)
-        Some(BlockExpr(valExpr +: (caseClasses ++ lazyDefs) :+ whenExpr))
+        Some(BlockExpr(whenExpr.ty, valExpr +: (caseClasses ++ lazyDefs) :+ whenExpr))
 
       case _ => None
     }

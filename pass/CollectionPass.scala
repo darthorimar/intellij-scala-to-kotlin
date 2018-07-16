@@ -108,6 +108,11 @@ class CollectionPass extends Pass {
     case BinExpr(ty, "*", left, right) if left.ty == KotlinTypes.STRING && right.ty == KotlinTypes.INT=>
       Some(CallExpr(ty, RefExpr(ty, Some(pass[Expr](left)), "repeat", Seq.empty, true), Seq(right)))
 
+      // seq(i) --> seq[i]
+//    case CallExpr(ty, obj, true), params)
+//      if TypeUtils.isKotlinList(ty) =>
+
+
 
     case RefExpr(refTy, Some(obj), "asInstanceOf", Seq(TypeParam(ty)), false) =>
       Some(ParenExpr(Exprs.as(pass[Expr](obj), pass[Type](ty))))
