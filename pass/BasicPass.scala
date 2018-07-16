@@ -104,8 +104,9 @@ class BasicPass extends Pass {
         val expandedClauses = clauses.flatMap {
           case MatchCaseClause(CompositePatternMatch(parts), expr, guard) =>
             parts.map { p =>
-              MatchCaseClause(CompositePatternMatch(parts), expr, guard)
+              MatchCaseClause(p, expr, guard)
             }
+          case x => Seq(x)
         }
 
         val newExpr = pass[Expr](expr)
