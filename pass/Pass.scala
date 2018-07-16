@@ -15,7 +15,7 @@ trait Pass {
   protected def parent: AST =
     parents.head
 
-  final def pass[T](ast: AST): T = {
+  def pass[T](ast: AST): T = {
     parentsStack = ast :: parentsStack
     val res = action(ast).getOrElse(copy(ast)).asInstanceOf[T]
     parentsStack = parentsStack.tail
@@ -117,8 +117,8 @@ trait Pass {
     case WhileExpr(ty, cond, body) =>
       WhileExpr(pass[Type](ty), pass[Expr](cond), pass[BlockExpr](body))
 
-    case PType(des, params) =>
-      PType(pass[Type](des), params.map(pass[Type]))
+    case ProductType(des, params) =>
+      ProductType(pass[Type](des), params.map(pass[Type]))
 
     case FuncType(left, right) =>
       FuncType(pass[Type](left), pass[Type](right))

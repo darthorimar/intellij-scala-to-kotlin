@@ -5,16 +5,32 @@ import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 
 object Exprs {
   def is(expr: Expr, ty: Type) =
-    BinExpr(KotlinTypes.BOOLEAN, BinOp("is"), expr, TypeExpr(ty))
+    BinExpr(KotlinTypes.BOOLEAN, "is", expr, TypeExpr(ty))
 
   def as(expr: Expr, ty: Type) =
-    BinExpr(KotlinTypes.BOOLEAN, BinOp("as"), expr, TypeExpr(ty))
+    BinExpr(KotlinTypes.BOOLEAN, "as", expr, TypeExpr(ty))
 
   def and(left: Expr, right: Expr) =
-    BinExpr(KotlinTypes.BOOLEAN, BinOp("&&"), left, right)
+    BinExpr(KotlinTypes.BOOLEAN, "&&", left, right)
 
   def letExpr(obj: Expr, lambda: LambdaExpr) =
     CallExpr(lambda.ty, RefExpr(NoType, Some(obj), "let", Seq.empty, true), Seq(lambda))
+
+  def emptyList(ty: Type) =
+    CallExpr(
+      listType(ty),
+      RefExpr(ty, None, "emptyList", Seq(TypeParam(ty)), true),
+      Seq.empty)
+
+  def emptyList =
+    CallExpr(
+      listType(NoType),
+      RefExpr(NoType, None, "emptyList", Seq.empty, true),
+      Seq.empty)
+
+  def listType(ty: Type) =
+    ProductType(KotlinTypes.LIST, Seq(ty))
+
 
   val falseLit = LitExpr(KotlinTypes.BOOLEAN, "false")
   val trueLit = LitExpr(KotlinTypes.BOOLEAN, "true")

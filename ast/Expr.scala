@@ -7,7 +7,7 @@ sealed trait Expr extends AST {
   def ty: Type
 }
 
-case class BinExpr(ty: Type, op: BinOp, left: Expr, right: Expr) extends Expr
+case class BinExpr(ty: Type, op: String, left: Expr, right: Expr) extends Expr
 case class ParenExpr(inner: Expr) extends Expr {
   override def ty: Type = inner.ty
 }

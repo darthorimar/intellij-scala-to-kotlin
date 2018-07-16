@@ -62,7 +62,7 @@ object ASTGenerator extends {
         else
           FuncType(ProdType(x.typeArguments.init.map(genType)), genType(x.typeArguments.last))
       case x: ScParameterizedType =>
-        PType(genType(x.designator), x.typeArguments.map(genType))
+        ProductType(genType(x.designator), x.typeArguments.map(genType))
       case x =>
         SimpleType(x.canonicalText)
     }
@@ -179,7 +179,7 @@ object ASTGenerator extends {
      BlockExpr(x.exprs.map(gen[Expr]))
 
     case x: ScInfixExpr =>
-      BinExpr(genType(x.`type`()), BinOp(x.operation.getText), gen[Expr](x.left), gen[Expr](x.right))
+      BinExpr(genType(x.`type`()), x.operation.getText, gen[Expr](x.left), gen[Expr](x.right))
     case x: ScLiteral =>
       LitExpr(genType(x.`type`()), x.getText)
     case x: ScUnderscoreSection =>

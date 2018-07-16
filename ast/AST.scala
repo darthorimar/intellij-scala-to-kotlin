@@ -28,8 +28,6 @@ case class TypeParam(ty: Type) extends AST
 case class Super(ty: Type, construct: Option[Construct]) extends AST
 case class FileDef(pckg: String, imports: Seq[ImportDef], defns: Seq[DefExpr]) extends AST
 
-case class BinOp(name: String) extends AST
-
 sealed trait MatchCasePattern extends AST {
   def name: String
 }

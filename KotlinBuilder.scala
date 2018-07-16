@@ -116,7 +116,7 @@ class KotlinBuilder extends KotlinBuilderBase {
       case BinExpr(ty, op, left, right) =>
         gen(left)
         str(" ")
-        gen(op)
+        str(op)
         str(" ")
         gen(right)
       case ParenExpr(inner) =>
@@ -218,8 +218,6 @@ class KotlinBuilder extends KotlinBuilderBase {
         unIndent()
         str("}")
 
-      case BinOp(name) =>
-        str(name)
       case TypeParam(ty) =>
         genType(ty, false)
       case CaseAttr =>

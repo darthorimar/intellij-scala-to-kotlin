@@ -213,7 +213,7 @@ class BasicPass extends Pass {
         val whenClauses =
           clauses.map {
             case MatchCaseClause(LitPatternMatch(lit), e, guard) =>
-              val equlasExpr = BinExpr(KotlinTypes.BOOLEAN, BinOp("=="), valRef, lit)
+              val equlasExpr = BinExpr(KotlinTypes.BOOLEAN, "==", valRef, lit)
               ExprWhenClause(addGuardExpr(equlasExpr, guard), pass[Expr](e))
 
             case MatchCaseClause(WildcardPatternMatch, e, guard) =>
@@ -239,7 +239,7 @@ class BasicPass extends Pass {
 
             case MatchCaseClause(pattern@ConstructorPatternMatch(ref, args, _, repr), e, _) =>
               val lazyRef = RefExpr(NoType, None, Utils.escapeName(repr), Seq.empty, false)
-              val notEqulasExpr = BinExpr(KotlinTypes.BOOLEAN, BinOp("!="), lazyRef, Exprs.nullLit)
+              val notEqulasExpr = BinExpr(KotlinTypes.BOOLEAN, "!=", lazyRef, Exprs.nullLit)
               val vals = collectVals(pattern)
               val valDef = ValDef(vals.map(p => ReferencePatternMatch(p.name)), lazyRef)
               val body = BlockExpr(Seq(valDef, e))

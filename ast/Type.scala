@@ -9,7 +9,7 @@ case class FuncType(left: Type, right: Type) extends Type {
     s"(${left.asKotlin}) -> ${right.asKotlin}"
 }
 
-case class PType(des: Type, params: Seq[Type]) extends Type {
+case class ProductType(des: Type, params: Seq[Type]) extends Type {
   override def asKotlin: String =
     params.map(_.asKotlin).mkString(des.asKotlin + "<", ", ", ">")
 }

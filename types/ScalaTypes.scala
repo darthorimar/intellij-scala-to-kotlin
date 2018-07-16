@@ -11,6 +11,7 @@ object ScalaTypes {
   val SEQ = SimpleType("_root_.scala.collection.Seq")
   val SEQ2 = SimpleType("scala.Seq")
   val LIST = SimpleType("_root_.scala.collection.List")
+  val LIST2 = SimpleType("_root_.scala.collection.immutable.List")
 
   val FUNCTION_PREFFIX = "_root_.scala.Function"
 }
