@@ -9,10 +9,10 @@ class TypePass extends Pass {
       Some(NullableType(pass[Type](i)))
 
     case ScalaTypes.STRING | ScalaTypes.JAVA_STRING =>
-      Some(SimpleType("String"))
+      Some(KotlinTypes.STRING)
 
-    case ScalaTypes.SEQ | ScalaTypes.SEQ2 =>
-      Some(SimpleType("List"))
+    case ScalaTypes.SEQ | ScalaTypes.SEQ2 | ScalaTypes.LIST =>
+      Some(KotlinTypes.LIST)
 
     case _ => None
   }

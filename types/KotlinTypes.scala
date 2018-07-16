@@ -5,4 +5,6 @@ import org.jetbrains.plugins.kotlinConverter.ast.SimpleType
 object KotlinTypes {
   val BOOLEAN = SimpleType("Boolean")
   val NOTHING = SimpleType("Nothing")
+  val STRING = SimpleType("String")
+  val LIST = SimpleType("List")
 }

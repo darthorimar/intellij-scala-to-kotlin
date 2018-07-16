@@ -10,6 +10,7 @@ object ScalaTypes {
   val JAVA_STRING = SimpleType("_root_.java.lang.String")
   val SEQ = SimpleType("_root_.scala.collection.Seq")
   val SEQ2 = SimpleType("scala.Seq")
+  val LIST = SimpleType("_root_.scala.collection.List")
 
   val FUNCTION_PREFFIX = "_root_.scala.Function"
 }
