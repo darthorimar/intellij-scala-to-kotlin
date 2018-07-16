@@ -26,8 +26,14 @@ trait Pass {
     case ReturnExpr(label, expr) =>
       ReturnExpr(label, expr.map(pass[Expr]))
 
-    case Defn(attrs, t, name, construct, supers, block) =>
-      Defn(attrs.map(pass[Attr]), t, name, construct.map(pass[Construct]), supers.map(pass[Super]), block.map(pass[BlockExpr]))
+    case Defn(attrs, t, name,typeParams, construct, supers, block) =>
+      Defn(attrs.map(pass[Attr]),
+        t,
+        name,
+        typeParams.map(pass[TypeParam]),
+        construct.map(pass[Construct]),
+        supers.map(pass[Super]),
+        block.map(pass[BlockExpr]))
 
     case Super(ty, construct) =>
       Super(pass[Type](ty), construct.map(pass[Construct]))
@@ -48,8 +54,8 @@ trait Pass {
     case VarDef(name, ty, expr) =>
       VarDef(name, pass[Type](ty), pass[Expr](expr))
 
-    case DefnDef(attrss, name, ty, args, retType, body) =>
-      DefnDef(attrss, name, pass[Type](ty), args.map(pass[DefParam]), pass[Type](retType), body.map(pass[Expr]))
+    case DefnDef(attrss, name, typeParams, ty, args, retType, body) =>
+      DefnDef(attrss, name, typeParams.map(pass[TypeParam]), pass[Type](ty), args.map(pass[DefParam]), pass[Type](retType), body.map(pass[Expr]))
 
     case ImportDef(ref, names) =>
       ImportDef(ref, names)

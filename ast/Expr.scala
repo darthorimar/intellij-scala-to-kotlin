@@ -47,6 +47,7 @@ sealed trait DefExpr extends Expr
 case class Defn(attrs: Seq[Attr],
                 t: DefnType,
                 name: String,
+                typeParams: Seq[TypeParam],
                 construct: Option[Construct],
                 supers: Seq[Super],
                 body: Option[Expr]) extends DefExpr {
@@ -57,7 +58,13 @@ case class ValDef(destructors: Seq[MatchCasePattern], expr: Expr) extends DefExp
 }
 case class LazyValDef(name: String, ty: Type, expr: Expr) extends DefExpr
 case class VarDef(name: String, ty: Type, expr: Expr) extends DefExpr
-case class DefnDef(attrs: Seq[Attr], name: String, ty: Type, args: Seq[DefParam], retType: Type, body: Option[Expr]) extends DefExpr
+case class DefnDef(attrs: Seq[Attr],
+                   name: String,
+                   typeParams: Seq[TypeParam],
+                   ty: Type,
+                   args: Seq[DefParam],
+                   retType: Type,
+                   body: Option[Expr]) extends DefExpr
 case class ImportDef(ref: String, names: Seq[String]) extends DefExpr {
   override def ty: Type = NoType
 }

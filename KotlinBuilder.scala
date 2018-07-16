@@ -21,12 +21,17 @@ class KotlinBuilder extends KotlinBuilderBase {
         }
         repNl(defns)(gen)
 
-      case Defn(attrs, t, name, consruct, supers, block) =>
+      case Defn(attrs, t, name, typeParams, consruct, supers, block) =>
         rep(attrs, " ")(gen)
         if (attrs.nonEmpty) str(" ")
         genKeyword(t)
         str(" ")
         str(name)
+        if (typeParams.nonEmpty) {
+          str("<")
+          rep(typeParams, ", ")(gen)
+          str(">")
+        }
         opt(consruct)(gen)
         if (supers.nonEmpty) {
           str(" : ")
@@ -88,10 +93,16 @@ class KotlinBuilder extends KotlinBuilderBase {
       case p: MatchCasePattern =>
         str(p.name)
 
-      case DefnDef(attrs, name, ty, args, retType, body) =>
+      case DefnDef(attrs, name, typeParams, ty, args, retType, body) =>
         rep(attrs, " ")(gen)
         if (attrs.nonEmpty) str(" ")
-        str("fun ")
+        str("fun")
+        if (typeParams.nonEmpty) {
+          str("<")
+          rep(typeParams, ", ")(gen)
+          str(">")
+        }
+        str(" ")
         str(name)
         str("(")
         rep(args, ", ") { case DefParam(ty, name) =>

@@ -9,9 +9,9 @@ import org.jetbrains.plugins.scala.lang.psi.ScalaPsiUtil
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.lang.psi.api.base._
 import org.jetbrains.plugins.scala.lang.psi.api.base.patterns._
-import org.jetbrains.plugins.scala.lang.psi.api.base.types.{ScSimpleTypeElement, ScTypeElement}
+import org.jetbrains.plugins.scala.lang.psi.api.base.types.{ScSimpleTypeElement, ScTypeArgs, ScTypeElement}
 import org.jetbrains.plugins.scala.lang.psi.api.expr._
-import org.jetbrains.plugins.scala.lang.psi.api.statements.params.{ScClassParameter, ScParameter}
+import org.jetbrains.plugins.scala.lang.psi.api.statements.params.{ScClassParameter, ScParameter, ScTypeParam}
 import org.jetbrains.plugins.scala.lang.psi.api.statements._
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.imports.{ScImportExpr, ScImportStmt}
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.templates.ScClassParents
@@ -37,7 +37,6 @@ object ASTGenerator extends {
   }
 
 
-
   private def genFunctionBody(fun: ScFunction): Option[Expr] = fun match {
     case x: ScFunctionDefinition =>
       x.body.map(gen[Expr])
@@ -46,12 +45,12 @@ object ASTGenerator extends {
   }
 
 
-  def genTypeArgs(genCall: ScGenericCall): Seq[TypeParam] = {
-    genCall.typeArgs.
-      map(_.typeArgs)
+  def genTypeArgs(typeArgs: Option[ScTypeArgs]): Seq[TypeParam] = {
+    typeArgs
+      .map(_.typeArgs)
       .toSeq
       .flatten
-      .map(z => TypeParam(genType(z.`type`())))
+      .map(z => TypeParam(genType(z.`type`())))//todo distinc type param and type arg
   }
 
   def genType(t: ScType): Type = {
@@ -115,6 +114,7 @@ object ASTGenerator extends {
       ImportDef(x.reference.map(_.getText).get, x.importedNames)
 
     case x: ScTypeDefinition =>
+      x.typeParameters
       val construct = x match {
         case y: ScClass => Some(y.constructor.map(gen[Construct]).getOrElse(EmptyConstruct))
         case _ => None
@@ -130,6 +130,7 @@ object ASTGenerator extends {
             .map { case p: ScClassParameter =>
               DefnDef(Seq(PublAttr, OverrideAttr),
                 p.name,
+                Seq.empty,
                 genType(p.`type`()),
                 Seq.empty,
                 genType(p.`type`()),
@@ -146,6 +147,7 @@ object ASTGenerator extends {
           case _: ScObject => ObjDefn
         },
         x.name,
+        x.typeParameters.map(gen[TypeParam]),
         construct,
         x.extendsBlock
           .findChildrenByType(ScalaElementTypes.CLASS_PARENTS)
@@ -164,6 +166,7 @@ object ASTGenerator extends {
       DefnDef(
         genAttrs(x),
         x.name,
+        x.typeParameters.map(z => TypeParam(SimpleType(z.typeParameterText))),
         genType(x.`type`()),
         x.parameters.map(gen[DefParam]),
         genType(x.returnType),
@@ -176,7 +179,7 @@ object ASTGenerator extends {
         false)
 
     case x: ScBlock =>
-     BlockExpr(x.exprs.map(gen[Expr]))
+      BlockExpr(x.exprs.map(gen[Expr]))
 
     case x: ScInfixExpr =>
       BinExpr(genType(x.`type`()), x.operation.getText, gen[Expr](x.left), gen[Expr](x.right))
@@ -206,7 +209,7 @@ object ASTGenerator extends {
         x.args.exprs.map(gen[Expr]))
 
     case x: ScGenericCall =>
-      gen[RefExpr](x.referencedExpr).copy(typeParams = genTypeArgs(x))
+      gen[RefExpr](x.referencedExpr).copy(typeParams = genTypeArgs(x.typeArgs))
 
     case x: ScIfStmt =>
       IfExpr(
@@ -222,7 +225,7 @@ object ASTGenerator extends {
 
     case x: ScCaseClause =>
       MatchCaseClause(gen[MatchCasePattern](x.pattern.get),
-        x.expr.map(gen[Expr]).get,//todo fix
+        x.expr.map(gen[Expr]).get, //todo fix
         x.guard.flatMap(_.expr).map(gen[Expr]))
 
     case x: ScCompositePattern =>
@@ -286,6 +289,9 @@ object ASTGenerator extends {
       )
     case x: ScGenerator =>
       ForGenerator(gen[MatchCasePattern](x.pattern), gen[Expr](x.rvalue))
+
+    case x: ScTypeParam =>
+      TypeParam(SimpleType(x.typeParameterText))//todo improve
 
   }).asInstanceOf[T]
 }

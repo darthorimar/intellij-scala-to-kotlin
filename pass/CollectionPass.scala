@@ -8,8 +8,8 @@ import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, TypeUtils}
 class CollectionPass extends Pass {
 
   override def pass[T](ast: AST): T = {
-    if (ast.isInstanceOf[FileDef])
-      println(Utils.prettyPrint(ast))
+//    if (ast.isInstanceOf[FileDef])
+//      println(Utils.prettyPrint(ast))
     super.pass(ast)
   }
 

@@ -139,6 +139,7 @@ class BasicPass extends Pass {
             Defn(Seq(DataAttr),
               ClassDefn,
               name,
+              Seq.empty,
               Some(ParamsConstruct(vals)),
               Seq.empty,
               None)
