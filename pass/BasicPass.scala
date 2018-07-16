@@ -99,10 +99,13 @@ class BasicPass extends Pass {
       //        } =>
 
 
-      // match expr to when one
+      // matchExpr to when one
       case MatchExpr(ty, expr, clauses) =>
-        val badClauses = clauses.collect {
-          case x@MatchCaseClause(_: ConstructorPatternMatch, _, _) => x
+        val expandedClauses = clauses.flatMap {
+          case MatchCaseClause(CompositePatternMatch(parts), expr, guard) =>
+            parts.map { p =>
+              MatchCaseClause(CompositePatternMatch(parts), expr, guard)
+            }
         }
 
         val newExpr = pass[Expr](expr)
@@ -124,19 +127,20 @@ class BasicPass extends Pass {
           }
         }
 
-        val caseClasses = badClauses.map { case MatchCaseClause(pattern@ConstructorPatternMatch(_, _, _, repr), _, _) =>
-          val name = Utils.escapeName(s"${repr}_data")
-          val vals = collectVals(pattern)
-          Defn(Seq(DataAttr),
-            ClassDefn,
-            name,
-            Some(ParamsConstruct(vals)),
-            Seq.empty,
-            None)
+        val caseClasses = expandedClauses.collect {
+          case MatchCaseClause(pattern@ConstructorPatternMatch(_, _, _, repr), _, _) =>
+            val name = Utils.escapeName(s"${repr}_data")
+            val vals = collectVals(pattern)
+            Defn(Seq(DataAttr),
+              ClassDefn,
+              name,
+              Some(ParamsConstruct(vals)),
+              Seq.empty,
+              None)
         }
 
-        def collectConstructors(constructors: Seq[(String, ConstructorPatternMatch)]): (Seq[ValDef], Seq[Expr], Seq[(String, ConstructorPatternMatch)]) = {
-          val (vals, conds, refs) = constructors.map { case (r, ConstructorPatternMatch(_, patterns, _, _)) =>
+        def collectConstructors(constructors: Seq[(String, MatchCasePattern)]): (Seq[ValDef], Seq[Expr], Seq[(String, ConstructorPatternMatch)]) = {
+          val (vals, conds, refs) = constructors.collect { case (r, ConstructorPatternMatch(_, patterns, _, _)) =>
             val (destructors, conds, refs) = patterns.map {
               case LitPatternMatch(litPattern) =>
                 (LitPatternMatch(litPattern), None, None)
@@ -161,7 +165,7 @@ class BasicPass extends Pass {
           (vals, conds.flatten, refs.flatten)
         }
 
-        def handleConstructors(constructors: Seq[(String, ConstructorPatternMatch)], defaultCase: Expr): Expr = {
+        def handleConstructors(constructors: Seq[(String, MatchCasePattern)], defaultCase: Expr): Expr = {
           val (valDefns, conditionParts, collectedConstructors) = collectConstructors(constructors)
 
           val trueBlock =
@@ -177,7 +181,7 @@ class BasicPass extends Pass {
           BlockExpr(valDefns :+ ifCond)
         }
 
-        val lazyDefs = badClauses.map {
+        val lazyDefs = expandedClauses.collect {
           case MatchCaseClause(pattern@ConstructorPatternMatch(ref, _, _, repr), expr, guard) =>
             val params = collectVals(pattern).map(v => RefExpr(NoType, None, v.name, Seq.empty, false))
             val callContructor =
@@ -211,7 +215,7 @@ class BasicPass extends Pass {
           }
 
         val whenClauses =
-          clauses.map {
+          expandedClauses.map {
             case MatchCaseClause(LitPatternMatch(lit), e, guard) =>
               val equlasExpr = BinExpr(KotlinTypes.BOOLEAN, "==", valRef, lit)
               ExprWhenClause(addGuardExpr(equlasExpr, guard), pass[Expr](e))
