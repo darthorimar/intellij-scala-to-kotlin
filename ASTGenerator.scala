@@ -190,6 +190,7 @@ object ASTGenerator extends {
     case x: ScParenthesisedExpr =>
       ParenExpr(gen[Expr](x.innerElement.get))
     case x: ScReferenceExpression =>
+      //todo in a case of functio use  for type `x.getInvokedExpr.asInstanceOf[ScReferenceExpressionImpl].shapeResolve.map(_.element)`
       val isFunc =
         x.getReference.asInstanceOf[ScReferenceExpressionImpl]
           .shapeResolve
