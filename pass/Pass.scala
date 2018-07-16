@@ -21,7 +21,7 @@ trait Pass {
     parentsStack = parentsStack.tail
     res
   }
-  
+
   protected def copy(ast: AST): AST = ast match {
     case ReturnExpr(label, expr) =>
       ReturnExpr(label, expr.map(pass[Expr]))
@@ -111,11 +111,11 @@ trait Pass {
     case IfExpr(ty, cond, trueB, falseB) =>
       IfExpr(pass[Type](ty), pass[Expr](cond), pass[Expr](trueB), falseB.map(pass[Expr]))
 
-    case ForExpr(ty, range, body) =>
-      ForExpr(pass[Type](ty), pass[Expr](range), pass[BlockExpr](body))
-
     case WhileExpr(ty, cond, body) =>
       WhileExpr(pass[Type](ty), pass[Expr](cond), pass[BlockExpr](body))
+
+    case TryExpr(tryBlock, finallyBlock) =>
+      TryExpr(pass[Expr](tryBlock), finallyBlock.map(pass[Expr]))
 
     case ProductType(des, params) =>
       ProductType(pass[Type](des), params.map(pass[Type]))
@@ -147,7 +147,7 @@ trait Pass {
     case LitPatternMatch(lit) =>
       LitPatternMatch(lit)
 
-    case ConstructorPatternMatch(ref, args, label,  repr) =>
+    case ConstructorPatternMatch(ref, args, label, repr) =>
       ConstructorPatternMatch(ref, args.map(pass[MatchCasePattern]), label, repr)
 
     case TypedPatternMatch(ref, ty) =>
@@ -158,6 +158,13 @@ trait Pass {
 
     case WildcardPatternMatch =>
       WildcardPatternMatch
+
+
+    case ForExpr(ty, generators, body) =>
+      ForExpr(pass[Type](ty), generators.map(pass[ForGenerator]), pass[Expr](body))
+
+    case ForGenerator(pattern, expr) =>
+      ForGenerator(pass[MatchCasePattern](pattern), pass[Expr](expr))
 
     case x: Keyword => x
   }

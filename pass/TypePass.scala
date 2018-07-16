@@ -14,6 +14,10 @@ class TypePass extends Pass {
     case ScalaTypes.SEQ | ScalaTypes.SEQ2 | ScalaTypes.LIST | ScalaTypes.LIST2=>
       Some(KotlinTypes.LIST)
 
+
+    case SimpleType(name) if name.startsWith("_root_.") =>
+      Some(SimpleType(name.stripPrefix("_root_.")))
+
     case _ => None
   }
 }

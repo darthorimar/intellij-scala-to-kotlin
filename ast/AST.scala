@@ -55,3 +55,5 @@ sealed trait WhenClause extends AST
 
 case class ExprWhenClause(clause: Expr, expr: Expr) extends WhenClause
 case class ElseWhenClause(expr: Expr) extends WhenClause
+
+case class ForGenerator(pattern: MatchCasePattern, expr: Expr) extends AST

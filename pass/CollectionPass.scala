@@ -3,7 +3,7 @@ package org.jetbrains.plugins.kotlinConverter.pass
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
+import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, TypeUtils}
 
 class CollectionPass extends Pass {
 
@@ -54,8 +54,9 @@ class CollectionPass extends Pass {
         params.map(pass[Expr])))
 
     //Seq.empty[T] --> emptyList<T>()
-    case CallExpr(_, RefExpr(_, Some(RefExpr(_, None, "Seq" | "List", _, false)), "empty", Seq(TypeParam(ty)), _), Seq()) =>
-      Some(Exprs.emptyList(pass[Type](ty)))
+    case CallExpr(_, RefExpr(_, Some(RefExpr(_, None, "Seq" | "List", _, false)), "empty", typeParams, _), Seq()) =>
+      if (typeParams.isEmpty) Some(Exprs.emptyList)
+      else Some(Exprs.emptyList(pass[Type](typeParams.head.ty)))
 
     //Nil --> emptytList()
     case RefExpr(SimpleType("scala.Nil.type"), None, "Nil", _, false) =>
@@ -79,6 +80,34 @@ class CollectionPass extends Pass {
           "+",
           pass[Expr](right),
           pass[Expr](right)))
+
+    // seq.mkString(a,b,c) --> seq.joinToString(b,a,c)
+    case CallExpr(ty, RefExpr(refTy, Some(obj), "mkString", typeParams, true), params)
+      if TypeUtils.isKotlinList(obj.ty) =>
+      val newParams =
+        if (params.length == 3) Seq(params(1), params(0), params(2))
+        else params
+      Some(CallExpr(ty, RefExpr(refTy, Some(pass[Expr](obj)), "joinToString", typeParams, true), newParams))
+
+    // seq.tail --> seq.drop(1)
+    case CallExpr(ty, RefExpr(refTy, Some(obj), "tail", typeParams, true), _)
+      if TypeUtils.isKotlinList(obj.ty) =>
+      Some(CallExpr(ty, RefExpr(refTy, Some(pass[Expr](obj)), "drop", typeParams, true), Seq(LitExpr(KotlinTypes.INT, "1"))))
+
+    // seq.init --> seq.dropLast(1)
+    case CallExpr(ty, RefExpr(refTy, Some(obj), "init", typeParams, true), _)
+      if TypeUtils.isKotlinList(obj.ty) =>
+      Some(CallExpr(ty, RefExpr(refTy, Some(pass[Expr](obj)), "dropLast", typeParams, true), Seq(LitExpr(KotlinTypes.INT, "1"))))
+
+    //seq.foreach --> seq.forEach
+    case CallExpr(ty, RefExpr(refTy, Some(obj), "foreach", typeParams, true), params)
+      if TypeUtils.isKotlinList(obj.ty) =>
+      Some(CallExpr(ty, RefExpr(refTy, Some(pass[Expr](obj)), "forEach", typeParams, true), params.map(pass[Expr])))
+
+    // str * i => str.repeat(i)
+    case BinExpr(ty, "*", left, right) if left.ty == KotlinTypes.STRING && right.ty == KotlinTypes.INT=>
+      Some(CallExpr(ty, RefExpr(ty, Some(pass[Expr](left)), "repeat", Seq.empty, true), Seq(right)))
+
 
     case RefExpr(refTy, Some(obj), "asInstanceOf", Seq(TypeParam(ty)), false) =>
       Some(ParenExpr(Exprs.as(pass[Expr](obj), pass[Type](ty))))

@@ -7,4 +7,5 @@ object KotlinTypes {
   val NOTHING = SimpleType("Nothing")
   val STRING = SimpleType("String")
   val LIST = SimpleType("List")
+  val INT = SimpleType("Int")
 }

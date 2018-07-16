@@ -1,6 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter
 
-import org.jetbrains.plugins.kotlinConverter.ast. _
+import org.jetbrains.plugins.kotlinConverter.ast._
 
 import scala.collection.mutable
 
@@ -101,9 +101,17 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(")")
         genType(retType)
         str(" ")
-        opt(body){ b =>
+        opt(body) { b =>
           if (!b.isInstanceOf[BlockExpr]) str("=")
           gen(b)
+        }
+
+      case TryExpr(tryBlock, finallyBlock) =>
+        str("try ")
+        genAsBlock(tryBlock)
+        opt(finallyBlock) { f =>
+          str(" finally ")
+          genAsBlock(f)
         }
 
       case ImportDef(reference, names) =>
@@ -211,23 +219,34 @@ class KotlinBuilder extends KotlinBuilderBase {
         rep(args, ", ")(gen)
         str(")")
 
-      case BlockExpr(stmts) =>
-        str("{")
-        indent()
-        repNl(stmts)(gen)
-        unIndent()
-        str("}")
+      case e: BlockExpr =>
+        genAsBlock(e)
 
+      case ForExpr(ty, generators, body) =>
+        str("for (")
+        gen(generators.head.pattern)//todo fix
+        str(" in ")
+        gen(generators.head.expr)
+        str(") ")
+        gen(body)
       case TypeParam(ty) =>
         genType(ty, false)
-      case CaseAttr =>
-        str("data")
-      //      case EmptyAst =>
-      //        str(" EPMTY_AST ")
+
       case x: Keyword =>
         genKeyword(x)
       case _ =>
     }
+
+  def genAsBlock(e: Expr): Unit = e match {
+    case BlockExpr(exprs) =>
+      str("{")
+      indent()
+      repNl(exprs)(gen)
+      unIndent()
+      str("}")
+    case _ =>
+      genAsBlock(BlockExpr(Seq(e)))
+  }
 
   def genKeyword(k: Keyword): Unit =
     str(k.name)

@@ -14,6 +14,14 @@ class BasicPass extends Pass {
 
   override protected def action(ast: AST): Option[AST] = {
     ast match {
+      //import _ --> *
+      case ImportDef(ref, names) =>
+        Some(ImportDef(ref, names.map {
+          case "_" => "*"
+          case x => x
+        }))
+
+      //rename refs
       case x: RefExpr if renamesVal.call(_.renames.contains(x.ref)) =>
         Some(x.copy(ref = renamesVal.get.renames(x.ref)))
 
@@ -30,6 +38,7 @@ class BasicPass extends Pass {
             ConstructParam(t, m, name, pass[Type](ty))
         }))
 
+      //sort fun attrs
       case x: DefnDef =>
         scoped(
           namerVal.set(new LocalNamer)
@@ -64,12 +73,6 @@ class BasicPass extends Pass {
           pass[Expr](ref),
           params.map(pass[Expr])))
 
-      case x@RefExpr(ty, obj, ref, typeParams, true)
-        if (parent match {
-          case CallExpr(_, r, _) if r == x => false
-          case _ => true
-        }) =>
-        Some(CallExpr(ty, copy(x).asInstanceOf[RefExpr], Seq.empty))
 
       //a.foo(f) --> a.foo{f(it)}
       case CallExpr(ty, ref, params)
@@ -87,17 +90,18 @@ class BasicPass extends Pass {
                 LambdaExpr(
                   ty,
                   Seq.empty,
-                  CallExpr(pass[Type](y.ty), pass[Expr](y), Seq(UnderScExpr(y.ty))),
+                  CallExpr(pass[Type](y.ty), copy(y).asInstanceOf[Expr], Seq(UnderScExpr(y.ty))),
                   false)
+              case y => y
             }))
 
-      // val destructing in a case of nested constructors
-      //      case ValDef(destructors, expr)
-      //        if destructors.exists {
-      //          case _: ConstructorPatternMatch => true
-      //          case _ => false
-      //        } =>
-
+      //x.foo --> x.foo()
+      case x@RefExpr(ty, obj, ref, typeParams, true)
+        if (parent match {
+          case CallExpr(_, r, _) if r == x => false
+          case _ => true
+        }) =>
+        Some(CallExpr(ty, copy(x).asInstanceOf[RefExpr], Seq.empty))
 
       // matchExpr to when one
       case MatchExpr(ty, expr, clauses) =>

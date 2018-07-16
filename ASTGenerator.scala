@@ -275,5 +275,17 @@ object ASTGenerator extends {
     case x: ScParameter =>
       DefParam(genType(x.typeElement), x.name)
 
+    case x: ScTryStmt =>
+      TryExpr(gen[Expr](x.tryBlock), x.finallyBlock.flatMap(_.expression).map(gen[Expr]))
+
+    case x: ScForStatement =>
+      ForExpr(
+        genType(x.`type`()),
+        x.enumerators.toSeq.flatMap(_.generators).map(gen[ForGenerator]),
+        gen[Expr](x.body.get)
+      )
+    case x: ScGenerator =>
+      ForGenerator(gen[MatchCasePattern](x.pattern), gen[Expr](x.rvalue))
+
   }).asInstanceOf[T]
 }
