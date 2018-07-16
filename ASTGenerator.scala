@@ -225,6 +225,8 @@ object ASTGenerator extends {
         x.expr.map(gen[Expr]).get,//todo fix
         x.guard.flatMap(_.expr).map(gen[Expr]))
 
+    case x: ScCompositePattern =>
+      CompositePatternMatch(x.subpatterns.map(gen[MatchCasePattern]))
     case x: ScLiteralPattern =>
       LitPatternMatch(gen[LitExpr](x.getLiteral))
     case x: ScNamingPattern =>
