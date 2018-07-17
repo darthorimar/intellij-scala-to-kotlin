@@ -271,7 +271,12 @@ class BasicPass extends Pass {
               val notEqulasExpr = BinExpr(KotlinTypes.BOOLEAN, "!=", lazyRef, Exprs.nullLit)
               val vals = collectVals(pattern)
               val valDef = ValDef(vals.map(p => ReferencePatternMatch(p.name)), lazyRef)
-              val body = BlockExpr(e.ty, Seq(valDef, e))
+              val body = e match {
+                case BlockExpr(ty, exprs) =>
+                  BlockExpr(ty, valDef +: exprs)
+                case expr =>
+                  BlockExpr(expr.ty, Seq(valDef, expr))
+              }
               ExprWhenClause(notEqulasExpr, body)
           }
         val whenExpr = WhenExpr(NoType, None, whenClauses)
