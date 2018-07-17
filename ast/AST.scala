@@ -26,8 +26,11 @@ sealed trait MatchCasePattern extends AST {
 case class CompositePatternMatch(parts: Seq[MatchCasePattern]) extends MatchCasePattern {
   override def name: String = parts.mkString(" | ")
 }
-case class LitPatternMatch(lit: LitExpr) extends MatchCasePattern {
-  override def name: String = lit.name
+case class LitPatternMatch(expr: Expr) extends MatchCasePattern {
+  override def name: String = expr match {
+    case LitExpr(_, name) => name
+    case RefExpr(_, _, ref, _, _) => ref
+  }
 }
 case class ConstructorPatternMatch(ref: String, args: Seq[MatchCasePattern], label: Option[String], repr: String)  extends MatchCasePattern {
   override def name: String = repr

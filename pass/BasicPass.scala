@@ -42,7 +42,7 @@ class BasicPass extends Pass {
             ConstructParam(t, m, name, pass[Type](ty))
         }))
 
-//      sort fun attrs, add return to the funcito end
+//      sort fun attrs, add return to the funcion end
       case x: DefnDef =>
         scoped(
           namerVal.set(new LocalNamer)
@@ -53,7 +53,7 @@ class BasicPass extends Pass {
               BlockExpr(ty, stmts.init :+ ReturnExpr(None, Some(stmts.last)))
             case b => b
           }
-          Some(newDef.copy(attrs = sortAttrs(x.attrs), body = x.body.map(handleBody).map(pass[Expr])))
+          Some(newDef.copy(attrs = sortAttrs(x.attrs), body = newDef.body.map(handleBody)))
         }
 
       case x: Defn =>

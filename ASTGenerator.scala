@@ -259,7 +259,7 @@ object ASTGenerator extends {
     case x: ScReferenceElement =>
       ReferencePatternMatch(x.refName)
     case x: ScStableReferenceElementPattern =>
-      ReferencePatternMatch(x.getReferenceExpression.get.refName)
+      LitPatternMatch(gen[Expr](x.getReferenceExpression.get))
     case _: ScWildcardPattern =>
       WildcardPatternMatch
     case x: ScPatternDefinition =>
