@@ -42,17 +42,19 @@ class BasicPass extends Pass {
             ConstructParam(t, m, name, pass[Type](ty))
         }))
 
-//      sort fun attrs, add return to the funcion end
+      //      sort fun attrs, add return to the funcion end
       case x: DefnDef =>
         scoped(
           namerVal.set(new LocalNamer)
         ) {
           val newDef = copy(x).asInstanceOf[DefnDef]
+
           def handleBody(body: Expr) = body match {
             case BlockExpr(ty, stmts) =>
               BlockExpr(ty, stmts.init :+ ReturnExpr(None, Some(stmts.last)))
             case b => b
           }
+
           Some(newDef.copy(attrs = sortAttrs(x.attrs), body = newDef.body.map(handleBody)))
         }
 
@@ -164,7 +166,7 @@ class BasicPass extends Pass {
                 val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
                 println(ref)
                 val condition =
-                  if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=",LitExpr(ty, local), Exprs.nullLit)
+                  if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=", LitExpr(ty, local), Exprs.nullLit)
                   else Exprs.is(LitExpr(ty, local), SimpleType(ref))
                 (ReferencePatternMatch(local),
                   Some(condition),
@@ -255,7 +257,7 @@ class BasicPass extends Pass {
               ) {
                 guard match {
                   case Some(g) => ExprWhenClause(pass[Expr](g), pass[Expr](e))
-                  case None => ExprWhenClause(Exprs.trueLit, pass[Expr](e))
+                  case None => ElseWhenClause(pass[Expr](e))
                 }
               }
 
@@ -279,6 +281,8 @@ class BasicPass extends Pass {
               }
               ExprWhenClause(notEqulasExpr, body)
           }
+          .span(_.isInstanceOf[ExprWhenClause]) match { case (h, t) => h :+ t.head } //take all before first else and first else
+
         val whenExpr = WhenExpr(NoType, None, whenClauses)
         Some(BlockExpr(whenExpr.ty, valExpr +: (caseClasses ++ lazyDefs) :+ whenExpr))
 
