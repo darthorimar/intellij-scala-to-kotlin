@@ -28,6 +28,9 @@ case class ThrowExpr(ty: Type, expr: Expr) extends Expr
 case class IfExpr(ty: Type, cond: Expr, trueB: Expr, falseB: Option[Expr]) extends Expr
 case class ForExpr(ty: Type, generators: Seq[ForGenerator], body: Expr) extends Expr
 case class WhileExpr(ty: Type, cond: Expr, body: BlockExpr) extends Expr
+case class InterpolatedStringExpr(parts: Seq[String], injected: Seq[Expr]) extends Expr {
+  override def ty: Type = KotlinTypes.STRING
+}
 case class ReturnExpr(label: Option[String], expr: Option[Expr]) extends Expr {
   override def ty: Type = KotlinTypes.NOTHING
 }

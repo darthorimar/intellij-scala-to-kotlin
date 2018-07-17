@@ -86,6 +86,8 @@ trait Pass {
     case ExprWhenClause(clause, expr) =>
       ExprWhenClause(pass[Expr](clause), pass[Expr](expr))
 
+    case InterpolatedStringExpr(parts, injected) =>
+      InterpolatedStringExpr(parts, injected.map(pass[Expr]))
 
     case LitExpr(ty, name) =>
       LitExpr(pass[Type](ty), name)

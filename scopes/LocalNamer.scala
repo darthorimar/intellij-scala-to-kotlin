@@ -1,4 +1,4 @@
-package org.jetbrains.plugins.kotlinConverter.pass
+package org.jetbrains.plugins.kotlinConverter.scopes
 
 import scala.collection.mutable
 

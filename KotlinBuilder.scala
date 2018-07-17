@@ -1,10 +1,12 @@
 package org.jetbrains.plugins.kotlinConverter
 
 import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.scopes.{BuilderState, ScopedVal}
 
-import scala.collection.mutable
+import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 
 class KotlinBuilder extends KotlinBuilderBase {
+  val stateVal: ScopedVal[BuilderState] = new ScopedVal[BuilderState](BuilderState())
   def gen(ast: AST): Unit =
     ast match {
       case FileDef(pckg, imports, defns) =>
@@ -240,6 +242,21 @@ class KotlinBuilder extends KotlinBuilderBase {
         gen(generators.head.expr)
         str(") ")
         gen(body)
+
+      case InterpolatedStringExpr(parts, injected) =>
+        scoped(
+          stateVal.updated(_.copy(inInterpolatedString = true))
+        ) {
+          str("\"")
+          rep(parts.zip(injected), "") { case (p, i) =>
+            str(p)
+            str("$")
+            gen(i)
+          }
+          str(parts.last)
+          str("\"")
+        }
+
       case TypeParam(ty) =>
         genType(ty, false)
 
@@ -251,9 +268,9 @@ class KotlinBuilder extends KotlinBuilderBase {
   def genAsBlock(e: Expr): Unit = e match {
     case BlockExpr(ty, exprs) =>
       str("{")
-      indent()
+      if (!stateVal.inInterpolatedString) indent()
       repNl(exprs)(gen)
-      unIndent()
+      if (!stateVal.inInterpolatedString) unIndent()
       str("}")
     case _ =>
       genAsBlock(BlockExpr(NoType, Seq(e)))

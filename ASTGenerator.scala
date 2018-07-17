@@ -191,6 +191,8 @@ object ASTGenerator extends {
 
     case x: ScInfixExpr =>
       BinExpr(genType(x.`type`()), x.operation.getText, gen[Expr](x.left), gen[Expr](x.right))
+    case x: ScInterpolatedStringLiteral =>
+      InterpolatedStringExpr(x.getStringParts, x.getInjections.map(gen[Expr]))
     case x: ScLiteral =>
       LitExpr(genType(x.`type`()), x.getText)
     case x: ScUnderscoreSection =>
