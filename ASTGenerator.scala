@@ -20,6 +20,8 @@ import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTem
 import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
 import org.jetbrains.plugins.scala.lang.psi.impl.toplevel.typedef.TypeDefinitionMembers
 import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
+import org.jetbrains.plugins.scala.lang.psi.types.api.TypeParameter
+import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ScMethodType, ScTypePolymorphicType}
 import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScParameterizedType, ScType}
 import org.jetbrains.plugins.scala.lang.psi.types.result.TypeResult
 import org.jetbrains.plugins.scala.lang.refactoring.util.ScalaNamesUtil
@@ -50,10 +52,11 @@ object ASTGenerator extends {
       .map(_.typeArgs)
       .toSeq
       .flatten
-      .map(z => TypeParam(genType(z.`type`())))//todo distinc type param and type arg
+      .map(z => TypeParam(genType(z.`type`()))) //todo distinc type param and type arg
   }
 
   def genType(t: ScType): Type = {
+    println(t)
     t match {
       case x: ScParameterizedType if x.designator.canonicalText.startsWith(ScalaTypes.FUNCTION_PREFFIX) =>
         if (x.typeArguments.init.length == 1)
@@ -62,10 +65,15 @@ object ASTGenerator extends {
           FuncType(ProdType(x.typeArguments.init.map(genType)), genType(x.typeArguments.last))
       case x: ScParameterizedType =>
         ProductType(genType(x.designator), x.typeArguments.map(genType))
+      case x: ScTypePolymorphicType =>
+        genType(x.internalType)
+      case x: ScMethodType =>
+        FuncType(ProdType(x.params.map(t => genType(t.paramType))), genType(x.returnType))
       case x =>
         SimpleType(x.canonicalText)
     }
   }
+
 
   def genType(t: Option[ScTypeElement]): Type =
     t.flatMap(_.`type`().toOption).map(genType)
@@ -189,15 +197,20 @@ object ASTGenerator extends {
       UnderScExpr(NoType)
     case x: ScParenthesisedExpr =>
       ParenExpr(gen[Expr](x.innerElement.get))
+
     case x: ScReferenceExpression =>
-      //todo in a case of functio use  for type `x.getInvokedExpr.asInstanceOf[ScReferenceExpressionImpl].shapeResolve.map(_.element)`
+      val ty = x.multiType
+        .headOption
+        .flatMap(_.toOption)
+        .map(genType)
+        .getOrElse(genType(x.`type`()))
       val isFunc =
         x.getReference.asInstanceOf[ScReferenceExpressionImpl]
           .shapeResolve
           .map(_.element)
           .exists(_.isInstanceOf[ScFunction])
       RefExpr(
-        genType(x.`type`()),
+        ty,
         x.qualifier.map(gen[Expr]),
         x.refName,
         Seq.empty,
@@ -292,7 +305,7 @@ object ASTGenerator extends {
       ForGenerator(gen[MatchCasePattern](x.pattern), gen[Expr](x.rvalue))
 
     case x: ScTypeParam =>
-      TypeParam(SimpleType(x.typeParameterText))//todo improve
+      TypeParam(SimpleType(x.typeParameterText)) //todo improve
 
   }).asInstanceOf[T]
 }

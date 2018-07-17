@@ -38,7 +38,7 @@ class BasicPass extends Pass {
             ConstructParam(t, m, name, pass[Type](ty))
         }))
 
-      //sort fun attrs, add return to the funcito end
+//      sort fun attrs, add return to the funcito end
       case x: DefnDef =>
         scoped(
           namerVal.set(new LocalNamer)
@@ -49,7 +49,7 @@ class BasicPass extends Pass {
               BlockExpr(ty, stmts.init :+ ReturnExpr(None, Some(stmts.last)))
             case b => b
           }
-          Some(newDef.copy(attrs = sortAttrs(x.attrs), body = x.body.map(handleBody)))
+          Some(newDef.copy(attrs = sortAttrs(x.attrs), body = x.body.map(handleBody).map(pass[Expr])))
         }
 
       case x: Defn =>
@@ -60,23 +60,23 @@ class BasicPass extends Pass {
         Some(copy(defn).asInstanceOf[Defn].copy(attrs = handleAttrs(defn), t = t))
 
       //uncarry
-      case x@CallExpr(_, _: CallExpr, _) =>
+      case x@CallExpr(_, c: CallExpr, _) if c.ty.isFunc =>
         def collectParams(c: Expr): List[Expr] = c match {
-          case x: CallExpr =>
+          case x: CallExpr if x.ref.ty.isFunc =>
             collectParams(x.ref) ++ x.params.toList
           case _ => Nil
         }
 
         def collectRef(c: CallExpr): Expr = c.ref match {
           case x: CallExpr => collectRef(x)
-          case _ => c.ref
+          case x => x
         }
 
         val params = collectParams(x)
         val ref = collectRef(x)
         Some(CallExpr(
           pass[Type](x.ty),
-          pass[Expr](ref),
+          copy(ref).asInstanceOf[RefExpr],
           params.map(pass[Expr])))
 
 
@@ -102,11 +102,7 @@ class BasicPass extends Pass {
             }))
 
       //x.foo --> x.foo()
-      case x@RefExpr(ty, obj, ref, typeParams, true)
-        if (parent match {
-          case CallExpr(_, r, _) if r == x => false
-          case _ => true
-        }) =>
+      case x@RefExpr(ty, obj, ref, typeParams, true) =>
         Some(CallExpr(ty, copy(x).asInstanceOf[RefExpr], Seq.empty))
 
       // matchExpr to when one

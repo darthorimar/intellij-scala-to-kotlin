@@ -2,11 +2,14 @@ package org.jetbrains.plugins.kotlinConverter.ast
 
 trait Type extends AST {
   def asKotlin: String
+  def isFunc: Boolean = false
 }
 
 case class FuncType(left: Type, right: Type) extends Type {
   override def asKotlin: String =
-    s"(${left.asKotlin}) -> ${right.asKotlin}"
+    s"${left.asKotlin} -> ${right.asKotlin}"
+
+  override def isFunc: Boolean = true
 }
 
 case class ProductType(des: Type, params: Seq[Type]) extends Type {
