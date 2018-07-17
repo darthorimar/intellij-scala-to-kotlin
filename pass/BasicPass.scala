@@ -1,5 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
+import com.intellij.formatting.BlockEx
 import com.sun.source.doctree.AttributeTree.ValueKind
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
@@ -7,6 +8,8 @@ import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renames, ScopedVal}
+
+import scala.meta.Term.Block
 
 
 class BasicPass extends Pass {
@@ -159,8 +162,12 @@ class BasicPass extends Pass {
                 (WildcardPatternMatch, None, None)
               case c@ConstructorPatternMatch(ref, _, label, _) =>
                 val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
+                println(ref)
+                val condition =
+                  if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=",LitExpr(ty, local), Exprs.nullLit)
+                  else Exprs.is(LitExpr(ty, local), SimpleType(ref))
                 (ReferencePatternMatch(local),
-                  Some(Exprs.is(LitExpr(ty, local), SimpleType(ref))),
+                  Some(condition),
                   Some(local -> c))
               case TypedPatternMatch(ref, tyPattern) =>
                 (ReferencePatternMatch(ref),
@@ -174,12 +181,13 @@ class BasicPass extends Pass {
           (vals, conds.flatten, refs.flatten)
         }
 
-        def handleConstructors(constructors: Seq[(String, MatchCasePattern)], defaultCase: Expr): Expr = {
+        def handleConstructors(constructors: Seq[(String, MatchCasePattern)], defaultCase: Expr): Seq[Expr] = {
           val (valDefns, conditionParts, collectedConstructors) = collectConstructors(constructors)
 
           val trueBlock =
             if (collectedConstructors.nonEmpty) {
-              handleConstructors(collectedConstructors, defaultCase)
+              val exprs = handleConstructors(collectedConstructors, defaultCase)
+              BlockExpr(exprs.last.ty, exprs)
             } else defaultCase
 
           val ifCond =
@@ -187,7 +195,7 @@ class BasicPass extends Pass {
               IfExpr(NoType, conditionParts.reduceLeft(Exprs.and), trueBlock, None)
             else trueBlock
 
-          BlockExpr(ifCond.ty, valDefns :+ ifCond)
+          valDefns :+ ifCond
         }
 
         val lazyDefs = expandedClauses.collect {
@@ -205,12 +213,18 @@ class BasicPass extends Pass {
               case None => retExpr
             }
 
-            val innerBody = handleConstructors(Seq((valRef.ref, pattern)), finalExpr)
+            val innerBodyExprs =
+              handleConstructors(Seq((valRef.ref, pattern)), finalExpr)
+
+            val condition =
+              if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
+              else Exprs.is(valRef, SimpleType(ref))
+
             val body = BlockExpr(NoType, Seq(
               IfExpr(
                 NoType,
-                Exprs.is(valRef, SimpleType(ref)),
-                innerBody,
+                condition,
+                BlockExpr(innerBodyExprs.last.ty, innerBodyExprs),
                 None),
               ReturnExpr(Some("lazy"), Some(Exprs.nullLit))
             ))
@@ -259,7 +273,6 @@ class BasicPass extends Pass {
               val valDef = ValDef(vals.map(p => ReferencePatternMatch(p.name)), lazyRef)
               val body = BlockExpr(e.ty, Seq(valDef, e))
               ExprWhenClause(notEqulasExpr, body)
-
           }
         val whenExpr = WhenExpr(NoType, None, whenClauses)
         Some(BlockExpr(whenExpr.ty, valExpr +: (caseClasses ++ lazyDefs) :+ whenExpr))
