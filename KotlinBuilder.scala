@@ -257,6 +257,9 @@ class KotlinBuilder extends KotlinBuilderBase {
           str("\"")
         }
 
+      case ThisExpr(ty) =>
+        str("this")
+
       case TypeParam(ty) =>
         genType(ty, false)
 

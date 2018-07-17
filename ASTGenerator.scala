@@ -309,5 +309,8 @@ object ASTGenerator extends {
     case x: ScTypeParam =>
       TypeParam(SimpleType(x.typeParameterText)) //todo improve
 
+    case x: ScThisReference =>
+      ThisExpr(genType(x.`type`()))
+
   }).asInstanceOf[T]
 }

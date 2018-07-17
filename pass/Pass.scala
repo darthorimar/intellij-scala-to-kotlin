@@ -167,6 +167,8 @@ trait Pass {
     case WildcardPatternMatch =>
       WildcardPatternMatch
 
+    case ThisExpr(ty) =>
+      ThisExpr(pass[Type](ty))
 
     case ForExpr(ty, generators, body) =>
       ForExpr(pass[Type](ty), generators.map(pass[ForGenerator]), pass[Expr](body))
