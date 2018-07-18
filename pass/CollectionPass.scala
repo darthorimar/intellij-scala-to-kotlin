@@ -47,10 +47,10 @@ class CollectionPass extends Pass {
     //Seqs
 
     //Seq(1,2,3) --> listOf(1,2,3)
-    case CallExpr(_, RefExpr(_, Some(RefExpr(ty, None, "Seq" | "List", _, false)), "apply", typeParams, true), params) =>
+    case CallExpr(ty, RefExpr(refTy, None, "Seq", typeParams, _), params) =>
       Some(CallExpr(
         pass[Type](ty),
-        RefExpr(pass[Type](ty), None, "listOf", typeParams.map(pass[TypeParam]), true),
+        RefExpr(pass[Type](refTy), None, "listOf", typeParams.map(pass[TypeParam]), true),
         params.map(pass[Expr])))
 
     //Seq.empty[T] --> emptyList<T>()
@@ -109,9 +109,9 @@ class CollectionPass extends Pass {
       Some(CallExpr(ty, RefExpr(ty, Some(pass[Expr](left)), "repeat", Seq.empty, true), Seq(right)))
 
     // seq(i) --> seq[i]
-    case CallExpr(ty, RefExpr(refTy, Some(obj), "apply", _, true), Seq(index))
+    case CallExpr(ty, obj, Seq(index))
       if TypeUtils.isKotlinList(obj.ty) =>
-      Some(BracketsExpr(ty, pass[Expr](obj), pass[Expr](index)))
+        Some(BracketsExpr(ty, pass[Expr](obj), pass[Expr](index)))
 
     case RefExpr(refTy, Some(obj), "asInstanceOf", Seq(TypeParam(ty)), false) =>
       Some(ParenExpr(Exprs.as(pass[Expr](obj), pass[Type](ty))))

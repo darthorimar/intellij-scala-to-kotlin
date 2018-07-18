@@ -143,7 +143,7 @@ class BasicPass extends Pass {
           case MatchCaseClause(pattern@ConstructorPatternMatch(_, _, _, repr), _, _) =>
             val name = Utils.escapeName(s"${repr}_data")
             val vals = collectVals(pattern)
-            Defn(Seq(DataAttr),
+            Defn(Seq(CaseAttr),
               ClassDefn,
               name,
               Seq.empty,
@@ -280,10 +280,12 @@ class BasicPass extends Pass {
               }
               ExprWhenClause(notEqulasExpr, body)
           }
-          .span(_.isInstanceOf[ExprWhenClause]) match { case (h, t) => h :+ t.head } //take all before first else and first else
+          .span(_.isInstanceOf[ExprWhenClause]) match { //take all before first else and first else
+            case (h, t) => h ++ t.headOption.toSeq
+          }
 
         val whenExpr = WhenExpr(NoType, None, whenClauses)
-        Some(BlockExpr(whenExpr.ty, valExpr +: (caseClasses ++ lazyDefs) :+ whenExpr))
+        Some(pass[Expr](BlockExpr(whenExpr.ty, valExpr +: (caseClasses ++ lazyDefs) :+ whenExpr)))
 
       case _ => None
     }
