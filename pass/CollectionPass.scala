@@ -8,8 +8,8 @@ import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, TypeUtils}
 class CollectionPass extends Pass {
 
   override def pass[T](ast: AST): T = {
-//    if (ast.isInstanceOf[FileDef])
-//      println(Utils.prettyPrint(ast))
+    //    if (ast.isInstanceOf[FileDef])
+    //      println(Utils.prettyPrint(ast))
     super.pass(ast)
   }
 
@@ -105,14 +105,13 @@ class CollectionPass extends Pass {
       Some(CallExpr(ty, RefExpr(refTy, Some(pass[Expr](obj)), "forEach", typeParams, true), params.map(pass[Expr])))
 
     // str * i => str.repeat(i)
-    case BinExpr(ty, "*", left, right) if left.ty == KotlinTypes.STRING && right.ty == KotlinTypes.INT=>
+    case BinExpr(ty, "*", left, right) if left.ty == KotlinTypes.STRING && right.ty == KotlinTypes.INT =>
       Some(CallExpr(ty, RefExpr(ty, Some(pass[Expr](left)), "repeat", Seq.empty, true), Seq(right)))
 
-      // seq(i) --> seq[i]
-//    case CallExpr(ty, obj, true), params)
-//      if TypeUtils.isKotlinList(ty) =>
-
-
+    // seq(i) --> seq[i]
+    case CallExpr(ty, RefExpr(refTy, Some(obj), "apply", _, true), Seq(index))
+      if TypeUtils.isKotlinList(obj.ty) =>
+      Some(BracketsExpr(ty, pass[Expr](obj), pass[Expr](index)))
 
     case RefExpr(refTy, Some(obj), "asInstanceOf", Seq(TypeParam(ty)), false) =>
       Some(ParenExpr(Exprs.as(pass[Expr](obj), pass[Type](ty))))

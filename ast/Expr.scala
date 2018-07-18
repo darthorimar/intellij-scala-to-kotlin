@@ -19,6 +19,7 @@ case class RefExpr(ty: Type, obj: Option[Expr], ref: String, typeParams: Seq[Typ
 case class PostExpr(ty: Type, obj: Expr, op: String) extends Expr
 case class MatchExpr(ty: Type, expr: Expr, clauses: Seq[MatchCaseClause]) extends Expr
 case class WhenExpr(ty: Type, expr: Option[Expr], clauses: Seq[WhenClause]) extends Expr
+case class BracketsExpr(ty: Type, expr: Expr, inBrackets: Expr) extends Expr
 case class AssignExpr(left: Expr, right: Expr) extends Expr {
   override def ty: Type = SimpleType("Unit")
 }

@@ -108,7 +108,8 @@ class BasicPass extends Pass {
             }))
 
       //x.foo --> x.foo()
-      case x@RefExpr(ty, obj, ref, typeParams, true) =>
+      case x@RefExpr(ty, obj, ref, typeParams, true)
+        if !parent.isInstanceOf[CallExpr] =>
         Some(CallExpr(ty, copy(x).asInstanceOf[RefExpr], Seq.empty))
 
       // matchExpr to when one

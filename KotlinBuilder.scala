@@ -257,6 +257,11 @@ class KotlinBuilder extends KotlinBuilderBase {
           str("\"")
         }
 
+      case BracketsExpr(ty, expr,inBrackets) =>
+        gen(expr)
+        str("[")
+        gen(inBrackets)
+        str("]")
       case ThisExpr(ty) =>
         str("this")
 
@@ -265,7 +270,6 @@ class KotlinBuilder extends KotlinBuilderBase {
 
       case x: Keyword =>
         genKeyword(x)
-      case _ =>
     }
 
   def genAsBlock(e: Expr): Unit = e match {
