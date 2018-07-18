@@ -31,13 +31,14 @@ import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
 import scala.collection.immutable
 
 object ASTGenerator extends {
-  private def genDefinitions(file: ScalaFile): Seq[PsiElement] = {
-    val functionDefns =
-      file.findChildrenByType(ScalaElementTypes.FUNCTION_DEFINITION)
-    val functionDecls =
-      file.findChildrenByType(ScalaElementTypes.FUNCTION_DECLARATION)
-    functionDefns ++ functionDecls ++ file.typeDefinitions
-  }
+  private def genDefinitions(file: ScalaFile): Seq[PsiElement] =
+    file.getChildren.filter {
+      case _: ScFunction => true
+      case _: ScVariable => true
+      case _: ScValue => true
+      case _: ScTypeDefinition => true
+      case _ => false
+    }
 
 
   private def genFunctionBody(fun: ScFunction): Option[Expr] = fun match {

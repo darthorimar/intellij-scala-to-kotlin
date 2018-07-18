@@ -6,13 +6,16 @@ import org.jetbrains.plugins.kotlinConverter.pass.Pass
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.extensions._
 import org.jetbrains.plugins.scala.lang.transformation.Transformer
+import org.jetbrains.plugins.scala.lang.transformation.annotations.{AddTypeToValueDefinition, AddTypeToVariableDefinition}
 import org.jetbrains.plugins.scala.lang.transformation.calls._
 
 object Converter {
   val transformers: Set[Transformer] = Set(
     new ExpandApplyCall(),
     new ExpandUpdateCall(),
-    new CanonizeZeroArityCall()
+    new CanonizeZeroArityCall(),
+    new AddTypeToVariableDefinition(),
+    new AddTypeToValueDefinition()
   )
 
   def convert(file: ScalaFile): String = {
