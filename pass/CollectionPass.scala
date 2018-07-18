@@ -47,10 +47,10 @@ class CollectionPass extends Pass {
     //Seqs
 
     //Seq(1,2,3) --> listOf(1,2,3)
-    case CallExpr(ty, RefExpr(refTy, None, "Seq", typeParams, _), params) =>
+    case CallExpr(_, RefExpr(_, Some(RefExpr(ty, None, "Seq" | "List", _, false)), "apply", typeParams, true), params) =>
       Some(CallExpr(
         pass[Type](ty),
-        RefExpr(pass[Type](refTy), None, "listOf", typeParams.map(pass[TypeParam]), true),
+        RefExpr(pass[Type](ty), None, "listOf", typeParams.map(pass[TypeParam]), true),
         params.map(pass[Expr])))
 
     //Seq.empty[T] --> emptyList<T>()
