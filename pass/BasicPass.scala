@@ -9,8 +9,6 @@ import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renames, ScopedVal}
 
-import scala.meta.Term.Block
-
 
 class BasicPass extends Pass {
   val renamesVal = new ScopedVal[Renames](Renames(Map.empty))

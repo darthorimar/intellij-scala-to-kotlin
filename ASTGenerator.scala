@@ -36,9 +36,8 @@ object ASTGenerator extends {
       case _: ScFunction => true
       case _: ScVariable => true
       case _: ScValue => true
-      case _: ScTypeDefinition => true
       case _ => false
-    }
+    } ++ file.typeDefinitions
 
 
   private def genFunctionBody(fun: ScFunction): Option[Expr] = fun match {
@@ -123,7 +122,10 @@ object ASTGenerator extends {
           .map(gen[DefExpr]))
 
     case x: ScImportExpr =>
-      ImportDef(x.reference.map(_.getText).get, x.importedNames)
+      if (x.isSingleWildcard)
+        ImportDef(x.reference.map(_.getText).get, Seq("*"))
+      else
+        ImportDef(x.reference.map(_.getText).get, x.selectors.flatMap(_.importedName))
 
     case x: ScTypeDefinition =>
       x.typeParameters

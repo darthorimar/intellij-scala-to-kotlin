@@ -128,11 +128,16 @@ class KotlinBuilder extends KotlinBuilderBase {
         }
 
       case ImportDef(reference, names) =>
-        repNl(names) { n =>
+        if (names.nonEmpty) {
+          repNl(names) { n =>
+            str("import ")
+            str(reference)
+            str(".")
+            str(n)
+          }
+        } else  {
           str("import ")
           str(reference)
-          str(".")
-          str(n)
         }
       case BinExpr(ty, op, left, right) =>
         gen(left)

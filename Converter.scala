@@ -10,10 +10,9 @@ import org.jetbrains.plugins.scala.lang.transformation.annotations.{AddTypeToVal
 import org.jetbrains.plugins.scala.lang.transformation.calls._
 
 object Converter {
-  val transformers: Set[Transformer] = Set(
+  val transformers: Set[Transformer] = Set.apply(
     new ExpandApplyCall(),
     new ExpandUpdateCall(),
-    new CanonizeZeroArityCall(),
     new AddTypeToVariableDefinition(),
     new AddTypeToValueDefinition()
   )
@@ -23,10 +22,10 @@ object Converter {
       override def run(): Unit = Transformer.transform(file, None, transformers)
     })
 
-    val builder = new KotlinBuilder
-    val ast = ASTGenerator.gen[FileDef](file)
+    val builder: KotlinBuilder = new KotlinBuilder
+    val ast: FileDef = ASTGenerator.gen[FileDef](file)
     println(Utils.prettyPrint(ast))
-    val newAst = Pass.applyPasses(ast)
+    val newAst: AST = Pass.applyPasses(ast)
     builder.gen(newAst)
     builder.text
   }
