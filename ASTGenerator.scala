@@ -21,7 +21,7 @@ import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
 import org.jetbrains.plugins.scala.lang.psi.impl.toplevel.typedef.TypeDefinitionMembers
 import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
 import org.jetbrains.plugins.scala.lang.psi.types.api.TypeParameter
-import org.jetbrains.plugins.scala.lang.psi.types.api.designator.ScDesignatorType
+import org.jetbrains.plugins.scala.lang.psi.types.api.designator.{DesignatorOwner, ScDesignatorType}
 import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ScMethodType, ScTypePolymorphicType}
 import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScParameterizedType, ScType}
 import org.jetbrains.plugins.scala.lang.psi.types.result.{TypeResult, Typeable}
@@ -53,11 +53,11 @@ object ASTGenerator extends {
       .map(_.typeArgs)
       .toSeq
       .flatten
-      .map(z => TypeParam(genType(z.`type`()))) //todo distinc type param and type arg
+      .map(z => TypeParam(genType(z.`type`())))
   }
 
-  def genType(t: ScType): Type =
-    t match {
+  def genType(ty: ScType): Type =
+    ty match {
       case x: ScParameterizedType if x.designator.canonicalText.startsWith(ScalaTypes.FUNCTION_PREFFIX) =>
         if (x.typeArguments.init.length == 1)
           FuncType(genType(x.typeArguments.head), genType(x.typeArguments.last))
@@ -69,11 +69,9 @@ object ASTGenerator extends {
         genType(x.internalType)
       case x: ScMethodType =>
         FuncType(ProdType(x.params.map(t => genType(t.paramType))), genType(x.returnType))
-      case x: ScDesignatorType =>
-        x.element match {
-          case t: Typeable => genType(t.`type`())
-          case _ => SimpleType(x.canonicalText)
-        }
+      case x: DesignatorOwner =>
+          x.extractDesignatorSingleton.map(genType)
+            .getOrElse(SimpleType(x.canonicalText))
       case x =>
         SimpleType(x.canonicalText)
     }
