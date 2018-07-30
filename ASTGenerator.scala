@@ -292,14 +292,22 @@ object ASTGenerator extends {
       ParamsConstruct(x.parameters.map(gen[ConstructParam]))
 
     case x: ScClassParameter =>
-      val mod =
-        if (x.isPrivate) PrivAttr
-        else PublAttr
-      val t =
+      val kind =
         if (x.isVal) ValKind
         else if (x.isVar) VarKind
         else NoMemberKind
-      ConstructParam(t, mod, x.name, genType(x.typeElement))
+
+      val modifier = kind match {
+        case NoMemberKind => NoAttr
+        case _ =>
+          if (x.isPrivate) PrivAttr
+          else if (x.isProtected) ProtAttr
+          else if (x.hasModifierProperty("public")) PublAttr
+          else NoAttr
+      }
+
+
+      ConstructParam(kind, modifier, x.name, genType(x.typeElement))
 
     case x: ScParameter =>
       DefParam(genType(x.typeElement), x.name)

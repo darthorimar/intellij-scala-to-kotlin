@@ -302,7 +302,7 @@ class BasicPass extends Pass {
     val attrs =
       (attr(x.attrs.contains(CaseAttr) && x.t == ClassDefn, DataAttr) ::
         attr(isOpen, OpenAttr) ::
-        attr(x.attrs.contains(PublAttr), PublAttr) ::
+//        attr(x.attrs.contains(PublAttr), PublAttr) ::
         attr(x.attrs.contains(PrivAttr), PrivAttr) ::
         attr(x.attrs.contains(ProtAttr), ProtAttr) ::
         attr(x.attrs.contains(AbstractAttr), AbstractAttr) ::
