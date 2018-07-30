@@ -100,7 +100,7 @@ object ASTGenerator extends {
       Nil).flatten
     val extraAttrs = x match {
       case y: ScFunction =>
-        attr(y.superSignatures.exists(!_.isInstanceOf[PhysicalSignature]), OverrideAttr).toSeq
+        attr(y.superMethod.isDefined, OverrideAttr).toSeq
       case y: ScTypeDefinition =>
         (attr(y.isCase, CaseAttr) ::
           Nil).flatten

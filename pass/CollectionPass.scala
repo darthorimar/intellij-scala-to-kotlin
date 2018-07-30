@@ -17,11 +17,11 @@ class CollectionPass extends Pass {
     //Options
 
     // Some(x) --> x
-    case CallExpr(NullableType(_), RefExpr(_, None, "Some", _, _), Seq(v)) =>
+    case CallExpr(_, RefExpr(_, Some(RefExpr(_, None, "Some", _, false)), "apply", _, _), Seq(v)) =>
       Some(pass[Expr](v))
 
     // None --> null
-    case CallExpr(NullableType(_), RefExpr(_, None, "None", _, _), Seq()) =>
+    case RefExpr(SimpleType("scala.None.type"), None, "None", _, _) =>
       Some(Exprs.nullLit)
 
     // opt.map(f), opt.flatMap(f) --> opt?.let {f(it)}
@@ -40,7 +40,7 @@ class CollectionPass extends Pass {
       Some(BinExpr(pass[Type](refTy), "?:", obj, pass[Expr](p)))
 
     //opt.get --> opt!!
-    case RefExpr(refTy, Some(obj), "get", _, true)
+    case CallExpr(_, RefExpr(refTy, Some(obj), "get", _, true), _)
       if obj.ty.isInstanceOf[NullableType] =>
       Some(PostExpr(pass[Type](refTy), pass[Expr](obj), "!!"))
 
@@ -59,7 +59,7 @@ class CollectionPass extends Pass {
       else Some(Exprs.emptyList(pass[Type](typeParams.head.ty)))
 
     //Nil --> emptytList()
-    case RefExpr(SimpleType("scala.Nil.type"), None, "Nil", _, false) =>
+    case RefExpr(SimpleType("scala.Nil.type" | "scala.collection.immutable.Nil.type"), None, "Nil", _, false) =>
       Some(Exprs.emptyList)
 
     // (1 :: seq, 1 +: seq)  --> listOf(1) + seq

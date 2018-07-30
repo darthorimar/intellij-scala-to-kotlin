@@ -71,7 +71,7 @@ class BasicPass extends Pass {
             case b => b
           }
 
-          Some(newDef.copy(attrs = sortAttrs(x.attrs), body = newDef.body.map(handleBody)))
+          Some(newDef.copy(attrs = sortAttrs(x.attrs).filter(_!= PublAttr), body = newDef.body.map(handleBody)))
         }
 
       case x: Defn =>

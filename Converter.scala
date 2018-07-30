@@ -10,7 +10,7 @@ import org.jetbrains.plugins.scala.lang.transformation.annotations.{AddTypeToVal
 import org.jetbrains.plugins.scala.lang.transformation.calls._
 
 object Converter {
-  val transformers: Set[Transformer] = Set.apply(
+  val transformers: Set[Transformer] = Set(
     new ExpandApplyCall(),
     new ExpandUpdateCall(),
     new AddTypeToVariableDefinition(),
