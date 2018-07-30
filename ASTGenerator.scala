@@ -318,11 +318,17 @@ object ASTGenerator extends {
     case x: ScForStatement =>
       ForExpr(
         genType(x.`type`()),
-        x.enumerators.toSeq.flatMap(_.generators).map(gen[ForGenerator]),
+        x.enumerators.toSeq.flatMap(_.getChildren).map(gen[ForEnumerator]),
         gen[Expr](x.body.get)
       )
     case x: ScGenerator =>
       ForGenerator(gen[MatchCasePattern](x.pattern), gen[Expr](x.rvalue))
+
+    case x: ScGuard =>
+      ForGuard(gen[Expr](x.expr.get))
+
+    case x: ScEnumerator =>
+      ForVal(gen[MatchCasePattern](x.pattern), gen[Expr](x.rvalue))
 
     case x: ScTypeParam =>
       TypeParam(SimpleType(x.typeParameterText)) //todo improve

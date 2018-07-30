@@ -27,7 +27,8 @@ case class NewExpr(ty: Type, name: String, args: Seq[Expr]) extends Expr
 case class LambdaExpr(ty: Type, params: Seq[DefParam], expr: Expr, needBraces: Boolean) extends Expr
 case class ThrowExpr(ty: Type, expr: Expr) extends Expr
 case class IfExpr(ty: Type, cond: Expr, trueB: Expr, falseB: Option[Expr]) extends Expr
-case class ForExpr(ty: Type, generators: Seq[ForGenerator], body: Expr) extends Expr
+case class ForExpr(ty: Type, generators: Seq[ForEnumerator], body: Expr) extends Expr
+case class ForInExpr(ty: Type, value: RefExpr, range: Expr, body: Expr) extends Expr
 case class WhileExpr(ty: Type, cond: Expr, body: BlockExpr) extends Expr
 case class ThisExpr(ty: Type) extends Expr
 case class InterpolatedStringExpr(parts: Seq[String], injected: Seq[Expr]) extends Expr {

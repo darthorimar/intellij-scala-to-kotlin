@@ -40,7 +40,25 @@ class BasicPass extends Pass {
             ConstructParam(t, m, name, pass[Type](ty))
         }))
 
-      //      sort fun attrs, add return to the funcion end
+      case ForExpr(ty, generators, body) =>
+        def wrapToBody(expr: Expr) = expr match {
+          case x: BlockExpr =>x
+          case _ => BlockExpr(expr.ty, Seq(expr))
+        }
+        val result = generators.reverse.foldLeft(pass[Expr](body): Expr) {
+          case (acc, ForGenerator(pattern, expr)) =>
+            ForInExpr(NoType, RefExpr(NoType, None, pattern.name, Seq.empty, false), pass[Expr](expr), wrapToBody(acc))
+          case (acc, ForGuard(condition)) =>
+            IfExpr(NoType, pass[Expr](condition),  wrapToBody(acc), None)
+          case (acc, ForVal(pattern, expr)) =>
+            BlockExpr(NoType, Seq(
+              ValDef(Seq(pattern), pass[Expr](expr)),
+              acc))
+        }
+        Some(result)
+
+
+      // sort fun attrs, add return to the funcion end
       case x: DefnDef =>
         scoped(
           namerVal.set(new LocalNamer)

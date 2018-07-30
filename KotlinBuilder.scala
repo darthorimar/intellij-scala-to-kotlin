@@ -248,11 +248,11 @@ class KotlinBuilder extends KotlinBuilderBase {
       case e: BlockExpr =>
         genAsBlock(e)
 
-      case ForExpr(ty, generators, body) =>
+      case ForInExpr(ty, ref, range, body) =>
         str("for (")
-        gen(generators.head.pattern) //todo fix
+        gen(ref)
         str(" in ")
-        gen(generators.head.expr)
+        gen(range)
         str(") ")
         gen(body)
 

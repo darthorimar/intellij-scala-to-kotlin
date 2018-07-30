@@ -26,7 +26,7 @@ trait Pass {
     case ReturnExpr(label, expr) =>
       ReturnExpr(label, expr.map(pass[Expr]))
 
-    case Defn(attrs, t, name,typeParams, construct, supersBlock, block) =>
+    case Defn(attrs, t, name, typeParams, construct, supersBlock, block) =>
       Defn(attrs.map(pass[Attr]),
         t,
         name,
@@ -42,6 +42,18 @@ trait Pass {
       SuperConstructor(pass[Type](ty), exprs.map(pass[Expr]))
 
     case EmptyConstruct => EmptyConstruct
+
+    case ForInExpr(ty, value, range, body) =>
+      ForInExpr(pass[Type](ty), pass[RefExpr](value), pass[Expr](range), pass[Expr](body))
+
+    case ForGenerator(pattern, expr) =>
+      ForGenerator(pass[MatchCasePattern](pattern), pass[Expr](expr))
+
+    case ForGuard(condition) =>
+      ForGuard(pass[Expr](condition))
+
+    case ForVal(pattern, expr) =>
+      ForVal(pass[MatchCasePattern](pattern), pass[Expr](expr))
 
     case ParamsConstruct(params) =>
       ParamsConstruct(params.map(pass[ConstructParam]))
@@ -175,7 +187,7 @@ trait Pass {
       ThisExpr(pass[Type](ty))
 
     case ForExpr(ty, generators, body) =>
-      ForExpr(pass[Type](ty), generators.map(pass[ForGenerator]), pass[Expr](body))
+      ForExpr(pass[Type](ty), generators.map(pass[ForEnumerator]), pass[Expr](body))
 
     case ForGenerator(pattern, expr) =>
       ForGenerator(pass[MatchCasePattern](pattern), pass[Expr](expr))
