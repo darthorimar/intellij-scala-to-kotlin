@@ -148,7 +148,7 @@ class BasicPass extends Pass {
               name,
               Seq.empty,
               Some(ParamsConstruct(vals)),
-              Seq.empty,
+              None,
               None)
         }
 

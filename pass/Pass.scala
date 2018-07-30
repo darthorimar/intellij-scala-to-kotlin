@@ -26,17 +26,21 @@ trait Pass {
     case ReturnExpr(label, expr) =>
       ReturnExpr(label, expr.map(pass[Expr]))
 
-    case Defn(attrs, t, name,typeParams, construct, supers, block) =>
+    case Defn(attrs, t, name,typeParams, construct, supersBlock, block) =>
       Defn(attrs.map(pass[Attr]),
         t,
         name,
         typeParams.map(pass[TypeParam]),
         construct.map(pass[Construct]),
-        supers.map(pass[Super]),
+        supersBlock.map(pass[SupersBlock]),
         block.map(pass[BlockExpr]))
 
-    case Super(ty, construct) =>
-      Super(pass[Type](ty), construct.map(pass[Construct]))
+    case SupersBlock(constructor, supers) =>
+      SupersBlock(constructor.map(pass[SuperConstructor]), supers.map(pass[Type]))
+
+    case SuperConstructor(ty, exprs) =>
+      SuperConstructor(pass[Type](ty), exprs.map(pass[Expr]))
+
     case EmptyConstruct => EmptyConstruct
 
     case ParamsConstruct(params) =>

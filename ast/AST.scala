@@ -16,7 +16,6 @@ case class ConstructParam(parType: MemberKind, mod: Attr, name: String, ty: Type
 
 case class TypeParam(ty: Type) extends AST
 
-case class Super(ty: Type, construct: Option[Construct]) extends AST
 case class FileDef(pckg: String, imports: Seq[ImportDef], defns: Seq[DefExpr]) extends AST
 
 sealed trait MatchCasePattern extends AST {
@@ -51,3 +50,7 @@ case class ExprWhenClause(clause: Expr, expr: Expr) extends WhenClause
 case class ElseWhenClause(expr: Expr) extends WhenClause
 
 case class ForGenerator(pattern: MatchCasePattern, expr: Expr) extends AST
+
+case class SupersBlock(constuctor: Option[SuperConstructor], supers: Seq[Type]) extends AST
+
+case class SuperConstructor(ty: Type, exprs: Seq[Expr]) extends AST

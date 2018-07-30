@@ -53,7 +53,7 @@ case class Defn(attrs: Seq[Attr],
                 name: String,
                 typeParams: Seq[TypeParam],
                 construct: Option[Construct],
-                supers: Seq[Super],
+                supersBlock: Option[SupersBlock],
                 body: Option[Expr]) extends DefExpr {
   override def ty: Type = NoType
 }

@@ -14,7 +14,7 @@ import org.jetbrains.plugins.scala.lang.psi.api.expr._
 import org.jetbrains.plugins.scala.lang.psi.api.statements.params.{ScClassParameter, ScParameter, ScTypeParam}
 import org.jetbrains.plugins.scala.lang.psi.api.statements._
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.imports.{ScImportExpr, ScImportStmt}
-import org.jetbrains.plugins.scala.lang.psi.api.toplevel.templates.ScClassParents
+import org.jetbrains.plugins.scala.lang.psi.api.toplevel.templates.{ScClassParents, ScTemplateParents}
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef._
 import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTemplateDefinitionImpl, ScReferenceExpressionImpl}
 import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
@@ -163,18 +163,20 @@ object ASTGenerator extends {
         x.name,
         x.typeParameters.map(gen[TypeParam]),
         construct,
-        x.extendsBlock
-          .findChildrenByType(ScalaElementTypes.CLASS_PARENTS)
-          .flatMap { case y: ScClassParents =>
-            y.findChildrenByType(ScalaElementTypes.CONSTRUCTOR)
-              .map { case z: ScConstructor =>
-                Super(genType(z.typeElement.`type`()), None)
-              }
-          },
+        x.extendsBlock.templateParents.map(gen[SupersBlock]),
         blockOrEmpty(
           overrideConstuctParamsDefs ++ x.extendsBlock.members.map(gen[DefExpr])))
     case x: PsiClassWrapper =>
       gen[DefExpr](x.definition)
+
+    case x: ScTemplateParents =>
+      val constructor = x match {
+        case y: ScClassParents => y.constructor.map {c =>
+          SuperConstructor(genType(c.typeElement.`type`()), c.args.toSeq.flatMap(_.exprs).map(gen[Expr]))
+        }
+        case _ => None
+      }
+      SupersBlock(constructor, x.typeElementsWithoutConstructor.map(_.`type`()).map(genType))
 
     case x: ScFunction =>
       DefnDef(

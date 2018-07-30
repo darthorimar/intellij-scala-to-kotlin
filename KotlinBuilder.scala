@@ -7,6 +7,7 @@ import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 
 class KotlinBuilder extends KotlinBuilderBase {
   val stateVal: ScopedVal[BuilderState] = new ScopedVal[BuilderState](BuilderState())
+
   def gen(ast: AST): Unit =
     ast match {
       case FileDef(pckg, imports, defns) =>
@@ -23,7 +24,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         }
         repNl(defns)(gen)
 
-      case Defn(attrs, t, name, typeParams, consruct, supers, block) =>
+      case Defn(attrs, t, name, typeParams, consruct, supersBlock, block) =>
         rep(attrs, " ")(gen)
         if (attrs.nonEmpty) str(" ")
         genKeyword(t)
@@ -35,15 +36,22 @@ class KotlinBuilder extends KotlinBuilderBase {
           str(">")
         }
         opt(consruct)(gen)
-        if (supers.nonEmpty) {
+        opt(supersBlock) { case SupersBlock(constuctor, supers) =>
           str(" : ")
-          rep(supers, ", ")(gen)
+          opt(constuctor) { case SuperConstructor(ty, exprs) =>
+            genType(ty, false)
+            str("(")
+            rep(exprs, ", ")(gen)
+            str(")")
+          }
+          if (constuctor.isDefined && supers.nonEmpty) {
+            str(", ")
+          }
+          rep(supers, ", ")(genType(_, false))
         }
         str(" ")
         opt(block)(gen)
 
-      case Super(ty, construct) =>
-        genType(ty, false)
 
       case EmptyConstruct =>
 
@@ -135,7 +143,7 @@ class KotlinBuilder extends KotlinBuilderBase {
             str(".")
             str(n)
           }
-        } else  {
+        } else {
           str("import ")
           str(reference)
         }
@@ -242,7 +250,7 @@ class KotlinBuilder extends KotlinBuilderBase {
 
       case ForExpr(ty, generators, body) =>
         str("for (")
-        gen(generators.head.pattern)//todo fix
+        gen(generators.head.pattern) //todo fix
         str(" in ")
         gen(generators.head.expr)
         str(") ")
@@ -262,7 +270,7 @@ class KotlinBuilder extends KotlinBuilderBase {
           str("\"")
         }
 
-      case BracketsExpr(ty, expr,inBrackets) =>
+      case BracketsExpr(ty, expr, inBrackets) =>
         gen(expr)
         str("[")
         gen(inBrackets)
