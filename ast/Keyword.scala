@@ -34,6 +34,9 @@
   case object OverrideAttr extends Attr{
     override def name: String = "override"
   }
+  case object AbstractAttr extends Attr{
+    override def name: String = "abstract"
+  }
 
 
   sealed trait MemberKind extends Keyword

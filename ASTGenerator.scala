@@ -70,12 +70,11 @@ object ASTGenerator extends {
       case x: ScMethodType =>
         FuncType(ProdType(x.params.map(t => genType(t.paramType))), genType(x.returnType))
       case x: DesignatorOwner =>
-          x.extractDesignatorSingleton.map(genType)
-            .getOrElse(SimpleType(x.canonicalText))
+        x.extractDesignatorSingleton.map(genType)
+          .getOrElse(SimpleType(x.canonicalText))
       case x =>
         SimpleType(x.canonicalText)
     }
-
 
 
   def genType(t: Option[ScTypeElement]): Type =
@@ -97,12 +96,15 @@ object ASTGenerator extends {
       attr(x.isPublic, PublAttr) ::
       attr(x.isProtected, ProtAttr) ::
       attr(x.hasFinalModifier, FinalAttr) ::
+      attr(x.hasAbstractModifier, AbstractAttr) ::
       Nil).flatten
     val extraAttrs = x match {
       case y: ScFunction =>
         attr(y.superSignatures.exists(!_.isInstanceOf[PhysicalSignature]), OverrideAttr).toSeq
       case y: ScTypeDefinition =>
-        attr(y.isCase, CaseAttr).toSeq
+        (attr(y.isCase, CaseAttr) ::
+          Nil).flatten
+
       case _ => Seq.empty
     }
     memberAttrs ++ extraAttrs
@@ -171,7 +173,7 @@ object ASTGenerator extends {
 
     case x: ScTemplateParents =>
       val constructor = x match {
-        case y: ScClassParents => y.constructor.map {c =>
+        case y: ScClassParents => y.constructor.map { c =>
           SuperConstructor(genType(c.typeElement.`type`()), c.args.toSeq.flatMap(_.exprs).map(gen[Expr]))
         }
         case _ => None

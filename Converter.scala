@@ -17,14 +17,15 @@ object Converter {
     new AddTypeToValueDefinition()
   )
 
-  def convert(file: ScalaFile): String = {
+  def convert(file: ScalaFile, doPrint: Boolean = false): String = {
     ApplicationManager.getApplication.runWriteAction(new Runnable {
       override def run(): Unit = Transformer.transform(file, None, transformers)
     })
 
     val builder: KotlinBuilder = new KotlinBuilder
     val ast: FileDef = ASTGenerator.gen[FileDef](file)
-    println(Utils.prettyPrint(ast))
+    if (doPrint)
+      println(Utils.prettyPrint(ast))
     val newAst: AST = Pass.applyPasses(ast)
     builder.gen(newAst)
     builder.text

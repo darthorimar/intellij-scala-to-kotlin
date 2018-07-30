@@ -280,7 +280,7 @@ class BasicPass extends Pass {
               }
               ExprWhenClause(notEqulasExpr, body)
           }
-          .span(_.isInstanceOf[ExprWhenClause]) match { //take all before first else and first else
+            .span(_.isInstanceOf[ExprWhenClause]) match { //take all before first else and first else
             case (h, t) => h ++ t.headOption.toSeq
           }
 
@@ -296,12 +296,16 @@ class BasicPass extends Pass {
     def attr(p: Boolean, a: Attr) =
       if (p) Some(a) else None
 
+    val isOpen = !x.attrs.contains(FinalAttr) &&
+      x.t == ClassDefn && !x.attrs.contains(CaseAttr) &&
+      !x.attrs.contains(AbstractAttr)
     val attrs =
       (attr(x.attrs.contains(CaseAttr) && x.t == ClassDefn, DataAttr) ::
-        attr(!x.attrs.contains(FinalAttr) && x.t == ClassDefn && !x.attrs.contains(CaseAttr), OpenAttr) ::
+        attr(isOpen, OpenAttr) ::
         attr(x.attrs.contains(PublAttr), PublAttr) ::
         attr(x.attrs.contains(PrivAttr), PrivAttr) ::
         attr(x.attrs.contains(ProtAttr), ProtAttr) ::
+        attr(x.attrs.contains(AbstractAttr), AbstractAttr) ::
         Nil)
         .flatten
     sortAttrs(attrs)
