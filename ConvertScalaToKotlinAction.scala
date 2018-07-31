@@ -1,5 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter
 
+import com.intellij.application.options.CodeStyle
 import com.intellij.notification.{NotificationDisplayType, NotificationType}
 import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent, CommonDataKeys, LangDataKeys}
 import com.intellij.openapi.vfs.VirtualFile
@@ -14,14 +15,17 @@ class ConvertScalaToKotlinAction extends AnAction {
 
   override def update(e: AnActionEvent) {
     val presentation = e.getPresentation
+
     def enable() {
       presentation.setEnabled(true)
       presentation.setVisible(true)
     }
+
     def disable() {
       presentation.setEnabled(false)
       presentation.setVisible(false)
     }
+
     try {
       var elements = LangDataKeys.PSI_ELEMENT_ARRAY.getData(e.getDataContext)
       if (elements == null) {
@@ -67,7 +71,7 @@ class ConvertScalaToKotlinAction extends AnAction {
               def run() {
                 val directory = jFile.getContainingDirectory
                 val name = jFile.getName.substring(0, jFile.getName.length - 5)
-                val nameWithExtension: String = name + ".kt"
+                val nameWithExtension: String = name + "kt"
                 val existingFile: VirtualFile = directory.getVirtualFile.findChild(nameWithExtension)
                 if (existingFile != null) {
                   NotificationUtil.builder(directory.getProject, s"File $nameWithExtension already exists").
@@ -78,26 +82,13 @@ class ConvertScalaToKotlinAction extends AnAction {
                     show()
                   return
                 }
-                val file = directory.createFile(name + ".kt")
+                val file = directory.createFile(name + "kt")
                 val newText = Converter.convert(jFile).trim
                 val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
                 document.insertString(0, newText)
                 PsiDocumentManager.getInstance(file.getProject).commitDocument(document)
                 val manager: CodeStyleManager = CodeStyleManager.getInstance(file.getProject)
-                val settings = CodeStyleSettingsManager.getSettings(file.getProject).getCommonSettings(ScalaLanguage.INSTANCE)
-                val keep_blank_lines_in_code = settings.KEEP_BLANK_LINES_IN_CODE
-                val keep_blank_lines_in_declarations = settings.KEEP_BLANK_LINES_IN_DECLARATIONS
-                val keep_blank_lines_before_rbrace = settings.KEEP_BLANK_LINES_BEFORE_RBRACE
-                settings.KEEP_BLANK_LINES_IN_CODE = 0
-                settings.KEEP_BLANK_LINES_IN_DECLARATIONS = 0
-                settings.KEEP_BLANK_LINES_BEFORE_RBRACE = 0
-                try {
-                  manager.reformatText(file, 0, file.getTextLength)
-                } finally {
-                  settings.KEEP_BLANK_LINES_IN_CODE = keep_blank_lines_in_code
-                  settings.KEEP_BLANK_LINES_IN_DECLARATIONS = keep_blank_lines_in_declarations
-                  settings.KEEP_BLANK_LINES_BEFORE_RBRACE = keep_blank_lines_before_rbrace
-                }
+                manager.reformatText(file, 0, file.getTextLength)
                 file.navigate(true)
               }
             }, jFile.getProject, "Convert to Kotlin")
