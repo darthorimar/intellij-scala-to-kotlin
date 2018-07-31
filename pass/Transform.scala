@@ -6,6 +6,7 @@ import org.jetbrains.plugins.kotlinConverter.ast._
 
 trait Transform {
   protected def action(ast: AST): Option[AST]
+  var collectedImports: List[ImportDef] = Nil
 
   private var parentsStack = List.empty[AST]
 
@@ -82,7 +83,8 @@ trait Transform {
       ImportDef(ref, names)
 
     case FileDef(pckg, imports, defns) =>
-      FileDef(pckg, imports.map(pass[ImportDef]), defns.map(pass[DefExpr]))
+      val newDefns = defns.map(pass[DefExpr])
+      FileDef(pckg, (imports ++ collectedImports).map(pass[ImportDef]), newDefns)
 
     case BinExpr(exprType, op, left, right) =>
       BinExpr(pass[Type](exprType), op, pass[Expr](left), pass[Expr](right))
@@ -149,8 +151,8 @@ trait Transform {
     case GenerecTypes(des, params) =>
       GenerecTypes(pass[Type](des), params.map(pass[Type]))
 
-    case FuncType(left, right) =>
-      FuncType(pass[Type](left), pass[Type](right))
+    case FunctionType(left, right) =>
+      FunctionType(pass[Type](left), pass[Type](right))
 
     case ProductType(exprTypepes) =>
       ProductType(exprTypepes.map(pass[Type]))
@@ -191,8 +193,8 @@ trait Transform {
     case ThisExpr(exprType) =>
       ThisExpr(pass[Type](exprType))
 
-    case ForExpr(exprType, generators, body) =>
-      ForExpr(pass[Type](exprType), generators.map(pass[ForEnumerator]), pass[Expr](body))
+    case ForExpr(exprType, generators, isYield,  body) =>
+      ForExpr(pass[Type](exprType), generators.map(pass[ForEnumerator]), isYield, pass[Expr](body))
 
     case ForGenerator(pattern, expr) =>
       ForGenerator(pass[CasePattern](pattern), pass[Expr](expr))
@@ -202,12 +204,12 @@ trait Transform {
 }
 
 object Transform {
-  def applyPasses(ast: AST): AST = {
+  def applyPasses(fileDef: FileDef): FileDef = {
     val passes = Seq(
       new TypeTransform,
       new BasicTransform,
       new CollectionTransform)
-    passes.foldLeft(ast)((a, p) => p.pass[AST](a))
+    passes.foldLeft(fileDef)((a, p) => p.pass[FileDef](a))
   }
 }
 

@@ -16,6 +16,8 @@ class BasicTransform extends Transform {
 
   override protected def action(ast: AST): Option[AST] = {
     ast match {
+
+
       //import _ --> *
       case ImportDef(ref, names) =>
         Some(ImportDef(ref, names.map {
@@ -40,22 +42,35 @@ class BasicTransform extends Transform {
             ConstructorParam(t, m, name, pass[Type](exprType))
         }))
 
-      case ForExpr(exprType, generators, body) =>
+      case ForExpr(exprType, generators, isYield, body) =>
         def wrapToBody(expr: Expr) = expr match {
-          case x: BlockExpr =>x
+          case x: BlockExpr => x
           case _ => BlockExpr(expr.exprType, Seq(expr))
         }
-        val result = generators.reverse.foldLeft(pass[Expr](body): Expr) {
+
+        val yieldedBody =
+          if (isYield)
+            Exprs.simpleCall("yield", exprType, Seq(body))
+          else body
+
+
+        val result = generators.reverse.foldLeft(pass[Expr](yieldedBody): Expr) {
           case (acc, ForGenerator(pattern, expr)) =>
             ForInExpr(NoType, RefExpr(NoType, None, pattern.name, Seq.empty, false), pass[Expr](expr), wrapToBody(acc))
           case (acc, ForGuard(condition)) =>
-            IfExpr(NoType, pass[Expr](condition),  wrapToBody(acc), None)
+            IfExpr(NoType, pass[Expr](condition), wrapToBody(acc), None)
           case (acc, ForVal(valDefExpr)) =>
             BlockExpr(NoType, Seq(
               pass[Expr](valDefExpr),
               acc))
         }
-        Some(result)
+        if (isYield) {
+          collectedImports = ImportDef("kotlin.coroutines.experimental.buildSequence", Seq.empty) :: collectedImports
+          Some(
+            Exprs.simpleCall("buildSequence",
+              exprType,
+              Seq(LambdaExpr(exprType, Seq.empty, result, false))))
+        } else Some(result)
 
 
       // sort fun attrs, add return to the function end
@@ -75,10 +90,10 @@ class BasicTransform extends Transform {
         }
 
       case x: ValOrVarDef =>
-        Some(x.copy(attributes = handleAttrs(x)))
+        Some(copy(x).asInstanceOf[ValOrVarDef].copy(attributes = handleAttrs(x)))
 
-      case x: SimpleValOrVarDef=>
-        Some(x.copy(attributes = handleAttrs(x)))
+      case x: SimpleValOrVarDef =>
+        Some(copy(x).asInstanceOf[SimpleValOrVarDef].copy(attributes = handleAttrs(x)))
 
       case x: Defn =>
         val defn = copy(x).asInstanceOf[Defn]
@@ -145,7 +160,7 @@ class BasicTransform extends Transform {
         }
 
         val newExpr = pass[Expr](expr)
-        val valExpr = SimpleValOrVarDef(Seq.empty, true, namerVal.newName("match"), None ,Some(newExpr))
+        val valExpr = SimpleValOrVarDef(Seq.empty, true, namerVal.newName("match"), None, Some(newExpr))
         val valRef = RefExpr(newExpr.exprType, None, valExpr.name, Seq.empty, false)
 
         def collectVals(constructorPatternMatch: ConstructorPattern): Seq[ConstructorParam] = {
@@ -187,9 +202,9 @@ class BasicTransform extends Transform {
                 (WildcardPattern, None, None)
               case c@ConstructorPattern(ref, _, label, _) =>
                 val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
-                val condition =
-                  if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=", LitExpr(exprType, local), Exprs.nullLit)
-                  else Exprs.is(LitExpr(exprType, local), SimpleType(ref))
+              val condition =
+                if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=", LitExpr(exprType, local), Exprs.nullLit)
+                else Exprs.is(LitExpr(exprType, local), SimpleType(ref))
                 (ReferencePattern(local),
                   Some(condition),
                   Some(local -> c))
@@ -328,7 +343,7 @@ class BasicTransform extends Transform {
     val attrs =
       (attr(x.attributes.contains(CaseAttribute) && x.isClassDefn, DataAttribute) ::
         attr(isOpen, OpenAttribute) ::
-//        attr(x.attrs.contains(PublicAttr), PublicAttr) ::
+        //        attr(x.attrs.contains(PublicAttr), PublicAttr) ::
         attr(x.attributes.contains(PrivateAttribute), PrivateAttribute) ::
         attr(x.attributes.contains(ProtectedAttribute), ProtectedAttribute) ::
         attr(x.attributes.contains(AbstractAttribute), AbstractAttribute) ::

@@ -181,6 +181,7 @@ class KotlinBuilder extends KotlinBuilderBase {
             gen(expr)
         }
         str(" }")
+
       case AssignExpr(left, right) =>
         gen(left)
         str(" = ")

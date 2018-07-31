@@ -31,7 +31,7 @@ case class NewExpr(exprType: Type, name: String, arguments: Seq[Expr]) extends E
 case class LambdaExpr(exprType: Type, parameters: Seq[DefParameter], expr: Expr, needBraces: Boolean) extends Expr
 case class ThrowExpr(exprType: Type, expr: Expr) extends Expr
 case class IfExpr(exprType: Type, condition: Expr, trueBranch: Expr, falseBranch: Option[Expr]) extends Expr
-case class ForExpr(exprType: Type, generators: Seq[ForEnumerator], body: Expr) extends Expr
+case class ForExpr(exprType: Type, generators: Seq[ForEnumerator], isYield: Boolean, body: Expr) extends Expr
 case class ForInExpr(exprType: Type, value: RefExpr, range: Expr, body: Expr) extends Expr
 case class WhileExpr(exprType: Type, condition: Expr, body: BlockExpr) extends Expr
 case class ThisExpr(exprType: Type) extends Expr

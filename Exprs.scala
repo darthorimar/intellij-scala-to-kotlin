@@ -31,6 +31,11 @@ object Exprs {
   def listType(ty: Type) =
     GenerecTypes(KotlinTypes.LIST, Seq(ty))
 
+  def simpleCall(name: String, returnType: Type, aruments: Seq[Expr]) =
+    CallExpr(FunctionType(ProductType(aruments.map(_.exprType)), returnType),
+      RefExpr(returnType, None, name, Seq.empty, true),
+      aruments
+    )
 
   val falseLit = LitExpr(KotlinTypes.BOOLEAN, "false")
   val trueLit = LitExpr(KotlinTypes.BOOLEAN, "true")

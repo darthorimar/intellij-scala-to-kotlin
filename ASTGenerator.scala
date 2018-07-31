@@ -60,15 +60,15 @@ object ASTGenerator extends {
     ty match {
       case x: ScParameterizedType if x.designator.canonicalText.startsWith(ScalaTypes.FUNCTION_PREFFIX) =>
         if (x.typeArguments.init.length == 1)
-          FuncType(genType(x.typeArguments.head), genType(x.typeArguments.last))
+          FunctionType(genType(x.typeArguments.head), genType(x.typeArguments.last))
         else
-          FuncType(ProductType(x.typeArguments.init.map(genType)), genType(x.typeArguments.last))
+          FunctionType(ProductType(x.typeArguments.init.map(genType)), genType(x.typeArguments.last))
       case x: ScParameterizedType =>
         GenerecTypes(genType(x.designator), x.typeArguments.map(genType))
       case x: ScTypePolymorphicType =>
         genType(x.internalType)
       case x: ScMethodType =>
-        FuncType(ProductType(x.params.map(t => genType(t.paramType))), genType(x.returnType))
+        FunctionType(ProductType(x.params.map(t => genType(t.paramType))), genType(x.returnType))
       case x: DesignatorOwner =>
         x.extractDesignatorSingleton.map(genType)
           .getOrElse(SimpleType(x.canonicalText))
@@ -349,8 +349,9 @@ object ASTGenerator extends {
       ForExpr(
         genType(x.`type`()),
         x.enumerators.toSeq.flatMap(_.getChildren).map(gen[ForEnumerator]),
-        gen[Expr](x.body.get)
-      )
+        x.isYield,
+        gen[Expr](x.body.get))
+
     case x: ScGenerator =>
       ForGenerator(gen[CasePattern](x.pattern), gen[Expr](x.rvalue))
 
@@ -362,6 +363,9 @@ object ASTGenerator extends {
 
     case x: ScTypeParam =>
       TypeParam(SimpleType(x.typeParameterText)) //todo improve
+
+    case x: ScPostfixExpr =>
+      PostfixExpr(genType(x.`type`()), gen[Expr](x.operand), x.operation.refName)
 
     case x: ScThisReference =>
       ThisExpr(genType(x.`type`()))

@@ -5,7 +5,7 @@ trait Type extends AST {
   def isFunction: Boolean = false
 }
 
-case class FuncType(left: Type, right: Type) extends Type {
+case class FunctionType(left: Type, right: Type) extends Type {
   override def asKotlin: String =
     s"${left.asKotlin} -> ${right.asKotlin}"
 

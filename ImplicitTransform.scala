@@ -1,5 +1,10 @@
 package org.jetbrains.plugins.kotlinConverter
 
+import com.intellij.psi.PsiElement
+import org.jetbrains.plugins.scala.extensions.{FirstChild, ImplicitConversion}
+import org.jetbrains.plugins.scala.lang.psi.api.base.patterns.ScReferencePattern
+import org.jetbrains.plugins.scala.lang.psi.api.expr.ScReferenceExpression
+import org.jetbrains.plugins.scala.lang.psi.api.statements.ScFunction
 import org.jetbrains.plugins.scala.lang.transformation.{AbstractTransformer, bindTo, qualifiedNameOf}
 import com.intellij.psi.PsiElement
 import org.jetbrains.plugins.scala.extensions.{FirstChild, ImplicitConversion}

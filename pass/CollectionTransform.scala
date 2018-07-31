@@ -107,9 +107,9 @@ class CollectionTransform extends Transform {
       Some(CallExpr(exprType, RefExpr(exprType, Some(pass[Expr](left)), "repeat", Seq.empty, true), Seq(right)))
 
     // seq(i) --> seq[i]
-    case CallExpr(exprType, refExpr, Seq(index))
-      if TypeUtils.isKotlinList(refExpr.exprType) =>
-        Some(BracketsExpr(exprType, pass[Expr](refExpr), pass[Expr](index)))
+//    case CallExpr(exprType, refExpr, Seq(index))
+//      if TypeUtils.isKotlinList(refExpr.exprType) =>
+//        Some(BracketsExpr(exprType, pass[Expr](refExpr), pass[Expr](index)))
 
     case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(TypeParam(exprType)), false) =>
       Some(ParenthesesExpr(Exprs.as(pass[Expr](referenceObject), pass[Type](exprType))))
