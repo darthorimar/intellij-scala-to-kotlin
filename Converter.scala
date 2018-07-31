@@ -14,7 +14,8 @@ object Converter {
     new ExpandApplyCall(),
     new ExpandUpdateCall(),
     new AddTypeToVariableDefinition(),
-    new AddTypeToValueDefinition()
+    new AddTypeToValueDefinition(),
+    new ImplicitTransform()
   )
 
   def convert(file: ScalaFile, doPrint: Boolean = false): String = {
