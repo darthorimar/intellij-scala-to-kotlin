@@ -187,7 +187,6 @@ class BasicTransform extends Transform {
                 (WildcardPattern, None, None)
               case c@ConstructorPattern(ref, _, label, _) =>
                 val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
-                println(ref)
                 val condition =
                   if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=", LitExpr(exprType, local), Exprs.nullLit)
                   else Exprs.is(LitExpr(exprType, local), SimpleType(ref))
