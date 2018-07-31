@@ -6,7 +6,7 @@ import org.jetbrains.plugins.kotlinConverter.ast._
 class TypeTransform extends Transform {
   override protected def action(ast: AST): Option[AST] = ast match {
     case GenerecTypes(inner, Seq(i)) if TypeUtils.isOption(inner) =>
-      Some(NullableType(pass[Type](i)))
+      Some(NullableType(transform[Type](i)))
 
     case ScalaTypes.STRING | ScalaTypes.JAVA_STRING =>
       Some(KotlinTypes.STRING)

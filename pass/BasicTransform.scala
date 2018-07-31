@@ -16,8 +16,6 @@ class BasicTransform extends Transform {
 
   override protected def action(ast: AST): Option[AST] = {
     ast match {
-
-
       //import _ --> *
       case ImportDef(ref, names) =>
         Some(ImportDef(ref, names.map {
@@ -31,7 +29,7 @@ class BasicTransform extends Transform {
 
       //Remove renault brackets for lambda like in seq.map {x => x * 2}
       case BlockExpr(_, stmts) if stmts.size == 1 && stmts.head.isInstanceOf[LambdaExpr] =>
-        Some(pass[Expr](stmts.head))
+        Some(transform[Expr](stmts.head))
 
       case ParamsConstructor(params)
         if parent.asInstanceOf[Defn].attributes.contains(CaseAttribute) =>
@@ -39,7 +37,7 @@ class BasicTransform extends Transform {
           case ConstructorParam(parType, mod, name, exprType) =>
             val t = if (parType == NoMemberKind) ValKind else parType
             val m = if (mod == NoAttribute) PublicAttribute else mod
-            ConstructorParam(t, m, name, pass[Type](exprType))
+            ConstructorParam(t, m, name, transform[Type](exprType))
         }))
 
       case ForExpr(exprType, generators, isYield, body) =>
@@ -54,14 +52,14 @@ class BasicTransform extends Transform {
           else body
 
 
-        val result = generators.reverse.foldLeft(pass[Expr](yieldedBody): Expr) {
+        val result = generators.reverse.foldLeft(transform[Expr](yieldedBody): Expr) {
           case (acc, ForGenerator(pattern, expr)) =>
-            ForInExpr(NoType, RefExpr(NoType, None, pattern.name, Seq.empty, false), pass[Expr](expr), wrapToBody(acc))
+            ForInExpr(NoType, RefExpr(NoType, None, pattern.name, Seq.empty, false), transform[Expr](expr), wrapToBody(acc))
           case (acc, ForGuard(condition)) =>
-            IfExpr(NoType, pass[Expr](condition), wrapToBody(acc), None)
+            IfExpr(NoType, transform[Expr](condition), wrapToBody(acc), None)
           case (acc, ForVal(valDefExpr)) =>
             BlockExpr(NoType, Seq(
-              pass[Expr](valDefExpr),
+              transform[Expr](valDefExpr),
               acc))
         }
         if (isYield) {
@@ -118,9 +116,9 @@ class BasicTransform extends Transform {
         val params = collectParams(x)
         val ref = collectRef(x)
         Some(CallExpr(
-          pass[Type](x.exprType),
+          transform[Type](x.exprType),
           copy(ref).asInstanceOf[RefExpr],
-          params.map(pass[Expr])))
+          params.map(transform[Expr])))
 
 
       //a.foo(f) --> a.foo{f(it)}
@@ -132,14 +130,14 @@ class BasicTransform extends Transform {
 
         Some(
           CallExpr(
-            pass[Type](exprType),
-            pass[Expr](ref),
+            transform[Type](exprType),
+            transform[Expr](ref),
             params.map {
               case y: RefExpr if y.isFunctionRef =>
                 LambdaExpr(
                   exprType,
                   Seq.empty,
-                  CallExpr(pass[Type](y.exprType), copy(y).asInstanceOf[Expr], Seq(UnderscoreExpr(y.exprType))),
+                  CallExpr(transform[Type](y.exprType), copy(y).asInstanceOf[Expr], Seq(UnderscoreExpr(y.exprType))),
                   false)
               case y => y
             }))
@@ -159,7 +157,7 @@ class BasicTransform extends Transform {
           case x => Seq(x)
         }
 
-        val newExpr = pass[Expr](expr)
+        val newExpr = transform[Expr](expr)
         val valExpr = SimpleValOrVarDef(Seq.empty, true, namerVal.newName("match"), None, Some(newExpr))
         val valRef = RefExpr(newExpr.exprType, None, valExpr.name, Seq.empty, false)
 
@@ -280,12 +278,12 @@ class BasicTransform extends Transform {
           expandedClauses.map {
             case MatchCaseClause(LitPattern(lit), e, guard) =>
               val equlasExpr = BinExpr(KotlinTypes.BOOLEAN, "==", valRef, lit)
-              ExprWhenClause(addGuardExpr(equlasExpr, guard), pass[Expr](e))
+              ExprWhenClause(addGuardExpr(equlasExpr, guard), transform[Expr](e))
 
             case MatchCaseClause(WildcardPattern, e, guard) =>
               guard match {
-                case Some(g) => ExprWhenClause(pass[Expr](g), pass[Expr](e))
-                case None => ElseWhenClause(pass[Expr](e))
+                case Some(g) => ExprWhenClause(transform[Expr](g), transform[Expr](e))
+                case None => ElseWhenClause(transform[Expr](e))
               }
 
             case MatchCaseClause(ReferencePattern(ref), e, guard) =>
@@ -293,8 +291,8 @@ class BasicTransform extends Transform {
                 renamesVal.updated(_.add(ref -> valRef.referenceName))
               ) {
                 guard match {
-                  case Some(g) => ExprWhenClause(pass[Expr](g), pass[Expr](e))
-                  case None => ElseWhenClause(pass[Expr](e))
+                  case Some(g) => ExprWhenClause(transform[Expr](g), transform[Expr](e))
+                  case None => ElseWhenClause(transform[Expr](e))
                 }
               }
 
@@ -302,7 +300,7 @@ class BasicTransform extends Transform {
               scoped(
                 renamesVal.updated(_.add(ref -> valExpr.name))
               ) {
-                ExprWhenClause(addGuardExpr(Exprs.is(valRef, patternTy), guard.map(pass[Expr])), pass[Expr](e))
+                ExprWhenClause(addGuardExpr(Exprs.is(valRef, patternTy), guard.map(transform[Expr])), transform[Expr](e))
               }
 
             case MatchCaseClause(pattern@ConstructorPattern(ref, args, _, repr), e, _) =>
@@ -323,7 +321,7 @@ class BasicTransform extends Transform {
           }
 
         val whenExpr = WhenExpr(NoType, None, whenClauses)
-        Some(pass[Expr](BlockExpr(whenExpr.exprType, valExpr +: (caseClasses ++ lazyDefs) :+ whenExpr)))
+        Some(transform[Expr](BlockExpr(whenExpr.exprType, valExpr +: (caseClasses ++ lazyDefs) :+ whenExpr)))
 
       case _ => None
     }

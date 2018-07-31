@@ -16,7 +16,7 @@ trait Transform {
   protected def parent: AST =
     parents.head
 
-  def pass[T](ast: AST): T = {
+  def transform[T](ast: AST): T = {
     parentsStack = ast :: parentsStack
     val res = action(ast).getOrElse(copy(ast)).asInstanceOf[T]
     parentsStack = parentsStack.tail
@@ -25,164 +25,164 @@ trait Transform {
 
   protected def copy(ast: AST): AST = ast match {
     case ReturnExpr(label, expr) =>
-      ReturnExpr(label, expr.map(pass[Expr]))
+      ReturnExpr(label, expr.map(transform[Expr]))
 
     case Defn(attrs, t, name, typeParams, construct, supersBlock, block) =>
-      Defn(attrs.map(pass[Attribute]),
+      Defn(attrs.map(transform[Attribute]),
         t,
         name,
-        typeParams.map(pass[TypeParam]),
-        construct.map(pass[Constructor]),
-        supersBlock.map(pass[SupersBlock]),
-        block.map(pass[BlockExpr]))
+        typeParams.map(transform[TypeParam]),
+        construct.map(transform[Constructor]),
+        supersBlock.map(transform[SupersBlock]),
+        block.map(transform[BlockExpr]))
 
     case SupersBlock(constructor, supers) =>
-      SupersBlock(constructor.map(pass[SuperConstructor]), supers.map(pass[Type]))
+      SupersBlock(constructor.map(transform[SuperConstructor]), supers.map(transform[Type]))
 
     case SuperConstructor(exprType, exprs) =>
-      SuperConstructor(pass[Type](exprType), exprs.map(pass[Expr]))
+      SuperConstructor(transform[Type](exprType), exprs.map(transform[Expr]))
 
     case EmptyConstructor => EmptyConstructor
 
     case ForInExpr(exprType, value, range, body) =>
-      ForInExpr(pass[Type](exprType), pass[RefExpr](value), pass[Expr](range), pass[Expr](body))
+      ForInExpr(transform[Type](exprType), transform[RefExpr](value), transform[Expr](range), transform[Expr](body))
 
     case ForGenerator(pattern, expr) =>
-      ForGenerator(pass[CasePattern](pattern), pass[Expr](expr))
+      ForGenerator(transform[CasePattern](pattern), transform[Expr](expr))
 
     case ForGuard(condition) =>
-      ForGuard(pass[Expr](condition))
+      ForGuard(transform[Expr](condition))
 
     case ForVal(expr) =>
-      ForVal(pass[Expr](expr))
+      ForVal(transform[Expr](expr))
 
     case ParamsConstructor(params) =>
-      ParamsConstructor(params.map(pass[ConstructorParam]))
+      ParamsConstructor(params.map(transform[ConstructorParam]))
 
     case ConstructorParam(parType, mod, name, parameterType) =>
-      ConstructorParam(parType, mod, name, pass[Type](parameterType))
+      ConstructorParam(parType, mod, name, transform[Type](parameterType))
 
     case SimpleValOrVarDef(attributes, isVal, name, valType, expr) =>
-      SimpleValOrVarDef(attributes, isVal, name, valType.map(pass[Type]), expr.map(pass[Expr]))
+      SimpleValOrVarDef(attributes, isVal, name, valType.map(transform[Type]), expr.map(transform[Expr]))
 
     case LazyValDef(name, exprType, expr) =>
-      LazyValDef(name, pass[Type](exprType), pass[Expr](expr))
+      LazyValDef(name, transform[Type](exprType), transform[Expr](expr))
 
     case ValOrVarDef(attributes, isVal, patterns, expr) =>
-      ValOrVarDef(attributes, isVal, patterns.map(pass[CasePattern]), expr.map(pass[Expr]))
+      ValOrVarDef(attributes, isVal, patterns.map(transform[CasePattern]), expr.map(transform[Expr]))
 
     case DefnDef(attrss, name, typeParams, args, retType, body) =>
       DefnDef(attrss,
         name,
-        typeParams.map(pass[TypeParam]),
-        args.map(pass[DefParameter]),
-        pass[Type](retType),
-        body.map(pass[Expr]))
+        typeParams.map(transform[TypeParam]),
+        args.map(transform[DefParameter]),
+        transform[Type](retType),
+        body.map(transform[Expr]))
 
     case ImportDef(ref, names) =>
       ImportDef(ref, names)
 
     case FileDef(pckg, imports, defns) =>
-      val newDefns = defns.map(pass[DefExpr])
-      FileDef(pckg, (imports ++ collectedImports).map(pass[ImportDef]), newDefns)
+      val newDefns = defns.map(transform[DefExpr])
+      FileDef(pckg, (imports ++ collectedImports).map(transform[ImportDef]), newDefns)
 
     case BinExpr(exprType, op, left, right) =>
-      BinExpr(pass[Type](exprType), op, pass[Expr](left), pass[Expr](right))
+      BinExpr(transform[Type](exprType), op, transform[Expr](left), transform[Expr](right))
 
     case ParenthesesExpr(inner) =>
-      ParenthesesExpr(pass[Expr](inner))
+      ParenthesesExpr(transform[Expr](inner))
 
     case TypeExpr(exprType) =>
-      TypeExpr(pass[Type](exprType))
+      TypeExpr(transform[Type](exprType))
 
     case CallExpr(exprType, ref, params) =>
-      CallExpr(pass[Type](exprType),
-        pass[Expr](ref),
-        params.map(pass[Expr]))
+      CallExpr(transform[Type](exprType),
+        transform[Expr](ref),
+        params.map(transform[Expr]))
 
     case WhenExpr(exprType, expr, clauses) =>
-      WhenExpr(pass[Type](exprType), expr.map(pass[Expr]), clauses.map(pass[WhenClause]))
+      WhenExpr(transform[Type](exprType), expr.map(transform[Expr]), clauses.map(transform[WhenClause]))
 
     case ElseWhenClause(expr) =>
-      ElseWhenClause(pass[Expr](expr))
+      ElseWhenClause(transform[Expr](expr))
 
     case ExprWhenClause(clause, expr) =>
-      ExprWhenClause(pass[Expr](clause), pass[Expr](expr))
+      ExprWhenClause(transform[Expr](clause), transform[Expr](expr))
 
     case InterpolatedStringExpr(parts, injected) =>
-      InterpolatedStringExpr(parts, injected.map(pass[Expr]))
+      InterpolatedStringExpr(parts, injected.map(transform[Expr]))
 
     case LitExpr(exprType, name) =>
-      LitExpr(pass[Type](exprType), name)
+      LitExpr(transform[Type](exprType), name)
 
     case UnderscoreExpr(exprType) =>
       UnderscoreExpr(exprType)
 
     case RefExpr(exprType, obj, ref, typeParams, isFunc) =>
-      RefExpr(pass[Type](exprType), obj.map(pass[Expr]), ref, typeParams.map(pass[TypeParam]), isFunc)
+      RefExpr(transform[Type](exprType), obj.map(transform[Expr]), ref, typeParams.map(transform[TypeParam]), isFunc)
 
     case MatchExpr(exprType, expr, clauses) =>
-      MatchExpr(pass[Type](exprType), pass[Expr](expr), clauses.map(pass[MatchCaseClause]))
+      MatchExpr(transform[Type](exprType), transform[Expr](expr), clauses.map(transform[MatchCaseClause]))
 
     case BlockExpr(exprType, exprs) =>
-      BlockExpr(pass[Type](exprType), exprs.map(pass[Expr]))
+      BlockExpr(transform[Type](exprType), exprs.map(transform[Expr]))
 
     case PostfixExpr(exprType, obj, op) =>
-      PostfixExpr(exprType, pass[Expr](obj), op)
+      PostfixExpr(exprType, transform[Expr](obj), op)
 
     case AssignExpr(left, right) =>
-      AssignExpr(pass[Expr](left), pass[Expr](right))
+      AssignExpr(transform[Expr](left), transform[Expr](right))
 
     case NewExpr(exprType, name, args) =>
-      NewExpr(pass[Type](exprType), name, args.map(pass[Expr]))
+      NewExpr(transform[Type](exprType), name, args.map(transform[Expr]))
 
     case LambdaExpr(exprType, params, expr, needBraces) =>
-      LambdaExpr(pass[Type](exprType), params.map(pass[DefParameter]), pass[Expr](expr), needBraces)
+      LambdaExpr(transform[Type](exprType), params.map(transform[DefParameter]), transform[Expr](expr), needBraces)
 
     case IfExpr(exprType, cond, trueB, falseB) =>
-      IfExpr(pass[Type](exprType), pass[Expr](cond), pass[Expr](trueB), falseB.map(pass[Expr]))
+      IfExpr(transform[Type](exprType), transform[Expr](cond), transform[Expr](trueB), falseB.map(transform[Expr]))
 
     case WhileExpr(exprType, cond, body) =>
-      WhileExpr(pass[Type](exprType), pass[Expr](cond), pass[BlockExpr](body))
+      WhileExpr(transform[Type](exprType), transform[Expr](cond), transform[BlockExpr](body))
 
     case TryExpr(tryBlock, finallyBlock) =>
-      TryExpr(pass[Expr](tryBlock), finallyBlock.map(pass[Expr]))
+      TryExpr(transform[Expr](tryBlock), finallyBlock.map(transform[Expr]))
 
     case GenerecTypes(des, params) =>
-      GenerecTypes(pass[Type](des), params.map(pass[Type]))
+      GenerecTypes(transform[Type](des), params.map(transform[Type]))
 
     case FunctionType(left, right) =>
-      FunctionType(pass[Type](left), pass[Type](right))
+      FunctionType(transform[Type](left), transform[Type](right))
 
     case ProductType(exprTypepes) =>
-      ProductType(exprTypepes.map(pass[Type]))
+      ProductType(exprTypepes.map(transform[Type]))
 
     case SimpleType(name) =>
       SimpleType(name)
 
     case NullableType(name) =>
-      NullableType(pass[Type](name))
+      NullableType(transform[Type](name))
 
     case NoType =>
       NoType
 
     case DefParameter(exprType, name) =>
-      DefParameter(pass[Type](exprType), name)
+      DefParameter(transform[Type](exprType), name)
 
     case MatchCaseClause(pattern, expr, guard) =>
-      MatchCaseClause(pattern, pass[Expr](expr), guard.map(pass[Expr]))
+      MatchCaseClause(pattern, transform[Expr](expr), guard.map(transform[Expr]))
 
     case TypeParam(exprType) =>
-      TypeParam(pass[Type](exprType))
+      TypeParam(transform[Type](exprType))
 
     case LitPattern(lit) =>
       LitPattern(lit)
 
     case ConstructorPattern(ref, args, label, repr) =>
-      ConstructorPattern(ref, args.map(pass[CasePattern]), label, repr)
+      ConstructorPattern(ref, args.map(transform[CasePattern]), label, repr)
 
     case TypedPattern(ref, exprType) =>
-      TypedPattern(ref, pass[Type](exprType))
+      TypedPattern(ref, transform[Type](exprType))
 
     case ReferencePattern(ref) =>
       ReferencePattern(ref)
@@ -191,13 +191,13 @@ trait Transform {
       WildcardPattern
 
     case ThisExpr(exprType) =>
-      ThisExpr(pass[Type](exprType))
+      ThisExpr(transform[Type](exprType))
 
     case ForExpr(exprType, generators, isYield,  body) =>
-      ForExpr(pass[Type](exprType), generators.map(pass[ForEnumerator]), isYield, pass[Expr](body))
+      ForExpr(transform[Type](exprType), generators.map(transform[ForEnumerator]), isYield, transform[Expr](body))
 
     case ForGenerator(pattern, expr) =>
-      ForGenerator(pass[CasePattern](pattern), pass[Expr](expr))
+      ForGenerator(transform[CasePattern](pattern), transform[Expr](expr))
 
     case x: Keyword => x
   }
@@ -209,7 +209,7 @@ object Transform {
       new TypeTransform,
       new BasicTransform,
       new CollectionTransform)
-    passes.foldLeft(fileDef)((a, p) => p.pass[FileDef](a))
+    passes.foldLeft(fileDef)((a, p) => p.transform[FileDef](a))
   }
 }
 
