@@ -52,8 +52,14 @@ case class BlockExpr(exprType: Type, exprs: Seq[Expr]) extends Expr {
 }
 
 
-sealed trait DefExpr extends Expr
-case class Defn(attrs: Seq[Attribute],
+sealed trait DefExpr extends Expr {
+  override def exprType: Type = NoType
+  def attributes: Seq[Attribute]
+  def isDefn: Boolean = false
+  def isClassDefn: Boolean = false
+  def isValOrVar: Boolean = false
+}
+case class Defn(attributes: Seq[Attribute],
                 defnType: DefnType,
                 name: String,
                 typeParams: Seq[TypeParam],
@@ -61,21 +67,44 @@ case class Defn(attrs: Seq[Attribute],
                 supersBlock: Option[SupersBlock],
                 body: Option[Expr]) extends DefExpr {
   override def exprType: Type = NoType
+  override def isDefn: Boolean = true
+
+  override def isClassDefn: Boolean = defnType == ClassDefn
 }
-case class ValDef(destructors: Seq[CasePattern], expr: Expr) extends DefExpr {
-  override def exprType: Type = KotlinTypes.NOTHING
+case class ValOrVarDef(attributes: Seq[Attribute],
+                       isVal: Boolean,
+                       patterns: Seq[CasePattern],
+                       expr: Option[Expr]) extends DefExpr {
+  def keyword: String =
+    if (isVal) "val"
+    else "var"
+
+  override def isValOrVar: Boolean = true
 }
-case class LazyValDef(name: String, exprType: Type, expr: Expr) extends DefExpr
-case class VarDef(name: String, exprType: Type, expr: Expr) extends DefExpr
+case class SimpleValOrVarDef(attributes: Seq[Attribute],
+                             isVal: Boolean,
+                             name: String,
+                             valType: Option[Type],
+                             expr: Option[Expr]) extends DefExpr {
+  def keyword: String =
+    if (isVal) "val"
+    else "var"
+  override def isValOrVar: Boolean = true
+}
+case class LazyValDef(name: String, valType: Type, expr: Expr) extends DefExpr {
+  override def attributes: Seq[Attribute] = Seq.empty
+}
+
 case class DefnDef(attributes: Seq[Attribute],
                    name: String,
                    typeParameters: Seq[TypeParam],
-                   exprType: Type,
                    parameters: Seq[DefParameter],
                    returnType: Type,
                    body: Option[Expr]) extends DefExpr
+
 case class ImportDef(ref: String, names: Seq[String]) extends DefExpr {
   override def exprType: Type = NoType
+  override def attributes: Seq[Attribute] = Seq.empty
 }
 
 

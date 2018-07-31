@@ -68,28 +68,37 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(name)
         genType(exprType)
 
-      case ValDef(destructors, expr) =>
-        str("val ")
-        if (destructors.size == 1) {
-          gen(destructors.head)
-        } else {
-          str("(")
-          rep(destructors, ", ")(gen)
-          str(")")
+      case x@SimpleValOrVarDef(attributes, isVal, name, valType, expr) =>
+        rep(attributes, " ")(gen)
+        str(" ")
+        str(x.keyword)
+        str(" ")
+        str(name)
+        opt(valType)(genType(_))
+        opt(expr) { e =>
+          str(" = ")
+          gen(e)
         }
-        str(" = ")
-        gen(expr)
+
+      case x@ValOrVarDef(attributes, isVal, patterns, expr) =>
+        rep(attributes, " ")(gen)
+        str(" ")
+        str(x.keyword)
+        str(" (")
+        rep(patterns, ", ")(gen)
+        str(")")
+        opt(expr) { e =>
+          str(" = ")
+          gen(e)
+        }
+
       case LazyValDef(name, ty, expr) =>
         str("val ")
         str(name)
         str(" by lazy ")
         gen(expr)
-      case VarDef(name, exprType, expr) =>
-        str("var ")
-        str(name)
-        genType(exprType)
-        str(" = ")
-        gen(expr)
+
+
 
       case ReturnExpr(label, expr) =>
         str("return")
@@ -103,7 +112,7 @@ class KotlinBuilder extends KotlinBuilderBase {
       case p: CasePattern =>
         str(p.name)
 
-      case DefnDef(attrs, name, typeParams, exprType, args, retType, body) =>
+      case DefnDef(attrs, name, typeParams, args, retType, body) =>
         rep(attrs, " ")(gen)
         if (attrs.nonEmpty) str(" ")
         str("fun")
@@ -115,9 +124,9 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(" ")
         str(name)
         str("(")
-        rep(args, ", ") { case DefParameter(paramterType, name) =>
+        rep(args, ", ") { case DefParameter(parameterType, name) =>
           str(name)
-          genType(paramterType)
+          genType(parameterType)
         }
         str(")")
         genType(retType)

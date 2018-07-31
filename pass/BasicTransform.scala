@@ -32,11 +32,11 @@ class BasicTransform extends Transform {
         Some(pass[Expr](stmts.head))
 
       case ParamsConstructor(params)
-        if parent.asInstanceOf[Defn].attrs.contains(CaseAttribute) =>
+        if parent.asInstanceOf[Defn].attributes.contains(CaseAttribute) =>
         Some(ParamsConstructor(params.map {
           case ConstructorParam(parType, mod, name, exprType) =>
             val t = if (parType == NoMemberKind) ValKind else parType
-            val m = if (mod == NoAttribute) PublicAttribute$ else mod
+            val m = if (mod == NoAttribute) PublicAttribute else mod
             ConstructorParam(t, m, name, pass[Type](exprType))
         }))
 
@@ -50,15 +50,15 @@ class BasicTransform extends Transform {
             ForInExpr(NoType, RefExpr(NoType, None, pattern.name, Seq.empty, false), pass[Expr](expr), wrapToBody(acc))
           case (acc, ForGuard(condition)) =>
             IfExpr(NoType, pass[Expr](condition),  wrapToBody(acc), None)
-          case (acc, ForVal(pattern, expr)) =>
+          case (acc, ForVal(valDefExpr)) =>
             BlockExpr(NoType, Seq(
-              ValDef(Seq(pattern), pass[Expr](expr)),
+              pass[Expr](valDefExpr),
               acc))
         }
         Some(result)
 
 
-      // sort fun attrs, add return to the funcion end
+      // sort fun attrs, add return to the function end
       case x: DefnDef =>
         scoped(
           namerVal.set(new LocalNamer)
@@ -71,15 +71,21 @@ class BasicTransform extends Transform {
             case b => b
           }
 
-          Some(newDef.copy(attributes = sortAttrs(x.attributes).filter(_!= PublicAttribute$), body = newDef.body.map(handleBody)))
+          Some(newDef.copy(attributes = handleAttrs(x), body = newDef.body.map(handleBody)))
         }
+
+      case x: ValOrVarDef =>
+        Some(x.copy(attributes = handleAttrs(x)))
+
+      case x: SimpleValOrVarDef=>
+        Some(x.copy(attributes = handleAttrs(x)))
 
       case x: Defn =>
         val defn = copy(x).asInstanceOf[Defn]
         val t =
           if (x.defnType == TraitDefn) InterfaceDefn
           else x.defnType
-        Some(copy(defn).asInstanceOf[Defn].copy(attrs = handleAttrs(defn), defnType = t))
+        Some(copy(defn).asInstanceOf[Defn].copy(attributes = handleAttrs(defn), defnType = t))
 
       //uncarry
       case x@CallExpr(_, c: CallExpr, _) if c.exprType.isFunction =>
@@ -139,21 +145,21 @@ class BasicTransform extends Transform {
         }
 
         val newExpr = pass[Expr](expr)
-        val valExpr = ValDef(Seq(ReferencePattern(namerVal.get.newName("match"))), newExpr)
-        val valRef = RefExpr(newExpr.exprType, None, valExpr.destructors.head.name, Seq.empty, false)
+        val valExpr = SimpleValOrVarDef(Seq.empty, true, namerVal.newName("match"), None ,Some(newExpr))
+        val valRef = RefExpr(newExpr.exprType, None, valExpr.name, Seq.empty, false)
 
         def collectVals(constructorPatternMatch: ConstructorPattern): Seq[ConstructorParam] = {
           constructorPatternMatch.args.flatMap {
             case LitPattern(litPattern) =>
               Seq.empty
             case ReferencePattern(ref) =>
-              Seq(ConstructorParam(ValKind, PublicAttribute$, ref, NoType))
+              Seq(ConstructorParam(ValKind, PublicAttribute, ref, NoType))
             case WildcardPattern =>
               Seq.empty
             case c: ConstructorPattern =>
               collectVals(c)
             case TypedPattern(ref, exprTypePattern) =>
-              Seq(ConstructorParam(ValKind, PublicAttribute$, ref, exprTypePattern))
+              Seq(ConstructorParam(ValKind, PublicAttribute, ref, exprTypePattern))
           }
         }
 
@@ -170,7 +176,7 @@ class BasicTransform extends Transform {
               None)
         }
 
-        def collectConstructors(constructors: Seq[(String, CasePattern)]): (Seq[ValDef], Seq[Expr], Seq[(String, ConstructorPattern)]) = {
+        def collectConstructors(constructors: Seq[(String, CasePattern)]): (Seq[ValOrVarDef], Seq[Expr], Seq[(String, ConstructorPattern)]) = {
           val (vals, conds, refs) = constructors.collect { case (r, ConstructorPattern(_, patterns, _, _)) =>
             val (destructors, conds, refs) = patterns.map {
               case LitPattern(litPattern) =>
@@ -193,7 +199,7 @@ class BasicTransform extends Transform {
                   Some(Exprs.is(LitExpr(exprTypePattern, ref), exprTypePattern)),
                   None)
             }.unzip3
-            (ValDef(destructors, RefExpr(NoType, None, r, Seq.empty, false)),
+            (ValOrVarDef(Seq.empty, true, destructors, Some(RefExpr(NoType, None, r, Seq.empty, false))),
               conds.flatten,
               refs.flatten)
           }.unzip3
@@ -280,7 +286,7 @@ class BasicTransform extends Transform {
 
             case MatchCaseClause(TypedPattern(ref, patternTy), e, guard) =>
               scoped(
-                renamesVal.updated(_.add(ref -> valExpr.destructors.head.name))
+                renamesVal.updated(_.add(ref -> valExpr.name))
               ) {
                 ExprWhenClause(addGuardExpr(Exprs.is(valRef, patternTy), guard.map(pass[Expr])), pass[Expr](e))
               }
@@ -289,7 +295,7 @@ class BasicTransform extends Transform {
               val lazyRef = RefExpr(NoType, None, Utils.escapeName(repr), Seq.empty, false)
               val notEqulasExpr = BinExpr(KotlinTypes.BOOLEAN, "!=", lazyRef, Exprs.nullLit)
               val vals = collectVals(pattern)
-              val valDef = ValDef(vals.map(p => ReferencePattern(p.name)), lazyRef)
+              val valDef = ValOrVarDef(Seq.empty, true, vals.map(p => ReferencePattern(p.name)), Some(lazyRef))
               val body = e match {
                 case BlockExpr(exprType, exprs) =>
                   BlockExpr(exprType, valDef +: exprs)
@@ -310,20 +316,24 @@ class BasicTransform extends Transform {
   }
 
 
-  private def handleAttrs(x: Defn) = {
+  private def handleAttrs(x: DefExpr): Seq[Attribute] = {
     def attr(p: Boolean, a: Attribute) =
       if (p) Some(a) else None
 
-    val isOpen = !x.attrs.contains(FinalAttribute) &&
-      x.defnType == ClassDefn && !x.attrs.contains(CaseAttribute) &&
-      !x.attrs.contains(AbstractAttribute)
+    val isOpen =
+      !x.attributes.contains(FinalAttribute) &&
+        x.isClassDefn && !x.attributes.contains(CaseAttribute) &&
+        !x.attributes.contains(AbstractAttribute)
+
+
     val attrs =
-      (attr(x.attrs.contains(CaseAttribute) && x.defnType == ClassDefn, DataAttribute) ::
+      (attr(x.attributes.contains(CaseAttribute) && x.isClassDefn, DataAttribute) ::
         attr(isOpen, OpenAttribute) ::
-//        attr(x.attrs.contains(PublAttr), PublAttr) ::
-        attr(x.attrs.contains(PrivateAttribute), PrivateAttribute) ::
-        attr(x.attrs.contains(ProtectedAttribute), ProtectedAttribute) ::
-        attr(x.attrs.contains(AbstractAttribute), AbstractAttribute) ::
+//        attr(x.attrs.contains(PublicAttr), PublicAttr) ::
+        attr(x.attributes.contains(PrivateAttribute), PrivateAttribute) ::
+        attr(x.attributes.contains(ProtectedAttribute), ProtectedAttribute) ::
+        attr(x.attributes.contains(AbstractAttribute), AbstractAttribute) ::
+        attr(x.attributes.contains(OverrideAttribute), OverrideAttribute) ::
         Nil)
         .flatten
     sortAttrs(attrs)
@@ -331,7 +341,7 @@ class BasicTransform extends Transform {
 
   private def sortAttrs(attrs: Seq[Attribute]) =
     attrs.sortBy {
-      case PublicAttribute$ => 1
+      case PublicAttribute => 1
       case PrivateAttribute => 1
       case ProtectedAttribute => 1
       case OpenAttribute => 2

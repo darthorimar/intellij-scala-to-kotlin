@@ -52,8 +52,8 @@ trait Transform {
     case ForGuard(condition) =>
       ForGuard(pass[Expr](condition))
 
-    case ForVal(pattern, expr) =>
-      ForVal(pass[CasePattern](pattern), pass[Expr](expr))
+    case ForVal(expr) =>
+      ForVal(pass[Expr](expr))
 
     case ParamsConstructor(params) =>
       ParamsConstructor(params.map(pass[ConstructorParam]))
@@ -61,17 +61,22 @@ trait Transform {
     case ConstructorParam(parType, mod, name, parameterType) =>
       ConstructorParam(parType, mod, name, pass[Type](parameterType))
 
-    case ValDef(destructors, expr) =>
-      ValDef(destructors.map(pass[CasePattern]), pass[Expr](expr))
+    case SimpleValOrVarDef(attributes, isVal, name, valType, expr) =>
+      SimpleValOrVarDef(attributes, isVal, name, valType.map(pass[Type]), expr.map(pass[Expr]))
 
     case LazyValDef(name, exprType, expr) =>
       LazyValDef(name, pass[Type](exprType), pass[Expr](expr))
 
-    case VarDef(name, exprType, expr) =>
-      VarDef(name, pass[Type](exprType), pass[Expr](expr))
+    case ValOrVarDef(attributes, isVal, patterns, expr) =>
+      ValOrVarDef(attributes, isVal, patterns.map(pass[CasePattern]), expr.map(pass[Expr]))
 
-    case DefnDef(attrss, name, typeParams, exprType, args, retType, body) =>
-      DefnDef(attrss, name, typeParams.map(pass[TypeParam]), pass[Type](exprType), args.map(pass[DefParameter]), pass[Type](retType), body.map(pass[Expr]))
+    case DefnDef(attrss, name, typeParams, args, retType, body) =>
+      DefnDef(attrss,
+        name,
+        typeParams.map(pass[TypeParam]),
+        args.map(pass[DefParameter]),
+        pass[Type](retType),
+        body.map(pass[Expr]))
 
     case ImportDef(ref, names) =>
       ImportDef(ref, names)

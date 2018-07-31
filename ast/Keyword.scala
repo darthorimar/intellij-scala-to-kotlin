@@ -16,7 +16,7 @@
   case object DataAttribute extends Attribute {
     override def name: String = "data"
   }
-  case object PublicAttribute$ extends Attribute {
+  case object PublicAttribute extends Attribute {
     override def name: String = "public"
   }
   case object PrivateAttribute extends Attribute {

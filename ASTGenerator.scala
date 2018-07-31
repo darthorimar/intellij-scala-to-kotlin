@@ -88,12 +88,12 @@ object ASTGenerator extends {
     if (exprs.nonEmpty) Some(BlockExpr(exprs.last.exprType, exprs))
     else None
 
-  def genAttrs(x: ScMember): Seq[Attribute] = {
+  def genAttributes(x: ScMember): Seq[Attribute] = {
     def attr(p: Boolean, a: Attribute) =
       if (p) Some(a) else None
 
     val memberAttrs = (attr(x.isPrivate, PrivateAttribute) ::
-      attr(x.isPublic, PublicAttribute$) ::
+      attr(x.isPublic, PublicAttribute) ::
       attr(x.isProtected, ProtectedAttribute) ::
       attr(x.hasFinalModifier, FinalAttribute) ::
       attr(x.hasAbstractModifier, AbstractAttribute) ::
@@ -144,10 +144,9 @@ object ASTGenerator extends {
                 .filter(p => ScalaPsiUtil.superValsSignatures(p).nonEmpty)
           }.flatten
             .map { case p: ScClassParameter =>
-              DefnDef(Seq(PublicAttribute$, OverrideAttribute),
+              DefnDef(Seq(PublicAttribute, OverrideAttribute),
                 p.name,
                 Seq.empty,
-                genType(p.`type`()),
                 Seq.empty,
                 genType(p.`type`()),
                 Some(RefExpr(genType(p.`type`()), None, p.name, Seq.empty, false)))
@@ -156,7 +155,7 @@ object ASTGenerator extends {
         }
 
       Defn(
-        genAttrs(x),
+        genAttributes(x),
         x match {
           case _: ScClass => ClassDefn
           case _: ScTrait => TraitDefn
@@ -182,10 +181,9 @@ object ASTGenerator extends {
 
     case x: ScFunction =>
       DefnDef(
-        genAttrs(x),
+        genAttributes(x),
         x.name,
         x.typeParameters.map(z => TypeParam(SimpleType(z.typeParameterText))),
-        genType(x.`type`()),
         x.parameters.map(gen[DefParameter]),
         genType(x.returnType),
         genFunctionBody(x))
@@ -272,15 +270,47 @@ object ASTGenerator extends {
       LitPattern(gen[Expr](x.getReferenceExpression.get))
     case _: ScWildcardPattern =>
       WildcardPattern
+
+    case x: ScPatternDefinition if x.isSimple =>
+      SimpleValOrVarDef(
+        genAttributes(x),
+        true,
+        x.pList.patterns.head.getText,
+        Some(genType(x.pList.patterns.head.`type`())),
+        x.expr.map(gen[Expr])
+      )
     case x: ScPatternDefinition =>
-      ValDef(
+      ValOrVarDef(
+        genAttributes(x),
+        true,
         x.pList.patterns.map(gen[CasePattern]),
-        gen[Expr](x.expr.get))
-    case x: ScVariableDefinition =>
-      VarDef(
-        x.bindings.head.name,
-        genType(x.typeElement),
-        gen[Expr](x.expr.get))
+        x.expr.map(gen[Expr]))
+
+    case x: ScVariableDefinition if x.isSimple =>
+      SimpleValOrVarDef(
+        genAttributes(x),
+        false,
+        x.pList.patterns.head.getText,
+        Some(genType(x.pList.patterns.head.`type`())),
+        x.expr.map(gen[Expr])
+      )
+
+    case x: ScValueDeclaration =>
+      SimpleValOrVarDef(
+        genAttributes(x),
+        true,
+        x.declaredElements.head.name,
+        x.declaredType.map(genType),
+        None)
+
+    case x: ScVariableDeclaration =>
+      SimpleValOrVarDef(
+        genAttributes(x),
+        false,
+        x.declaredElements.head.name,
+        x.declaredType.map(genType),
+        None)
+
     case x: ScAssignStmt =>
       AssignExpr(gen[Expr](x.getLExpression), gen[Expr](x.getRExpression.get))
     case x: ScNewTemplateDefinitionImpl =>
@@ -302,7 +332,7 @@ object ASTGenerator extends {
         case _ =>
           if (x.isPrivate) PrivateAttribute
           else if (x.isProtected) ProtectedAttribute
-          else if (x.hasModifierProperty("public")) PublicAttribute$
+          else if (x.hasModifierProperty("public")) PublicAttribute
           else NoAttribute
       }
 
@@ -328,7 +358,7 @@ object ASTGenerator extends {
       ForGuard(gen[Expr](x.expr.get))
 
     case x: ScEnumerator =>
-      ForVal(gen[CasePattern](x.pattern), gen[Expr](x.rvalue))
+      ForVal(ast.SimpleValOrVarDef(Seq.empty, true, x.pattern.getText, None, Some(gen[Expr](x.rvalue))))
 
     case x: ScTypeParam =>
       TypeParam(SimpleType(x.typeParameterText)) //todo improve
@@ -337,4 +367,5 @@ object ASTGenerator extends {
       ThisExpr(genType(x.`type`()))
 
   }).asInstanceOf[T]
+
 }
