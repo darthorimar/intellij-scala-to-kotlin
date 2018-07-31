@@ -2,7 +2,7 @@ package org.jetbrains.plugins.kotlinConverter
 
 import com.intellij.openapi.application.ApplicationManager
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.pass.Pass
+import org.jetbrains.plugins.kotlinConverter.pass.Transform
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.extensions._
 import org.jetbrains.plugins.scala.lang.transformation.Transformer
@@ -26,7 +26,7 @@ object Converter {
     val ast: FileDef = ASTGenerator.gen[FileDef](file)
     if (doPrint)
       println(Utils.prettyPrint(ast))
-    val newAst: AST = Pass.applyPasses(ast)
+    val newAst: AST = Transform.applyPasses(ast)
     builder.gen(newAst)
     builder.text
   }

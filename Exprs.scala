@@ -14,7 +14,7 @@ object Exprs {
     BinExpr(KotlinTypes.BOOLEAN, "&&", left, right)
 
   def letExpr(obj: Expr, lambda: LambdaExpr) =
-    CallExpr(lambda.ty, RefExpr(NoType, Some(obj), "let", Seq.empty, true), Seq(lambda))
+    CallExpr(lambda.exprType, RefExpr(NoType, Some(obj), "let", Seq.empty, true), Seq(lambda))
 
   def emptyList(ty: Type) =
     CallExpr(
@@ -29,7 +29,7 @@ object Exprs {
       Seq.empty)
 
   def listType(ty: Type) =
-    ProductType(KotlinTypes.LIST, Seq(ty))
+    GenerecTypes(KotlinTypes.LIST, Seq(ty))
 
 
   val falseLit = LitExpr(KotlinTypes.BOOLEAN, "false")

@@ -2,27 +2,27 @@ package org.jetbrains.plugins.kotlinConverter.ast
 
 trait Type extends AST {
   def asKotlin: String
-  def isFunc: Boolean = false
+  def isFunction: Boolean = false
 }
 
 case class FuncType(left: Type, right: Type) extends Type {
   override def asKotlin: String =
     s"${left.asKotlin} -> ${right.asKotlin}"
 
-  override def isFunc: Boolean = true
+  override def isFunction: Boolean = true
 }
 
-case class ProductType(des: Type, params: Seq[Type]) extends Type {
+case class GenerecTypes(baseType: Type, parameters: Seq[Type]) extends Type {
   override def asKotlin: String =
-    params.map(_.asKotlin).mkString(des.asKotlin + "<", ", ", ">")
+    parameters.map(_.asKotlin).mkString(baseType.asKotlin + "<", ", ", ">")
 }
 
-case class NullableType(t: Type) extends Type {
+case class NullableType(inner: Type) extends Type {
   override def asKotlin: String =
-    t.asKotlin + "?"
+    inner.asKotlin + "?"
 }
 
-case class ProdType(types: Seq[Type]) extends Type {
+case class ProductType(types: Seq[Type]) extends Type {
   override def asKotlin: String =
     types.map(_.asKotlin).mkString("(", ", ", ")")
 }

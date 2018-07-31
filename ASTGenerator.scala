@@ -62,13 +62,13 @@ object ASTGenerator extends {
         if (x.typeArguments.init.length == 1)
           FuncType(genType(x.typeArguments.head), genType(x.typeArguments.last))
         else
-          FuncType(ProdType(x.typeArguments.init.map(genType)), genType(x.typeArguments.last))
+          FuncType(ProductType(x.typeArguments.init.map(genType)), genType(x.typeArguments.last))
       case x: ScParameterizedType =>
-        ProductType(genType(x.designator), x.typeArguments.map(genType))
+        GenerecTypes(genType(x.designator), x.typeArguments.map(genType))
       case x: ScTypePolymorphicType =>
         genType(x.internalType)
       case x: ScMethodType =>
-        FuncType(ProdType(x.params.map(t => genType(t.paramType))), genType(x.returnType))
+        FuncType(ProductType(x.params.map(t => genType(t.paramType))), genType(x.returnType))
       case x: DesignatorOwner =>
         x.extractDesignatorSingleton.map(genType)
           .getOrElse(SimpleType(x.canonicalText))
@@ -85,24 +85,24 @@ object ASTGenerator extends {
     t.map(genType).getOrElse(NoType)
 
   def blockOrEmpty(exprs: Seq[Expr]): Option[BlockExpr] =
-    if (exprs.nonEmpty) Some(BlockExpr(exprs.last.ty, exprs))
+    if (exprs.nonEmpty) Some(BlockExpr(exprs.last.exprType, exprs))
     else None
 
-  def genAttrs(x: ScMember): Seq[Attr] = {
-    def attr(p: Boolean, a: Attr) =
+  def genAttrs(x: ScMember): Seq[Attribute] = {
+    def attr(p: Boolean, a: Attribute) =
       if (p) Some(a) else None
 
-    val memberAttrs = (attr(x.isPrivate, PrivAttr) ::
-      attr(x.isPublic, PublAttr) ::
-      attr(x.isProtected, ProtAttr) ::
-      attr(x.hasFinalModifier, FinalAttr) ::
-      attr(x.hasAbstractModifier, AbstractAttr) ::
+    val memberAttrs = (attr(x.isPrivate, PrivateAttribute) ::
+      attr(x.isPublic, PublicAttribute$) ::
+      attr(x.isProtected, ProtectedAttribute) ::
+      attr(x.hasFinalModifier, FinalAttribute) ::
+      attr(x.hasAbstractModifier, AbstractAttribute) ::
       Nil).flatten
     val extraAttrs = x match {
       case y: ScFunction =>
-        attr(y.superMethod.isDefined, OverrideAttr).toSeq
+        attr(y.superMethod.isDefined, OverrideAttribute).toSeq
       case y: ScTypeDefinition =>
-        (attr(y.isCase, CaseAttr) ::
+        (attr(y.isCase, CaseAttribute) ::
           Nil).flatten
 
       case _ => Seq.empty
@@ -132,7 +132,7 @@ object ASTGenerator extends {
     case x: ScTypeDefinition =>
       x.typeParameters
       val construct = x match {
-        case y: ScClass => Some(y.constructor.map(gen[Construct]).getOrElse(EmptyConstruct))
+        case y: ScClass => Some(y.constructor.map(gen[Constructor]).getOrElse(EmptyConstructor))
         case _ => None
       }
 
@@ -144,7 +144,7 @@ object ASTGenerator extends {
                 .filter(p => ScalaPsiUtil.superValsSignatures(p).nonEmpty)
           }.flatten
             .map { case p: ScClassParameter =>
-              DefnDef(Seq(PublAttr, OverrideAttr),
+              DefnDef(Seq(PublicAttribute$, OverrideAttribute),
                 p.name,
                 Seq.empty,
                 genType(p.`type`()),
@@ -186,14 +186,14 @@ object ASTGenerator extends {
         x.name,
         x.typeParameters.map(z => TypeParam(SimpleType(z.typeParameterText))),
         genType(x.`type`()),
-        x.parameters.map(gen[DefParam]),
+        x.parameters.map(gen[DefParameter]),
         genType(x.returnType),
         genFunctionBody(x))
 
     case x: ScBlockExpr if x.hasCaseClauses =>
       LambdaExpr(genType(x.`type`()),
         Seq.empty,
-        MatchExpr(genType(x.`type`()), UnderScExpr(NoType), x.caseClauses.get.caseClauses.map(gen[MatchCaseClause])),
+        MatchExpr(genType(x.`type`()), UnderscoreExpr(NoType), x.caseClauses.get.caseClauses.map(gen[MatchCaseClause])),
         false)
 
     case x: ScBlock =>
@@ -206,9 +206,9 @@ object ASTGenerator extends {
     case x: ScLiteral =>
       LitExpr(genType(x.`type`()), x.getText)
     case x: ScUnderscoreSection =>
-      UnderScExpr(NoType)
+      UnderscoreExpr(NoType)
     case x: ScParenthesisedExpr =>
-      ParenExpr(gen[Expr](x.innerElement.get))
+      ParenthesesExpr(gen[Expr](x.innerElement.get))
 
     case x: ScReferenceExpression =>
       val ty = x.multiType
@@ -247,34 +247,34 @@ object ASTGenerator extends {
     case x: ScMatchStmt =>
       MatchExpr(genType(x.`type`()), gen[Expr](x.expr.get), x.caseClauses.map(gen[MatchCaseClause]))
     case x: ScFunctionExpr =>
-      LambdaExpr(genType(x.`type`()), x.parameters.map(gen[DefParam]), gen[Expr](x.result.get), false)
+      LambdaExpr(genType(x.`type`()), x.parameters.map(gen[DefParameter]), gen[Expr](x.result.get), false)
 
     case x: ScCaseClause =>
-      MatchCaseClause(gen[MatchCasePattern](x.pattern.get),
+      MatchCaseClause(gen[CasePattern](x.pattern.get),
         x.expr.map(gen[Expr]).get, //todo fix
         x.guard.flatMap(_.expr).map(gen[Expr]))
 
     case x: ScCompositePattern =>
-      CompositePatternMatch(x.subpatterns.map(gen[MatchCasePattern]))
+      CompositePattern(x.subpatterns.map(gen[CasePattern]))
     case x: ScLiteralPattern =>
-      LitPatternMatch(gen[LitExpr](x.getLiteral))
+      LitPattern(gen[LitExpr](x.getLiteral))
     case x: ScNamingPattern =>
-      gen[ConstructorPatternMatch](x.named).copy(label = Some(x.name))
+      gen[ConstructorPattern](x.named).copy(label = Some(x.name))
     case x: ScConstructorPattern =>
-      ConstructorPatternMatch(x.ref.qualName, x.args.patterns.map(gen[MatchCasePattern]), None, x.getText)
+      ConstructorPattern(x.ref.qualName, x.args.patterns.map(gen[CasePattern]), None, x.getText)
     case x: ScTypedPattern =>
-      TypedPatternMatch(x.name, genType(x.typePattern.map(_.typeElement)))
+      TypedPattern(x.name, genType(x.typePattern.map(_.typeElement)))
     case x: ScReferencePattern =>
-      ReferencePatternMatch(x.name)
+      ReferencePattern(x.name)
     case x: ScReferenceElement =>
-      ReferencePatternMatch(x.refName)
+      ReferencePattern(x.refName)
     case x: ScStableReferenceElementPattern =>
-      LitPatternMatch(gen[Expr](x.getReferenceExpression.get))
+      LitPattern(gen[Expr](x.getReferenceExpression.get))
     case _: ScWildcardPattern =>
-      WildcardPatternMatch
+      WildcardPattern
     case x: ScPatternDefinition =>
       ValDef(
-        x.pList.patterns.map(gen[MatchCasePattern]),
+        x.pList.patterns.map(gen[CasePattern]),
         gen[Expr](x.expr.get))
     case x: ScVariableDefinition =>
       VarDef(
@@ -289,7 +289,7 @@ object ASTGenerator extends {
         x.constructor.get.typeElement.getText,
         x.constructor.get.args.toSeq.flatMap(_.exprs).map(gen[Expr]))
     case x: ScPrimaryConstructor =>
-      ParamsConstruct(x.parameters.map(gen[ConstructParam]))
+      ParamsConstructor(x.parameters.map(gen[ConstructorParam]))
 
     case x: ScClassParameter =>
       val kind =
@@ -298,19 +298,19 @@ object ASTGenerator extends {
         else NoMemberKind
 
       val modifier = kind match {
-        case NoMemberKind => NoAttr
+        case NoMemberKind => NoAttribute
         case _ =>
-          if (x.isPrivate) PrivAttr
-          else if (x.isProtected) ProtAttr
-          else if (x.hasModifierProperty("public")) PublAttr
-          else NoAttr
+          if (x.isPrivate) PrivateAttribute
+          else if (x.isProtected) ProtectedAttribute
+          else if (x.hasModifierProperty("public")) PublicAttribute$
+          else NoAttribute
       }
 
 
-      ConstructParam(kind, modifier, x.name, genType(x.typeElement))
+      ConstructorParam(kind, modifier, x.name, genType(x.typeElement))
 
     case x: ScParameter =>
-      DefParam(genType(x.typeElement), x.name)
+      DefParameter(genType(x.typeElement), x.name)
 
     case x: ScTryStmt =>
       TryExpr(gen[Expr](x.tryBlock), x.finallyBlock.flatMap(_.expression).map(gen[Expr]))
@@ -322,13 +322,13 @@ object ASTGenerator extends {
         gen[Expr](x.body.get)
       )
     case x: ScGenerator =>
-      ForGenerator(gen[MatchCasePattern](x.pattern), gen[Expr](x.rvalue))
+      ForGenerator(gen[CasePattern](x.pattern), gen[Expr](x.rvalue))
 
     case x: ScGuard =>
       ForGuard(gen[Expr](x.expr.get))
 
     case x: ScEnumerator =>
-      ForVal(gen[MatchCasePattern](x.pattern), gen[Expr](x.rvalue))
+      ForVal(gen[CasePattern](x.pattern), gen[Expr](x.rvalue))
 
     case x: ScTypeParam =>
       TypeParam(SimpleType(x.typeParameterText)) //todo improve

@@ -36,6 +36,5 @@ object ScopedVal {
 
   implicit def implicitGet[T](scopedVal: ScopedVal[T]): T =
     scopedVal.get
-
 }
 

@@ -4,37 +4,37 @@
     def name: String
   }
 
-  sealed trait Attr extends Keyword
+  sealed trait Attribute extends Keyword
 
-  case object NoAttr extends Attr {
+  case object NoAttribute extends Attribute {
     override def name: String = ""
   }
 
-  case object CaseAttr extends Attr {
+  case object CaseAttribute extends Attribute {
     override def name: String = "case"
   }
-  case object DataAttr extends Attr {
+  case object DataAttribute extends Attribute {
     override def name: String = "data"
   }
-  case object PublAttr extends Attr{
+  case object PublicAttribute$ extends Attribute {
     override def name: String = "public"
   }
-  case object PrivAttr extends Attr{
+  case object PrivateAttribute extends Attribute {
     override def name: String = "private"
   }
-  case object ProtAttr extends Attr{
+  case object ProtectedAttribute extends Attribute {
     override def name: String = "protected"
   }
-  case object OpenAttr extends Attr{
+  case object OpenAttribute extends Attribute {
     override def name: String = "open"
   }
-  case object FinalAttr extends Attr{
+  case object FinalAttribute extends Attribute {
     override def name: String = "final"
   }
-  case object OverrideAttr extends Attr{
+  case object OverrideAttribute extends Attribute {
     override def name: String = "override"
   }
-  case object AbstractAttr extends Attr{
+  case object AbstractAttribute extends Attribute {
     override def name: String = "abstract"
   }
 

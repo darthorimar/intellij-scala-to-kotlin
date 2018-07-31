@@ -10,7 +10,7 @@ import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renames, ScopedVal}
 
 
-class BasicPass extends Pass {
+class BasicTransform extends Transform {
   val renamesVal = new ScopedVal[Renames](Renames(Map.empty))
   val namerVal = new ScopedVal[LocalNamer](new LocalNamer)
 
@@ -24,26 +24,26 @@ class BasicPass extends Pass {
         }))
 
       //rename refs
-      case x: RefExpr if renamesVal.call(_.renames.contains(x.ref)) =>
-        Some(x.copy(ref = renamesVal.get.renames(x.ref)))
+      case x: RefExpr if renamesVal.call(_.renames.contains(x.referenceName)) =>
+        Some(x.copy(referenceName = renamesVal.get.renames(x.referenceName)))
 
       //Remove renault brackets for lambda like in seq.map {x => x * 2}
       case BlockExpr(_, stmts) if stmts.size == 1 && stmts.head.isInstanceOf[LambdaExpr] =>
         Some(pass[Expr](stmts.head))
 
-      case ParamsConstruct(params)
-        if parent.asInstanceOf[Defn].attrs.contains(CaseAttr) =>
-        Some(ParamsConstruct(params.map {
-          case ConstructParam(parType, mod, name, ty) =>
+      case ParamsConstructor(params)
+        if parent.asInstanceOf[Defn].attrs.contains(CaseAttribute) =>
+        Some(ParamsConstructor(params.map {
+          case ConstructorParam(parType, mod, name, exprType) =>
             val t = if (parType == NoMemberKind) ValKind else parType
-            val m = if (mod == NoAttr) PublAttr else mod
-            ConstructParam(t, m, name, pass[Type](ty))
+            val m = if (mod == NoAttribute) PublicAttribute$ else mod
+            ConstructorParam(t, m, name, pass[Type](exprType))
         }))
 
-      case ForExpr(ty, generators, body) =>
+      case ForExpr(exprType, generators, body) =>
         def wrapToBody(expr: Expr) = expr match {
           case x: BlockExpr =>x
-          case _ => BlockExpr(expr.ty, Seq(expr))
+          case _ => BlockExpr(expr.exprType, Seq(expr))
         }
         val result = generators.reverse.foldLeft(pass[Expr](body): Expr) {
           case (acc, ForGenerator(pattern, expr)) =>
@@ -66,25 +66,25 @@ class BasicPass extends Pass {
           val newDef = copy(x).asInstanceOf[DefnDef]
 
           def handleBody(body: Expr) = body match {
-            case BlockExpr(ty, stmts) =>
-              BlockExpr(ty, stmts.init :+ ReturnExpr(None, Some(stmts.last)))
+            case BlockExpr(exprType, stmts) =>
+              BlockExpr(exprType, stmts.init :+ ReturnExpr(None, Some(stmts.last)))
             case b => b
           }
 
-          Some(newDef.copy(attrs = sortAttrs(x.attrs).filter(_!= PublAttr), body = newDef.body.map(handleBody)))
+          Some(newDef.copy(attributes = sortAttrs(x.attributes).filter(_!= PublicAttribute$), body = newDef.body.map(handleBody)))
         }
 
       case x: Defn =>
         val defn = copy(x).asInstanceOf[Defn]
         val t =
-          if (x.t == TraitDefn) InterfaceDefn
-          else x.t
-        Some(copy(defn).asInstanceOf[Defn].copy(attrs = handleAttrs(defn), t = t))
+          if (x.defnType == TraitDefn) InterfaceDefn
+          else x.defnType
+        Some(copy(defn).asInstanceOf[Defn].copy(attrs = handleAttrs(defn), defnType = t))
 
       //uncarry
-      case x@CallExpr(_, c: CallExpr, _) if c.ty.isFunc =>
+      case x@CallExpr(_, c: CallExpr, _) if c.exprType.isFunction =>
         def collectParams(c: Expr): List[Expr] = c match {
-          case x: CallExpr if x.ref.ty.isFunc =>
+          case x: CallExpr if x.ref.exprType.isFunction =>
             collectParams(x.ref) ++ x.params.toList
           case _ => Nil
         }
@@ -97,41 +97,41 @@ class BasicPass extends Pass {
         val params = collectParams(x)
         val ref = collectRef(x)
         Some(CallExpr(
-          pass[Type](x.ty),
+          pass[Type](x.exprType),
           copy(ref).asInstanceOf[RefExpr],
           params.map(pass[Expr])))
 
 
       //a.foo(f) --> a.foo{f(it)}
-      case CallExpr(ty, ref, params)
+      case CallExpr(exprType, ref, params)
         if params.exists {
-          case y: RefExpr if y.isFunc => true
+          case y: RefExpr if y.isFunctionRef => true
           case _ => false
         } =>
 
         Some(
           CallExpr(
-            pass[Type](ty),
+            pass[Type](exprType),
             pass[Expr](ref),
             params.map {
-              case y: RefExpr if y.isFunc =>
+              case y: RefExpr if y.isFunctionRef =>
                 LambdaExpr(
-                  ty,
+                  exprType,
                   Seq.empty,
-                  CallExpr(pass[Type](y.ty), copy(y).asInstanceOf[Expr], Seq(UnderScExpr(y.ty))),
+                  CallExpr(pass[Type](y.exprType), copy(y).asInstanceOf[Expr], Seq(UnderscoreExpr(y.exprType))),
                   false)
               case y => y
             }))
 
       //x.foo --> x.foo()
-      case x@RefExpr(ty, obj, ref, typeParams, true)
+      case x@RefExpr(exprType, obj, ref, exprTypepeParams, true)
         if !parent.isInstanceOf[CallExpr] =>
-        Some(CallExpr(ty, copy(x).asInstanceOf[RefExpr], Seq.empty))
+        Some(CallExpr(exprType, copy(x).asInstanceOf[RefExpr], Seq.empty))
 
       // matchExpr to when one
-      case MatchExpr(ty, expr, clauses) =>
+      case MatchExpr(exprType, expr, clauses) =>
         val expandedClauses = clauses.flatMap {
-          case MatchCaseClause(CompositePatternMatch(parts), expr, guard) =>
+          case MatchCaseClause(CompositePattern(parts), expr, guard) =>
             parts.map { p =>
               MatchCaseClause(p, expr, guard)
             }
@@ -139,58 +139,58 @@ class BasicPass extends Pass {
         }
 
         val newExpr = pass[Expr](expr)
-        val valExpr = ValDef(Seq(ReferencePatternMatch(namerVal.get.newName("match"))), newExpr)
-        val valRef = RefExpr(newExpr.ty, None, valExpr.destructors.head.name, Seq.empty, false)
+        val valExpr = ValDef(Seq(ReferencePattern(namerVal.get.newName("match"))), newExpr)
+        val valRef = RefExpr(newExpr.exprType, None, valExpr.destructors.head.name, Seq.empty, false)
 
-        def collectVals(constructorPatternMatch: ConstructorPatternMatch): Seq[ConstructParam] = {
+        def collectVals(constructorPatternMatch: ConstructorPattern): Seq[ConstructorParam] = {
           constructorPatternMatch.args.flatMap {
-            case LitPatternMatch(litPattern) =>
+            case LitPattern(litPattern) =>
               Seq.empty
-            case ReferencePatternMatch(ref) =>
-              Seq(ConstructParam(ValKind, PublAttr, ref, NoType))
-            case WildcardPatternMatch =>
+            case ReferencePattern(ref) =>
+              Seq(ConstructorParam(ValKind, PublicAttribute$, ref, NoType))
+            case WildcardPattern =>
               Seq.empty
-            case c: ConstructorPatternMatch =>
+            case c: ConstructorPattern =>
               collectVals(c)
-            case TypedPatternMatch(ref, tyPattern) =>
-              Seq(ConstructParam(ValKind, PublAttr, ref, tyPattern))
+            case TypedPattern(ref, exprTypePattern) =>
+              Seq(ConstructorParam(ValKind, PublicAttribute$, ref, exprTypePattern))
           }
         }
 
         val caseClasses = expandedClauses.collect {
-          case MatchCaseClause(pattern@ConstructorPatternMatch(_, _, _, repr), _, _) =>
+          case MatchCaseClause(pattern@ConstructorPattern(_, _, _, repr), _, _) =>
             val name = Utils.escapeName(s"${repr}_data")
             val vals = collectVals(pattern)
-            Defn(Seq(CaseAttr),
+            Defn(Seq(CaseAttribute),
               ClassDefn,
               name,
               Seq.empty,
-              Some(ParamsConstruct(vals)),
+              Some(ParamsConstructor(vals)),
               None,
               None)
         }
 
-        def collectConstructors(constructors: Seq[(String, MatchCasePattern)]): (Seq[ValDef], Seq[Expr], Seq[(String, ConstructorPatternMatch)]) = {
-          val (vals, conds, refs) = constructors.collect { case (r, ConstructorPatternMatch(_, patterns, _, _)) =>
+        def collectConstructors(constructors: Seq[(String, CasePattern)]): (Seq[ValDef], Seq[Expr], Seq[(String, ConstructorPattern)]) = {
+          val (vals, conds, refs) = constructors.collect { case (r, ConstructorPattern(_, patterns, _, _)) =>
             val (destructors, conds, refs) = patterns.map {
-              case LitPatternMatch(litPattern) =>
-                (LitPatternMatch(litPattern), None, None)
-              case ReferencePatternMatch(ref) =>
-                (ReferencePatternMatch(ref), None, None)
-              case WildcardPatternMatch =>
-                (WildcardPatternMatch, None, None)
-              case c@ConstructorPatternMatch(ref, _, label, _) =>
+              case LitPattern(litPattern) =>
+                (LitPattern(litPattern), None, None)
+              case ReferencePattern(ref) =>
+                (ReferencePattern(ref), None, None)
+              case WildcardPattern =>
+                (WildcardPattern, None, None)
+              case c@ConstructorPattern(ref, _, label, _) =>
                 val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
                 println(ref)
                 val condition =
-                  if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=", LitExpr(ty, local), Exprs.nullLit)
-                  else Exprs.is(LitExpr(ty, local), SimpleType(ref))
-                (ReferencePatternMatch(local),
+                  if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=", LitExpr(exprType, local), Exprs.nullLit)
+                  else Exprs.is(LitExpr(exprType, local), SimpleType(ref))
+                (ReferencePattern(local),
                   Some(condition),
                   Some(local -> c))
-              case TypedPatternMatch(ref, tyPattern) =>
-                (ReferencePatternMatch(ref),
-                  Some(Exprs.is(LitExpr(tyPattern, ref), tyPattern)),
+              case TypedPattern(ref, exprTypePattern) =>
+                (ReferencePattern(ref),
+                  Some(Exprs.is(LitExpr(exprTypePattern, ref), exprTypePattern)),
                   None)
             }.unzip3
             (ValDef(destructors, RefExpr(NoType, None, r, Seq.empty, false)),
@@ -200,13 +200,13 @@ class BasicPass extends Pass {
           (vals, conds.flatten, refs.flatten)
         }
 
-        def handleConstructors(constructors: Seq[(String, MatchCasePattern)], defaultCase: Expr): Seq[Expr] = {
+        def handleConstructors(constructors: Seq[(String, CasePattern)], defaultCase: Expr): Seq[Expr] = {
           val (valDefns, conditionParts, collectedConstructors) = collectConstructors(constructors)
 
           val trueBlock =
             if (collectedConstructors.nonEmpty) {
               val exprs = handleConstructors(collectedConstructors, defaultCase)
-              BlockExpr(exprs.last.ty, exprs)
+              BlockExpr(exprs.last.exprType, exprs)
             } else defaultCase
 
           val ifCond =
@@ -218,7 +218,7 @@ class BasicPass extends Pass {
         }
 
         val lazyDefs = expandedClauses.collect {
-          case MatchCaseClause(pattern@ConstructorPatternMatch(ref, _, _, repr), expr, guard) =>
+          case MatchCaseClause(pattern@ConstructorPattern(ref, _, _, repr), expr, guard) =>
             val params = collectVals(pattern).map(v => RefExpr(NoType, None, v.name, Seq.empty, false))
             val callContructor =
               CallExpr(NoType,
@@ -233,7 +233,7 @@ class BasicPass extends Pass {
             }
 
             val innerBodyExprs =
-              handleConstructors(Seq((valRef.ref, pattern)), finalExpr)
+              handleConstructors(Seq((valRef.referenceName, pattern)), finalExpr)
 
             val condition =
               if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
@@ -243,7 +243,7 @@ class BasicPass extends Pass {
               IfExpr(
                 NoType,
                 condition,
-                BlockExpr(innerBodyExprs.last.ty, innerBodyExprs),
+                BlockExpr(innerBodyExprs.last.exprType, innerBodyExprs),
                 None),
               ReturnExpr(Some("lazy"), Some(Exprs.nullLit))
             ))
@@ -258,19 +258,19 @@ class BasicPass extends Pass {
 
         val whenClauses =
           expandedClauses.map {
-            case MatchCaseClause(LitPatternMatch(lit), e, guard) =>
+            case MatchCaseClause(LitPattern(lit), e, guard) =>
               val equlasExpr = BinExpr(KotlinTypes.BOOLEAN, "==", valRef, lit)
               ExprWhenClause(addGuardExpr(equlasExpr, guard), pass[Expr](e))
 
-            case MatchCaseClause(WildcardPatternMatch, e, guard) =>
+            case MatchCaseClause(WildcardPattern, e, guard) =>
               guard match {
                 case Some(g) => ExprWhenClause(pass[Expr](g), pass[Expr](e))
                 case None => ElseWhenClause(pass[Expr](e))
               }
 
-            case MatchCaseClause(ReferencePatternMatch(ref), e, guard) =>
+            case MatchCaseClause(ReferencePattern(ref), e, guard) =>
               scoped(
-                renamesVal.updated(_.add(ref -> valRef.ref))
+                renamesVal.updated(_.add(ref -> valRef.referenceName))
               ) {
                 guard match {
                   case Some(g) => ExprWhenClause(pass[Expr](g), pass[Expr](e))
@@ -278,32 +278,32 @@ class BasicPass extends Pass {
                 }
               }
 
-            case MatchCaseClause(TypedPatternMatch(ref, patternTy), e, guard) =>
+            case MatchCaseClause(TypedPattern(ref, patternTy), e, guard) =>
               scoped(
                 renamesVal.updated(_.add(ref -> valExpr.destructors.head.name))
               ) {
                 ExprWhenClause(addGuardExpr(Exprs.is(valRef, patternTy), guard.map(pass[Expr])), pass[Expr](e))
               }
 
-            case MatchCaseClause(pattern@ConstructorPatternMatch(ref, args, _, repr), e, _) =>
+            case MatchCaseClause(pattern@ConstructorPattern(ref, args, _, repr), e, _) =>
               val lazyRef = RefExpr(NoType, None, Utils.escapeName(repr), Seq.empty, false)
               val notEqulasExpr = BinExpr(KotlinTypes.BOOLEAN, "!=", lazyRef, Exprs.nullLit)
               val vals = collectVals(pattern)
-              val valDef = ValDef(vals.map(p => ReferencePatternMatch(p.name)), lazyRef)
+              val valDef = ValDef(vals.map(p => ReferencePattern(p.name)), lazyRef)
               val body = e match {
-                case BlockExpr(ty, exprs) =>
-                  BlockExpr(ty, valDef +: exprs)
+                case BlockExpr(exprType, exprs) =>
+                  BlockExpr(exprType, valDef +: exprs)
                 case expr =>
-                  BlockExpr(expr.ty, Seq(valDef, expr))
+                  BlockExpr(expr.exprType, Seq(valDef, expr))
               }
               ExprWhenClause(notEqulasExpr, body)
           }
-            .span(_.isInstanceOf[ExprWhenClause]) match { //take all before first else and first else
+            .span(_.isInstanceOf[ExprWhenClause]) match { //take all before first else including first else
             case (h, t) => h ++ t.headOption.toSeq
           }
 
         val whenExpr = WhenExpr(NoType, None, whenClauses)
-        Some(pass[Expr](BlockExpr(whenExpr.ty, valExpr +: (caseClasses ++ lazyDefs) :+ whenExpr)))
+        Some(pass[Expr](BlockExpr(whenExpr.exprType, valExpr +: (caseClasses ++ lazyDefs) :+ whenExpr)))
 
       case _ => None
     }
@@ -311,34 +311,34 @@ class BasicPass extends Pass {
 
 
   private def handleAttrs(x: Defn) = {
-    def attr(p: Boolean, a: Attr) =
+    def attr(p: Boolean, a: Attribute) =
       if (p) Some(a) else None
 
-    val isOpen = !x.attrs.contains(FinalAttr) &&
-      x.t == ClassDefn && !x.attrs.contains(CaseAttr) &&
-      !x.attrs.contains(AbstractAttr)
+    val isOpen = !x.attrs.contains(FinalAttribute) &&
+      x.defnType == ClassDefn && !x.attrs.contains(CaseAttribute) &&
+      !x.attrs.contains(AbstractAttribute)
     val attrs =
-      (attr(x.attrs.contains(CaseAttr) && x.t == ClassDefn, DataAttr) ::
-        attr(isOpen, OpenAttr) ::
+      (attr(x.attrs.contains(CaseAttribute) && x.defnType == ClassDefn, DataAttribute) ::
+        attr(isOpen, OpenAttribute) ::
 //        attr(x.attrs.contains(PublAttr), PublAttr) ::
-        attr(x.attrs.contains(PrivAttr), PrivAttr) ::
-        attr(x.attrs.contains(ProtAttr), ProtAttr) ::
-        attr(x.attrs.contains(AbstractAttr), AbstractAttr) ::
+        attr(x.attrs.contains(PrivateAttribute), PrivateAttribute) ::
+        attr(x.attrs.contains(ProtectedAttribute), ProtectedAttribute) ::
+        attr(x.attrs.contains(AbstractAttribute), AbstractAttribute) ::
         Nil)
         .flatten
     sortAttrs(attrs)
   }
 
-  private def sortAttrs(attrs: Seq[Attr]) =
+  private def sortAttrs(attrs: Seq[Attribute]) =
     attrs.sortBy {
-      case PublAttr => 1
-      case PrivAttr => 1
-      case ProtAttr => 1
-      case OpenAttr => 2
-      case FinalAttr => 2
-      case CaseAttr => 3
-      case DataAttr => 3
-      case OverrideAttr => 4
+      case PublicAttribute$ => 1
+      case PrivateAttribute => 1
+      case ProtectedAttribute => 1
+      case OpenAttribute => 2
+      case FinalAttribute => 2
+      case CaseAttribute => 3
+      case DataAttribute => 3
+      case OverrideAttribute => 4
       case _ => 5
     }
 }
