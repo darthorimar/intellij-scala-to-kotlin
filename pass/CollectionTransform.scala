@@ -127,9 +127,20 @@ class CollectionTransform extends Transform {
       Some(Exprs.simpleInfix(exprType, "+", transform[Expr](left), transform[Expr](right)))
 
     // seq.nonEmpty --> seq.isNotEmpty
-    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "nonEmpty", typeParams, true), _)
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "nonEmpty", typeParams, _), _)
       if TypeUtils.isKotlinList(referenceObject.exprType) =>
       Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "isNotEmpty", typeParams, true), Seq.empty))
+
+
+    // seq.nonEmpty --> seq.isNotEmpty
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "size", typeParams, _), _)
+      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+      Some(RefExpr(refTy, Some(transform[Expr](referenceObject)), "size", typeParams, true))
+
+    // seq.nonEmpty --> seq.isNotEmpty
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "size", typeParams, _), _)
+      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+      Some(RefExpr(refTy, Some(transform[Expr](referenceObject)), "size", typeParams, true))
 
 
     case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(TypeParam(exprType)), false) =>
