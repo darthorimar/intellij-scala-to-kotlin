@@ -34,8 +34,8 @@ class CollectionTransform extends Transform {
         Seq(transform[Expr](p))))
 
     // opt.getOrElse(x) --> opt :? x
-    case CallExpr(_, RefExpr(refTy, Some(referenceObject), "getOrElse", _, true), Seq(p)) if referenceObject.exprType.isInstanceOf[NullableType] =>
-      Some(BinExpr(transform[Type](refTy), "?:", referenceObject, transform[Expr](p)))
+    //    case CallExpr(_, RefExpr(refTy, Some(referenceObject), "getOrElse", _, true), Seq(p)) if referenceObject.exprType.isInstanceOf[NullableType] =>
+    //      Some(InfixExpr(transform[Type](refTy), "?:", referenceObject, transform[Expr](p)))
 
     //opt.get --> opt!!
     case CallExpr(_, RefExpr(refTy, Some(referenceObject), "get", _, true), _)
@@ -60,21 +60,23 @@ class CollectionTransform extends Transform {
     case RefExpr(SimpleType("scala.Nil.type" | "scala.collection.immutable.Nil.type"), None, "Nil", _, false) =>
       Some(Exprs.emptyList)
 
-    // (1 :: seq, 1 +: seq)  --> listOf(1) + seq
-    case BinExpr(GenerecTypes(KotlinTypes.LIST, Seq(exprType)), "::" | "+:", left, right) =>
-      Some(
-        BinExpr(Exprs.listType(transform[Type](exprType)),
-          "+",
-          CallExpr(
-            transform[Type](exprType),
-            RefExpr(transform[Type](exprType), None, "listOf", Seq.empty, true),
-            Seq(transform[Expr](left))),
-          transform[Expr](right)))
+    //     (1 :: seq, 1 +: seq)  --> listOf(1) + seq
+    case CallExpr(exprType, RefExpr(refTy, Some(left), "::" | "+:", _, _), Seq(right)) =>
+//      if TypeUtils.isKotlinList(right.exprType) =>
+      Some(Exprs.simpleInfix(
+        Exprs.listType(transform[Type](exprType)),
+        "+",
+        CallExpr(
+          transform[Type](exprType),
+          RefExpr(transform[Type](exprType), None, "listOf", Seq.empty, true),
+          Seq(transform[Expr](left))),
+        transform[Expr](right)))
+
 
     // seq :+ 1  --> seq + 1
-    case BinExpr(GenerecTypes(KotlinTypes.LIST, Seq(exprType)), ":+", left, right) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(left), ":+", _, true), Seq(right)) =>
       Some(
-        BinExpr(Exprs.listType(transform[Type](exprType)),
+        Exprs.simpleInfix(Exprs.listType(transform[Type](exprType)),
           "+",
           transform[Expr](right),
           transform[Expr](right)))
@@ -102,14 +104,15 @@ class CollectionTransform extends Transform {
       if TypeUtils.isKotlinList(referenceObject.exprType) =>
       Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "forEach", typeParams, true), params.map(transform[Expr])))
 
-    // str * i => str.repeat(i)
-    case BinExpr(exprType, "*", left, right) if left.exprType == KotlinTypes.STRING && right.exprType == KotlinTypes.INT =>
+    //     str * i => str.repeat(i)
+    case CallExpr(exprType, RefExpr(refTy, Some(left), "*", _, _), Seq(right))
+      if left.exprType == KotlinTypes.STRING && right.exprType == KotlinTypes.INT =>
       Some(CallExpr(exprType, RefExpr(exprType, Some(transform[Expr](left)), "repeat", Seq.empty, true), Seq(right)))
 
     // seq(i) --> seq[i]
-//    case CallExpr(exprType, refExpr, Seq(index))
-//      if TypeUtils.isKotlinList(refExpr.exprType) =>
-//        Some(BracketsExpr(exprType, pass[Expr](refExpr), pass[Expr](index)))
+    //    case CallExpr(exprType, refExpr, Seq(index))
+    //      if TypeUtils.isKotlinList(refExpr.exprType) =>
+    //        Some(BracketsExpr(exprType, pass[Expr](refExpr), pass[Expr](index)))
 
     case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(TypeParam(exprType)), false) =>
       Some(ParenthesesExpr(Exprs.as(transform[Expr](referenceObject), transform[Type](exprType))))

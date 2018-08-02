@@ -11,8 +11,28 @@ import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renames, Scoped
 
 
 class BasicTransform extends Transform {
+
+  import org.jetbrains.plugins.kotlinConverter.types.TypeUtils._
+
+  def isDefaultOperator(op: RefExpr): Boolean =
+    op match {
+      case RefExpr(FunctionType(NumericType(_), NumericType(_)), None, "*" | "/" | "+" | "-", _, _) => true
+      case RefExpr(FunctionType(NumericType(_), KotlinTypes.BOOLEAN), None, ">" | "<" | ">=" | "<=" | "==" | "!=", _, _) => true
+      case RefExpr(FunctionType(KotlinTypes.STRING, KotlinTypes.STRING), None, "+", _, _) => true
+      case _ => false
+    }
+
   override protected def action(ast: AST): Option[AST] = {
     ast match {
+      case x@InfixExpr(exprType, op, _, _, _) if !isDefaultOperator(op) =>
+        val (left, right) = (x.left, x.right)
+        Some(transform[Expr](CallExpr(
+          exprType,
+          op.copy(referencedObject = Some(left)),
+          Seq(transform[Expr](right))
+        )))
+
+      //scala try --> kotlin try
       case ScalaTryExpr(exprType, tryBlock, catchBlock, finallyBlock) =>
         val cases = MatchUtils.expandCompositePattern(catchBlock.toSeq.flatMap(_.cases))
         val (goodClauses, badClauses) = cases.span {

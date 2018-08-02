@@ -4,6 +4,7 @@ import com.intellij.formatting.BlockEx
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renames, ScopedVal}
+import org.scalafmt.internal.SyntacticGroup.Term
 
 trait Transform {
   protected def action(ast: AST): Option[AST]
@@ -93,8 +94,12 @@ trait Transform {
       val newDefns = defns.map(transform[DefExpr])
       FileDef(pckg, (imports ++ collectedImports).map(transform[ImportDef]), newDefns)
 
-    case BinExpr(exprType, op, left, right) =>
-      BinExpr(transform[Type](exprType), op, transform[Expr](left), transform[Expr](right))
+    case InfixExpr(exprType, op, left, right, isLeftAssoc) =>
+      InfixExpr(transform[Type](exprType),
+        transform[RefExpr](op),
+        transform[Expr](left),
+        transform[Expr](right),
+        isLeftAssoc)
 
     case ParenthesesExpr(inner) =>
       ParenthesesExpr(transform[Expr](inner))

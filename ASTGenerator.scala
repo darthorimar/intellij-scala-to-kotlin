@@ -211,7 +211,12 @@ object ASTGenerator extends {
       BlockExpr(genType(x.`type`()), x.statements.map(gen[Expr]))
 
     case x: ScInfixExpr =>
-      BinExpr(genType(x.`type`()), x.operation.getText, gen[Expr](x.left), gen[Expr](x.right))
+      InfixExpr(genType(x.`type`()),
+        gen[RefExpr](x.operation),
+        gen[Expr](x.left),
+        gen[Expr](x.right),
+        x.isLeftAssoc)
+
     case x: ScInterpolatedStringLiteral =>
       InterpolatedStringExpr(x.getStringParts, x.getInjections.map(gen[Expr]))
     case x: ScLiteral =>

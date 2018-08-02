@@ -11,7 +11,11 @@ case object ErrorExpr extends Expr with ErrorAst {
 }
 
 
-case class BinExpr(exprType: Type, op: String, left: Expr, right: Expr) extends Expr
+case class InfixExpr(exprType: Type, op: RefExpr, left: Expr, right: Expr, isLeftAssoc: Boolean) extends Expr {
+  def rightOrder: (Expr, Expr) =
+    if (isLeftAssoc) (left, right)
+    else (right, left)
+}
 case class ParenthesesExpr(inner: Expr) extends Expr {
   override def exprType: Type = inner.exprType
 }

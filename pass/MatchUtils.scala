@@ -66,7 +66,7 @@ object MatchUtils {
           case c@ConstructorPattern(ref, _, label, _) =>
             val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
           val condition =
-            if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=", LitExpr(exprType, local), Exprs.nullLit)
+            if (ref == "Some") Exprs.simpleInfix(KotlinTypes.BOOLEAN, "!=", LitExpr(exprType, local), Exprs.nullLit)
             else Exprs.is(LitExpr(exprType, local), SimpleType(ref))
             (ReferencePattern(local),
               Some(condition),
@@ -119,7 +119,7 @@ object MatchUtils {
           handleConstructors(Seq((valRef.referenceName, pattern)), finalExpr)
 
         val condition =
-          if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
+          if (ref == "Some") Exprs.simpleInfix(KotlinTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
           else Exprs.is(valRef, SimpleType(ref))
 
         val body = BlockExpr(NoType, Seq(
@@ -142,7 +142,7 @@ object MatchUtils {
     val whenClauses =
       expandedClauses.map {
         case MatchCaseClause(LitPattern(lit), e, guard) =>
-          val equlasExpr = BinExpr(KotlinTypes.BOOLEAN, "==", valRef, lit)
+          val equlasExpr = Exprs.simpleInfix(KotlinTypes.BOOLEAN, "==", valRef, lit)
           ExprWhenClause(addGuardExpr(equlasExpr, guard), transform[Expr](e))
 
         case MatchCaseClause(WildcardPattern, e, guard) =>
@@ -170,7 +170,7 @@ object MatchUtils {
 
         case MatchCaseClause(pattern@ConstructorPattern(ref, args, _, repr), e, _) =>
           val lazyRef = RefExpr(NoType, None, Utils.escapeName(repr), Seq.empty, false)
-          val notEqulasExpr = BinExpr(KotlinTypes.BOOLEAN, "!=", lazyRef, Exprs.nullLit)
+          val notEqulasExpr = Exprs.simpleInfix(KotlinTypes.BOOLEAN, "!=", lazyRef, Exprs.nullLit)
           val vals = collectVals(pattern)
           val valDef = ValOrVarDef(Seq.empty, true, vals.map(p => ReferencePattern(p.name)), Some(lazyRef))
           val body = e match {

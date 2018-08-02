@@ -17,5 +17,10 @@ object TypeUtils {
     case KotlinTypes.LIST => true
     case _ => false
   }
-
+  object NumericType {
+    def unapply(t: Type): Option[Type] = t match {
+      case KotlinTypes.INT => Some(t)
+      case _ => None
+    }
+  }
 }

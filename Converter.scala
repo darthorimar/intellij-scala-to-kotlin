@@ -12,9 +12,7 @@ import org.jetbrains.plugins.scala.lang.transformation.calls._
 object Converter {
   val transformers: Set[Transformer] = Set(
     new ExpandApplyCall(),
-    new ExpandUpdateCall(),
-    new AddTypeToVariableDefinition(),
-    new AddTypeToValueDefinition(),
+//    new ExpandUpdateCall(),
     new ImplicitTransform()
   )
 

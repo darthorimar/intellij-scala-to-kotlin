@@ -5,16 +5,23 @@ import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 
 object Exprs {
   def is(expr: Expr, ty: Type) =
-    BinExpr(KotlinTypes.BOOLEAN, "is", expr, TypeExpr(ty))
+    simpleInfix(KotlinTypes.BOOLEAN, "is", expr, TypeExpr(ty))
 
   def as(expr: Expr, ty: Type) =
-    BinExpr(KotlinTypes.BOOLEAN, "as", expr, TypeExpr(ty))
+    simpleInfix(KotlinTypes.BOOLEAN, "as", expr, TypeExpr(ty))
 
   def and(left: Expr, right: Expr) =
-    BinExpr(KotlinTypes.BOOLEAN, "&&", left, right)
+    simpleInfix(KotlinTypes.BOOLEAN, "&&", left, right)
 
   def letExpr(obj: Expr, lambda: LambdaExpr) =
     CallExpr(lambda.exprType, RefExpr(NoType, Some(obj), "let", Seq.empty, true), Seq(lambda))
+
+  def simpleInfix(resultType: Type, op: String, left: Expr, right: Expr) =
+    InfixExpr(FunctionType(right.exprType, resultType),
+      RefExpr(FunctionType(right.exprType, resultType), None, op, Seq.empty, false),
+      left,
+      right,
+      true)
 
   def emptyList(ty: Type) =
     CallExpr(

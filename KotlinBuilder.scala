@@ -17,6 +17,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         if (pckg.trim.nonEmpty) {
           str("package ")
           str(pckg)
+          nl()
         }
         if (imports.nonEmpty) {
           nl()
@@ -165,10 +166,10 @@ class KotlinBuilder extends KotlinBuilderBase {
           str("import ")
           str(reference)
         }
-      case BinExpr(exprType, op, left, right) =>
+      case InfixExpr(exprType, op, left, right, isLeftAssoc) =>
         gen(left)
         str(" ")
-        str(op)
+        gen(op)
         str(" ")
         gen(right)
       case ParenthesesExpr(inner) =>
