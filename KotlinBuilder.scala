@@ -10,6 +10,9 @@ class KotlinBuilder extends KotlinBuilderBase {
 
   def gen(ast: AST): Unit =
     ast match {
+      case _: ErrorAst =>
+        str("/* ERROR */")
+
       case FileDef(pckg, imports, defns) =>
         if (pckg.trim.nonEmpty) {
           str("package ")

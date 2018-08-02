@@ -29,6 +29,7 @@ import org.jetbrains.plugins.scala.lang.refactoring.util.ScalaNamesUtil
 import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
 
 import scala.collection.immutable
+import scala.util.Try
 
 object ASTGenerator extends {
   private def genDefinitions(file: ScalaFile): Seq[PsiElement] =
@@ -110,7 +111,16 @@ object ASTGenerator extends {
     memberAttrs ++ extraAttrs
   }
 
-  def gen[T](psi: PsiElement): T = (psi match {
+  def gen[T](psi: PsiElement): T =
+    Try(transform[T](psi))
+      .recoverWith { case _ => Try(ErrorExpr.asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorCasePattern.asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorType.asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorForEnumerator.asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorWhenClause.asInstanceOf[T]) }
+      .get
+
+  def transform[T](psi: PsiElement): T = (psi match {
     case x: ScalaFile =>
       FileDef(
         x.getPackageName,

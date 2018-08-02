@@ -2,6 +2,15 @@ package org.jetbrains.plugins.kotlinConverter.ast
 
 trait AST
 
+trait ErrorAst extends AST
+
+case object ErrorCasePattern extends CasePattern with ErrorAst {
+  override def name: String = ""
+}
+
+case object ErrorWhenClause extends WhenClause with ErrorAst
+case object ErrorForEnumerator extends ForEnumerator with ErrorAst
+
 
 case class DefParameter(parameterType: Type, name: String) extends AST
 case class MatchCaseClause(pattern: CasePattern, expr: Expr, guard: Option[Expr]) extends AST

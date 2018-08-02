@@ -1,6 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter.ast
 
-trait Type extends AST {
+sealed trait Type extends AST {
   def asKotlin: String
   def isFunction: Boolean = false
 }
@@ -34,3 +34,6 @@ case object NoType extends Type {
   override def asKotlin: String = "Any"
 }
 
+case object ErrorType extends Type with ErrorAst {
+  override def asKotlin: String = ""
+}

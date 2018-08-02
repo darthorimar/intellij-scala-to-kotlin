@@ -28,6 +28,9 @@ trait Transform {
   }
 
   protected def copy(ast: AST): AST = ast match {
+    case x: ErrorAst =>
+      x
+
     case ReturnExpr(label, expr) =>
       ReturnExpr(label, expr.map(transform[Expr]))
 

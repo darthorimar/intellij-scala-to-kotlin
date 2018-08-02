@@ -6,6 +6,10 @@ import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 sealed trait Expr extends AST {
   def exprType: Type
 }
+case object ErrorExpr extends Expr with ErrorAst {
+  override def exprType: Type = NoType
+}
+
 
 case class BinExpr(exprType: Type, op: String, left: Expr, right: Expr) extends Expr
 case class ParenthesesExpr(inner: Expr) extends Expr {
