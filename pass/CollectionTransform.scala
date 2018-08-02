@@ -4,6 +4,7 @@ import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, TypeUtils}
+import org.scalafmt.internal.SyntacticGroup.Term
 
 class CollectionTransform extends Transform {
 
@@ -62,7 +63,7 @@ class CollectionTransform extends Transform {
 
     //     (1 :: seq, 1 +: seq)  --> listOf(1) + seq
     case CallExpr(exprType, RefExpr(refTy, Some(left), "::" | "+:", _, _), Seq(right)) =>
-//      if TypeUtils.isKotlinList(right.exprType) =>
+      //      if TypeUtils.isKotlinList(right.exprType) =>
       Some(Exprs.simpleInfix(
         Exprs.listType(transform[Type](exprType)),
         "+",
@@ -94,6 +95,12 @@ class CollectionTransform extends Transform {
       if TypeUtils.isKotlinList(referenceObject.exprType) =>
       Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "drop", typeParams, true), Seq(LitExpr(KotlinTypes.INT, "1"))))
 
+    // seq.head --> seq.first
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "head", typeParams, true), _)
+      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+      Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "first", typeParams, true), Seq.empty))
+
+
     // seq.init --> seq.dropLast(1)
     case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "init", typeParams, true), _)
       if TypeUtils.isKotlinList(referenceObject.exprType) =>
@@ -109,10 +116,21 @@ class CollectionTransform extends Transform {
       if left.exprType == KotlinTypes.STRING && right.exprType == KotlinTypes.INT =>
       Some(CallExpr(exprType, RefExpr(exprType, Some(transform[Expr](left)), "repeat", Seq.empty, true), Seq(right)))
 
-    // seq(i) --> seq[i]
-    //    case CallExpr(exprType, refExpr, Seq(index))
-    //      if TypeUtils.isKotlinList(refExpr.exprType) =>
-    //        Some(BracketsExpr(exprType, pass[Expr](refExpr), pass[Expr](index)))
+    //seq(i) --> seq[i]
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "apply", typeParams, true), Seq(i))
+      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+      Some(BracketsExpr(exprType, transform[Expr](referenceObject), transform[Expr](i)))
+
+    //seq1 ++ seq2  --> seq1+ seq2
+    case CallExpr(exprType, RefExpr(refTy, Some(left), "++", typeParams, true), Seq(right))
+      if TypeUtils.isKotlinList(left.exprType) && TypeUtils.isKotlinList(right.exprType) =>
+      Some(Exprs.simpleInfix(exprType, "+", transform[Expr](left), transform[Expr](right)))
+
+    // seq.nonEmpty --> seq.isNotEmpty
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "nonEmpty", typeParams, true), _)
+      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+      Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "isNotEmpty", typeParams, true), Seq.empty))
+
 
     case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(TypeParam(exprType)), false) =>
       Some(ParenthesesExpr(Exprs.as(transform[Expr](referenceObject), transform[Type](exprType))))
