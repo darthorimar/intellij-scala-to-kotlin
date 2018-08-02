@@ -41,9 +41,16 @@ case class InterpolatedStringExpr(parts: Seq[String], injected: Seq[Expr]) exten
 case class ReturnExpr(label: Option[String], expr: Option[Expr]) extends Expr {
   override def exprType: Type = KotlinTypes.NOTHING
 }
-case class TryExpr(tryBlock: Expr, finallyBlock: Option[Expr]) extends Expr {
-  override def exprType: Type = tryBlock.exprType
-}
+case class ScalaTryExpr(exprType: Type,
+                        tryBlock: Expr,
+                        catchBlock: Option[ScalaCatch],
+                        finallyBlock: Option[Expr]) extends Expr
+
+case class KotlinTryExpr(exprType: Type,
+                         tryBlock: Expr,
+                         catchBlock: Seq[KotlinCatchCase],
+                         finallyBlock: Option[Expr]) extends Expr
+
 case class TypeExpr(exprType: Type) extends Expr
 
 case class BlockExpr(exprType: Type, exprs: Seq[Expr]) extends Expr {

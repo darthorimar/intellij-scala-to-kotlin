@@ -37,6 +37,10 @@ object Exprs {
       aruments
     )
 
+  def simpleRef(name: String, refType: Type) =
+    RefExpr(refType, None, name, Seq.empty, false)
+
+
   val falseLit = LitExpr(KotlinTypes.BOOLEAN, "false")
   val trueLit = LitExpr(KotlinTypes.BOOLEAN, "true")
   val nullLit = LitExpr(NoType, "null") //TODO fix

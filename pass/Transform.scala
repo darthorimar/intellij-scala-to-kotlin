@@ -3,10 +3,14 @@ package org.jetbrains.plugins.kotlinConverter.pass
 import com.intellij.formatting.BlockEx
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renames, ScopedVal}
 
 trait Transform {
   protected def action(ast: AST): Option[AST]
+
   var collectedImports: List[ImportDef] = Nil
+  val renamesVal = new ScopedVal[Renames](Renames(Map.empty))
+  val namerVal = new ScopedVal[LocalNamer](new LocalNamer)
 
   private var parentsStack = List.empty[AST]
 
@@ -145,8 +149,23 @@ trait Transform {
     case WhileExpr(exprType, cond, body) =>
       WhileExpr(transform[Type](exprType), transform[Expr](cond), transform[BlockExpr](body))
 
-    case TryExpr(tryBlock, finallyBlock) =>
-      TryExpr(transform[Expr](tryBlock), finallyBlock.map(transform[Expr]))
+    case ScalaTryExpr(exprType, tryBlock, catchBlock, finallyBlock) =>
+      ScalaTryExpr(transform[Type](exprType),
+        transform[Expr](tryBlock),
+        catchBlock.map(transform[ScalaCatch]),
+        finallyBlock.map(transform[Expr]))
+
+    case KotlinTryExpr(exprType, tryBlock, catchCases, finallyBlock) =>
+      KotlinTryExpr(transform[Type](exprType),
+        transform[Expr](tryBlock),
+        catchCases.map(transform[KotlinCatchCase]),
+        finallyBlock.map(transform[Expr]))
+
+    case ScalaCatch(cases) =>
+      ScalaCatch(cases.map(transform[MatchCaseClause]))
+
+    case KotlinCatchCase(name, valueType, expr) =>
+      KotlinCatchCase(name, transform[Type](valueType), transform[Expr](expr))
 
     case GenerecTypes(des, params) =>
       GenerecTypes(transform[Type](des), params.map(transform[Type]))
@@ -193,7 +212,7 @@ trait Transform {
     case ThisExpr(exprType) =>
       ThisExpr(transform[Type](exprType))
 
-    case ForExpr(exprType, generators, isYield,  body) =>
+    case ForExpr(exprType, generators, isYield, body) =>
       ForExpr(transform[Type](exprType), generators.map(transform[ForEnumerator]), isYield, transform[Expr](body))
 
     case ForGenerator(pattern, expr) =>

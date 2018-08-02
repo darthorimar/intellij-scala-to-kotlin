@@ -188,11 +188,14 @@ object ASTGenerator extends {
         genType(x.returnType),
         genFunctionBody(x))
 
-    case x: ScBlockExpr if x.hasCaseClauses =>
+    case x: ScBlockExpr if x.isAnonymousFunction =>
       LambdaExpr(genType(x.`type`()),
         Seq.empty,
         MatchExpr(genType(x.`type`()), UnderscoreExpr(NoType), x.caseClauses.get.caseClauses.map(gen[MatchCaseClause])),
         false)
+
+    case x: ScBlockExpr if x.isInCatchBlock =>
+      ScalaCatch(x.caseClauses.get.caseClauses.map(gen[MatchCaseClause]))
 
     case x: ScBlock =>
       BlockExpr(genType(x.`type`()), x.statements.map(gen[Expr]))
@@ -343,7 +346,10 @@ object ASTGenerator extends {
       DefParameter(genType(x.typeElement), x.name)
 
     case x: ScTryStmt =>
-      TryExpr(gen[Expr](x.tryBlock), x.finallyBlock.flatMap(_.expression).map(gen[Expr]))
+      ScalaTryExpr(genType(x.`type`()),
+        gen[Expr](x.tryBlock),
+        x.catchBlock.flatMap(_.expression).map(gen[ScalaCatch]),
+        x.finallyBlock.flatMap(_.expression).map(gen[Expr]))
 
     case x: ScForStatement =>
       ForExpr(

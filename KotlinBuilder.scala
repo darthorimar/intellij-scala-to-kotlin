@@ -99,7 +99,6 @@ class KotlinBuilder extends KotlinBuilderBase {
         gen(expr)
 
 
-
       case ReturnExpr(label, expr) =>
         str("return")
         opt(label) { l =>
@@ -136,9 +135,16 @@ class KotlinBuilder extends KotlinBuilderBase {
           gen(b)
         }
 
-      case TryExpr(tryBlock, finallyBlock) =>
+      case KotlinTryExpr(exprType, tryBlock, catches, finallyBlock) =>
         str("try ")
         genAsBlock(tryBlock)
+        rep(catches, " ") { case KotlinCatchCase(name, valueType, expr) =>
+          str("catch (")
+          str(name)
+          genType(valueType)
+          str(") ")
+          genAsBlock(expr)
+        }
         opt(finallyBlock) { f =>
           str(" finally ")
           genAsBlock(f)

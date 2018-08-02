@@ -3,7 +3,7 @@ package org.jetbrains.plugins.kotlinConverter.pass
 import com.intellij.formatting.BlockEx
 import com.sun.source.doctree.AttributeTree.ValueKind
 import org.jetbrains.plugins.kotlinConverter
-import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
+import org.jetbrains.plugins.kotlinConverter.{ExprUtils, Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
@@ -11,11 +11,31 @@ import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renames, Scoped
 
 
 class BasicTransform extends Transform {
-  val renamesVal = new ScopedVal[Renames](Renames(Map.empty))
-  val namerVal = new ScopedVal[LocalNamer](new LocalNamer)
-
   override protected def action(ast: AST): Option[AST] = {
     ast match {
+      case ScalaTryExpr(exprType, tryBlock, catchBlock, finallyBlock) =>
+        val cases = MatchUtils.expandCompositePattern(catchBlock.toSeq.flatMap(_.cases))
+        val (goodClauses, badClauses) = cases.span {
+          case MatchCaseClause(_: TypedPattern, _, None) => true
+          case MatchCaseClause(_: ReferencePattern, _, None) => true
+          case _ => false
+        }
+        val goodCatches = goodClauses.map {
+          case MatchCaseClause(TypedPattern(referenceName, patternType), expr, None) =>
+            KotlinCatchCase(referenceName, patternType, expr)
+          case MatchCaseClause(ReferencePattern(referenceName), expr, None) =>
+            KotlinCatchCase(referenceName, KotlinTypes.THROWABLE, expr)
+        }
+        val badCatches = badClauses match {
+          case Seq() => Seq.empty
+          case _ =>
+            val ref = Exprs.simpleRef(namerVal.newName("e"), KotlinTypes.THROWABLE)
+            val matchExpr = ExprUtils.blockOf(MatchUtils.convertMatchToWhen(ref, badClauses, exprType, this))
+            Seq(KotlinCatchCase(ref.referenceName, ref.exprType, matchExpr))
+        }
+        Some(KotlinTryExpr(exprType, tryBlock, goodCatches ++ badCatches, finallyBlock))
+
+
       //import _ --> *
       case ImportDef(ref, names) =>
         Some(ImportDef(ref, names.map {
@@ -149,179 +169,11 @@ class BasicTransform extends Transform {
 
       // matchExpr to when one
       case MatchExpr(exprType, expr, clauses) =>
-        val expandedClauses = clauses.flatMap {
-          case MatchCaseClause(CompositePattern(parts), expr, guard) =>
-            parts.map { p =>
-              MatchCaseClause(p, expr, guard)
-            }
-          case x => Seq(x)
-        }
-
         val newExpr = transform[Expr](expr)
         val valExpr = SimpleValOrVarDef(Seq.empty, true, namerVal.newName("match"), None, Some(newExpr))
         val valRef = RefExpr(newExpr.exprType, None, valExpr.name, Seq.empty, false)
-
-        def collectVals(constructorPatternMatch: ConstructorPattern): Seq[ConstructorParam] = {
-          constructorPatternMatch.args.flatMap {
-            case LitPattern(litPattern) =>
-              Seq.empty
-            case ReferencePattern(ref) =>
-              Seq(ConstructorParam(ValKind, PublicAttribute, ref, NoType))
-            case WildcardPattern =>
-              Seq.empty
-            case c: ConstructorPattern =>
-              collectVals(c)
-            case TypedPattern(ref, exprTypePattern) =>
-              Seq(ConstructorParam(ValKind, PublicAttribute, ref, exprTypePattern))
-          }
-        }
-
-        val caseClasses = expandedClauses.collect {
-          case MatchCaseClause(pattern@ConstructorPattern(_, _, _, repr), _, _) =>
-            val name = Utils.escapeName(s"${repr}_data")
-            val vals = collectVals(pattern)
-            Defn(Seq(CaseAttribute),
-              ClassDefn,
-              name,
-              Seq.empty,
-              Some(ParamsConstructor(vals)),
-              None,
-              None)
-        }
-
-        def collectConstructors(constructors: Seq[(String, CasePattern)]): (Seq[ValOrVarDef], Seq[Expr], Seq[(String, ConstructorPattern)]) = {
-          val (vals, conds, refs) = constructors.collect { case (r, ConstructorPattern(_, patterns, _, _)) =>
-            val (destructors, conds, refs) = patterns.map {
-              case LitPattern(litPattern) =>
-                (LitPattern(litPattern), None, None)
-              case ReferencePattern(ref) =>
-                (ReferencePattern(ref), None, None)
-              case WildcardPattern =>
-                (WildcardPattern, None, None)
-              case c@ConstructorPattern(ref, _, label, _) =>
-                val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
-              val condition =
-                if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=", LitExpr(exprType, local), Exprs.nullLit)
-                else Exprs.is(LitExpr(exprType, local), SimpleType(ref))
-                (ReferencePattern(local),
-                  Some(condition),
-                  Some(local -> c))
-              case TypedPattern(ref, exprTypePattern) =>
-                (ReferencePattern(ref),
-                  Some(Exprs.is(LitExpr(exprTypePattern, ref), exprTypePattern)),
-                  None)
-            }.unzip3
-            (ValOrVarDef(Seq.empty, true, destructors, Some(RefExpr(NoType, None, r, Seq.empty, false))),
-              conds.flatten,
-              refs.flatten)
-          }.unzip3
-          (vals, conds.flatten, refs.flatten)
-        }
-
-        def handleConstructors(constructors: Seq[(String, CasePattern)], defaultCase: Expr): Seq[Expr] = {
-          val (valDefns, conditionParts, collectedConstructors) = collectConstructors(constructors)
-
-          val trueBlock =
-            if (collectedConstructors.nonEmpty) {
-              val exprs = handleConstructors(collectedConstructors, defaultCase)
-              BlockExpr(exprs.last.exprType, exprs)
-            } else defaultCase
-
-          val ifCond =
-            if (conditionParts.nonEmpty)
-              IfExpr(NoType, conditionParts.reduceLeft(Exprs.and), trueBlock, None)
-            else trueBlock
-
-          valDefns :+ ifCond
-        }
-
-        val lazyDefs = expandedClauses.collect {
-          case MatchCaseClause(pattern@ConstructorPattern(ref, _, _, repr), expr, guard) =>
-            val params = collectVals(pattern).map(v => RefExpr(NoType, None, v.name, Seq.empty, false))
-            val callContructor =
-              CallExpr(NoType,
-                RefExpr(NoType, None, Utils.escapeName(s"${repr}_data"), Seq.empty, true),
-                params
-              )
-
-            val retExpr = ReturnExpr(Some("lazy"), Some(callContructor))
-            val finalExpr = guard match {
-              case Some(g) => IfExpr(NoType, g, retExpr, None)
-              case None => retExpr
-            }
-
-            val innerBodyExprs =
-              handleConstructors(Seq((valRef.referenceName, pattern)), finalExpr)
-
-            val condition =
-              if (ref == "Some") BinExpr(KotlinTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
-              else Exprs.is(valRef, SimpleType(ref))
-
-            val body = BlockExpr(NoType, Seq(
-              IfExpr(
-                NoType,
-                condition,
-                BlockExpr(innerBodyExprs.last.exprType, innerBodyExprs),
-                None),
-              ReturnExpr(Some("lazy"), Some(Exprs.nullLit))
-            ))
-            LazyValDef(Utils.escapeName(repr), NoType, body)
-        }
-
-        def addGuardExpr(expr: Expr, guard: Option[Expr]) =
-          guard match {
-            case Some(g) => Exprs.and(expr, g)
-            case None => expr
-          }
-
-        val whenClauses =
-          expandedClauses.map {
-            case MatchCaseClause(LitPattern(lit), e, guard) =>
-              val equlasExpr = BinExpr(KotlinTypes.BOOLEAN, "==", valRef, lit)
-              ExprWhenClause(addGuardExpr(equlasExpr, guard), transform[Expr](e))
-
-            case MatchCaseClause(WildcardPattern, e, guard) =>
-              guard match {
-                case Some(g) => ExprWhenClause(transform[Expr](g), transform[Expr](e))
-                case None => ElseWhenClause(transform[Expr](e))
-              }
-
-            case MatchCaseClause(ReferencePattern(ref), e, guard) =>
-              scoped(
-                renamesVal.updated(_.add(ref -> valRef.referenceName))
-              ) {
-                guard match {
-                  case Some(g) => ExprWhenClause(transform[Expr](g), transform[Expr](e))
-                  case None => ElseWhenClause(transform[Expr](e))
-                }
-              }
-
-            case MatchCaseClause(TypedPattern(ref, patternTy), e, guard) =>
-              scoped(
-                renamesVal.updated(_.add(ref -> valExpr.name))
-              ) {
-                ExprWhenClause(addGuardExpr(Exprs.is(valRef, patternTy), guard.map(transform[Expr])), transform[Expr](e))
-              }
-
-            case MatchCaseClause(pattern@ConstructorPattern(ref, args, _, repr), e, _) =>
-              val lazyRef = RefExpr(NoType, None, Utils.escapeName(repr), Seq.empty, false)
-              val notEqulasExpr = BinExpr(KotlinTypes.BOOLEAN, "!=", lazyRef, Exprs.nullLit)
-              val vals = collectVals(pattern)
-              val valDef = ValOrVarDef(Seq.empty, true, vals.map(p => ReferencePattern(p.name)), Some(lazyRef))
-              val body = e match {
-                case BlockExpr(exprType, exprs) =>
-                  BlockExpr(exprType, valDef +: exprs)
-                case expr =>
-                  BlockExpr(expr.exprType, Seq(valDef, expr))
-              }
-              ExprWhenClause(notEqulasExpr, body)
-          }
-            .span(_.isInstanceOf[ExprWhenClause]) match { //take all before first else including first else
-            case (h, t) => h ++ t.headOption.toSeq
-          }
-
-        val whenExpr = WhenExpr(NoType, None, whenClauses)
-        Some(transform[Expr](BlockExpr(whenExpr.exprType, valExpr +: (caseClasses ++ lazyDefs) :+ whenExpr)))
+        val whenExpr = MatchUtils.convertMatchToWhen(valRef, clauses, exprType, this)
+        Some(ExprUtils.blockOf(valExpr +: whenExpr))
 
       case _ => None
     }

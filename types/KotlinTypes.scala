@@ -8,4 +8,5 @@ object KotlinTypes {
   val STRING = SimpleType("String")
   val LIST = SimpleType("List")
   val INT = SimpleType("Int")
+  val THROWABLE = SimpleType("Throwable")
 }

@@ -59,3 +59,6 @@ case class ForVal(valDefExpr: Expr) extends ForEnumerator
 case class SupersBlock(constructor: Option[SuperConstructor], supers: Seq[Type]) extends AST
 
 case class SuperConstructor(constructorType: Type, exprs: Seq[Expr]) extends AST
+
+case class ScalaCatch(cases: Seq[MatchCaseClause]) extends AST
+case class KotlinCatchCase(name: String, valueType: Type, expr: Expr) extends AST
