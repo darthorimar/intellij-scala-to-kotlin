@@ -16,7 +16,7 @@ trait KotlinBuilderBase {
     i += indentStep
     nl()
   }
-  def unIndent(): Unit = {
+  def unIndent(): Unit = {//todo add checking
     i -= indentStep
     nl()
   }

@@ -236,7 +236,7 @@ object Transform {
       new TypeTransform,
       new BasicTransform,
       new CollectionTransform)
-    passes.foldLeft(fileDef)((a, p) => p.transform[FileDef](a))
+    passes.foldLeft(fileDef)((a, p) => p.transform[FileDef](a))//todo rename
   }
 }
 

@@ -121,7 +121,7 @@ object ASTGenerator extends {
       .get
 
   def transform[T](psi: PsiElement): T = (psi match {
-    case x: ScalaFile =>
+    case x: ScalaFile => //todo x --> sth else
       FileDef(
         x.getPackageName,
         x.importStatementsInHeader.flatMap(_.importExprs).map(gen[ImportDef]),
@@ -177,7 +177,7 @@ object ASTGenerator extends {
         x.extendsBlock.templateParents.map(gen[SupersBlock]),
         blockOrEmpty(
           overrideConstuctParamsDefs ++ x.extendsBlock.members.map(gen[DefExpr])))
-    case x: PsiClassWrapper =>
+    case x: PsiClassWrapper => //todo get rid of
       gen[DefExpr](x.definition)
 
     case x: ScTemplateParents =>
@@ -234,7 +234,7 @@ object ASTGenerator extends {
         .getOrElse(genType(x.`type`()))
       val isFunc =
         x.getReference.asInstanceOf[ScReferenceExpressionImpl]
-          .shapeResolve
+          .shapeResolve//todo use bind
           .map(_.element)
           .exists(_.isInstanceOf[ScFunction])
       RefExpr(

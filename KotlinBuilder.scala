@@ -308,7 +308,7 @@ class KotlinBuilder extends KotlinBuilderBase {
   def genAsBlock(e: Expr): Unit = e match {
     case BlockExpr(exprType, exprs) =>
       str("{")
-      if (!stateVal.inInterpolatedString) indent()
+      if (!stateVal.inInterpolatedString) indent()//todo move to func
       repNl(exprs)(gen)
       if (!stateVal.inInterpolatedString) unIndent()
       str("}")
