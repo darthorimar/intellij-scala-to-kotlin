@@ -128,7 +128,8 @@ object ASTGenerator extends {
     case x: ScalaFile => //todo x --> sth else
       FileDef(
         x.getPackageName,
-        x.importStatementsInHeader.flatMap(_.importExprs).map(gen[ImportDef]),
+        Seq.empty,
+//        x.importStatementsInHeader.flatMap(_.importExprs).map(gen[ImportDef]),
         genDefinitions(x)
           .filter {
             case _: PsiClassWrapper => false
@@ -141,12 +142,6 @@ object ASTGenerator extends {
             case _ => true
           }
       )
-
-    case x: ScImportExpr =>
-      if (x.isSingleWildcard)
-        ImportDef(x.reference.map(_.getText).get, Seq("*"))
-      else
-        ImportDef(x.reference.map(_.getText).get, x.selectors.flatMap(_.importedName))
 
     case x: ScTypeDefinition =>
       x.typeParameters

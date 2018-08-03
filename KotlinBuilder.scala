@@ -155,18 +155,10 @@ class KotlinBuilder extends KotlinBuilderBase {
           genAsBlock(f)
         }
 
-      case ImportDef(reference, names) =>
-        if (names.nonEmpty) {
-          repNl(names) { n =>
-            str("import ")
-            str(reference)
-            str(".")
-            str(n)
-          }
-        } else {
-          str("import ")
-          str(reference)
-        }
+      case ImportDef(reference) =>
+        str("import ")
+        str(reference)
+
       case InfixExpr(exprType, op, left, right, isLeftAssoc) =>
         gen(left)
         str(" ")

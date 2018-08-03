@@ -11,10 +11,10 @@ class ScopedVal[T](initial: T) {
   def get: T = stack.head
 
   def updated(update: T => T): SettedScopedVal[T] =
-    set(update(get))
+    set(update.apply(get))
 
   def call[R](func: T => R): R =
-    func(get)
+    func.apply(get)
 }
 
 object ScopedVal {

@@ -59,13 +59,6 @@ class BasicTransform extends Transform {
           finallyBlock.map(transform[Expr])))
 
 
-      //import _ --> *
-      case ImportDef(ref, names) =>
-        Some(ImportDef(ref, names.map {
-          case "_" => "*"
-          case x => x
-        }))
-
       //rename refs
       case x: RefExpr if renamesVal.call(_.renames.contains(x.referenceName)) =>
         Some(x.copy(referenceName = renamesVal.get.renames(x.referenceName)))
@@ -106,7 +99,7 @@ class BasicTransform extends Transform {
               acc))
         }
         if (isYield) {
-          collectedImports = ImportDef("kotlin.coroutines.experimental.buildSequence", Seq.empty) :: collectedImports
+          collectedImports = ImportDef("kotlin.coroutines.experimental.buildSequence") :: collectedImports
           Some(
             Exprs.simpleCall("buildSequence",
               exprType,

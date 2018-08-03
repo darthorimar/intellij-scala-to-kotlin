@@ -123,7 +123,7 @@ case class DefnDef(attributes: Seq[Attribute],
                    returnType: Type,
                    body: Option[Expr]) extends DefExpr
 
-case class ImportDef(ref: String, names: Seq[String]) extends DefExpr {
+case class ImportDef(ref: String) extends DefExpr {
   override def exprType: Type = NoType
   override def attributes: Seq[Attribute] = Seq.empty
 }

@@ -13,6 +13,8 @@ trait Transform {
   val renamesVal = new ScopedVal[Renames](Renames(Map.empty))
   val namerVal = new ScopedVal[LocalNamer](new LocalNamer)
 
+  var imports: Set[ImportDef] = Set.empty
+
   private var parentsStack = List.empty[AST]
 
   protected def parents: List[AST] =
@@ -93,8 +95,8 @@ trait Transform {
         transform[Type](retType),
         body.map(transform[Expr]))
 
-    case ImportDef(ref, names) =>
-      ImportDef(ref, names)
+    case ImportDef(ref) =>
+      ImportDef(ref)
 
     case FileDef(pckg, imports, defns) =>
       val newDefns = defns.map(transform[DefExpr])
@@ -246,7 +248,8 @@ object Transform {
     val passes = Seq(
       new TypeTransform,
       new BasicTransform,
-      new CollectionTransform)
+      new CollectionTransform,
+      new RefCollector)
     passes.foldLeft(fileDef)((a, p) => p.transform[FileDef](a)) //todo rename
   }
 }
