@@ -28,7 +28,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         }
         repNl(defns)(gen)
 
-      case Defn(attrs, t, name, typeParams, consruct, supersBlock, block) =>
+      case Defn(attrs, t, name, typeParams, consruct, supersBlock, block, companionDefn) =>
         rep(attrs, " ")(gen)
         if (attrs.nonEmpty) str(" ")
         genKeyword(t)
@@ -308,6 +308,8 @@ class KotlinBuilder extends KotlinBuilderBase {
       case TypeParam(exprType) =>
         genType(exprType, false)
 
+      case EmptyDefExpr =>
+
       case x: Keyword =>
         genKeyword(x)
     }
@@ -315,7 +317,7 @@ class KotlinBuilder extends KotlinBuilderBase {
   def genAsBlock(e: Expr): Unit = e match {
     case BlockExpr(exprType, exprs) =>
       str("{")
-      if (!stateVal.inInterpolatedString) indent()//todo move to func
+      if (!stateVal.inInterpolatedString) indent() //todo move to func
       repNl(exprs)(gen)
       if (!stateVal.inInterpolatedString) unIndent()
       str("}")

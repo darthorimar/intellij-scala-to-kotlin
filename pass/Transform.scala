@@ -35,14 +35,20 @@ trait Transform {
     case ReturnExpr(label, expr) =>
       ReturnExpr(label, expr.map(transform[Expr]))
 
-    case Defn(attrs, t, name, typeParams, construct, supersBlock, block) =>
+    case Defn(attrs, t, name, typeParams, construct, supersBlock, block, companionDefn) =>
       Defn(attrs.map(transform[Attribute]),
         t,
         name,
         typeParams.map(transform[TypeParam]),
         construct.map(transform[Constructor]),
         supersBlock.map(transform[SupersBlock]),
-        block.map(transform[BlockExpr]))
+        block.map(transform[BlockExpr]),
+        companionDefn.map(transform[CompanionModule]))
+
+    case ClassCompanion(companion) =>
+      ClassCompanion(transform[Defn](companion))
+
+    case ObjectCompanion => ObjectCompanion
 
     case SupersBlock(constructor, supers) =>
       SupersBlock(constructor.map(transform[SuperConstructor]), supers.map(transform[Type]))
@@ -228,6 +234,8 @@ trait Transform {
 
     case ForGenerator(pattern, expr) =>
       ForGenerator(transform[CasePattern](pattern), transform[Expr](expr))
+
+    case EmptyDefExpr => EmptyDefExpr
 
     case x: Keyword => x
   }

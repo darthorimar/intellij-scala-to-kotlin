@@ -71,3 +71,7 @@ case class SuperConstructor(constructorType: Type, exprs: Seq[Expr]) extends AST
 
 case class ScalaCatch(cases: Seq[MatchCaseClause]) extends AST
 case class KotlinCatchCase(name: String, valueType: Type, expr: Expr) extends AST
+
+sealed trait CompanionModule extends AST
+case class ClassCompanion(companion: Defn) extends CompanionModule
+case object ObjectCompanion extends CompanionModule

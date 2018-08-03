@@ -81,12 +81,17 @@ case class Defn(attributes: Seq[Attribute],
                 typeParams: Seq[TypeParam],
                 constructor: Option[Constructor],
                 supersBlock: Option[SupersBlock],
-                body: Option[Expr]) extends DefExpr {
+                body: Option[BlockExpr],
+                companionDefn: Option[CompanionModule]) extends DefExpr {
   override def exprType: Type = NoType
   override def isDefn: Boolean = true
 
   override def isClassDefn: Boolean = defnType == ClassDefn
 }
+object EmptyDefExpr extends DefExpr {
+  override def attributes: Seq[Attribute] = Seq.empty
+}
+
 case class ValOrVarDef(attributes: Seq[Attribute],
                        isVal: Boolean,
                        patterns: Seq[CasePattern],

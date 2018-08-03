@@ -141,10 +141,28 @@ class BasicTransform extends Transform {
 
       case x: Defn =>
         val defn = copy(x).asInstanceOf[Defn]
-        val t =
+        val companionObj =
+          defn.companionDefn.toSeq.flatMap {
+            case ClassCompanion(c) =>
+              Seq(c.copy(attributes = c.attributes :+ CompanionAttribute))
+            case _ => Seq.empty
+          }
+        val exprs = x.body.toSeq.flatMap(_.exprs) ++ companionObj
+        val newBody =
+          if (exprs.isEmpty) None
+          else Some(BlockExpr(NoType, exprs))
+
+        val defnType =
           if (x.defnType == TraitDefn) InterfaceDefn
           else x.defnType
-        Some(copy(defn).asInstanceOf[Defn].copy(attributes = handleAttrs(defn), defnType = t))
+        val name =
+          if (x.companionDefn.contains(ObjectCompanion)) ""
+        else x.name
+        Some(copy(defn).asInstanceOf[Defn]
+          .copy(attributes = handleAttrs(defn),
+            defnType = defnType,
+            body = newBody,
+            name = name))
 
       //uncarry
       case x@CallExpr(_, c: CallExpr, _) if c.exprType.isFunction =>
@@ -224,6 +242,7 @@ class BasicTransform extends Transform {
         attr(x.attributes.contains(ProtectedAttribute), ProtectedAttribute) ::
         attr(x.attributes.contains(AbstractAttribute), AbstractAttribute) ::
         attr(x.attributes.contains(OverrideAttribute), OverrideAttribute) ::
+        attr(x.attributes.contains(CompanionAttribute), CompanionAttribute) ::
         Nil)
         .flatten
     sortAttrs(attrs)

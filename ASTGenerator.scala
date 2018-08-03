@@ -131,7 +131,12 @@ object ASTGenerator extends {
             case y: ScObject if y.isSyntheticObject => false
             case _ => true
           }
-          .map(gen[DefExpr]))
+          .map(gen[DefExpr])
+          .filter {
+            case Defn(_, ObjDefn, _, _, _, _, _, Some(_)) => false
+            case _ => true
+          }
+      )
 
     case x: ScImportExpr =>
       if (x.isSingleWildcard)
@@ -153,7 +158,7 @@ object ASTGenerator extends {
               z.parameters
                 .filter(p => ScalaPsiUtil.superValsSignatures(p).nonEmpty)
           }.flatten
-            .map { case p: ScClassParameter =>
+            .map { p: ScClassParameter =>
               DefnDef(Seq(PublicAttribute, OverrideAttribute),
                 p.name,
                 Seq.empty,
@@ -164,19 +169,30 @@ object ASTGenerator extends {
           case _ => Seq.empty
         }
 
-      Defn(
-        genAttributes(x),
+      val defnType =
         x match {
           case _: ScClass => ClassDefn
           case _: ScTrait => TraitDefn
           case _: ScObject => ObjDefn
-        },
+        }
+
+
+      val companionDefn =  x.baseCompanionModule.map {
+        case _ if defnType == ObjDefn => ObjectCompanion
+        case c => ClassCompanion(gen[Defn](c))
+      }
+
+      Defn(
+        genAttributes(x),
+        defnType,
         x.name,
         x.typeParameters.map(gen[TypeParam]),
         construct,
         x.extendsBlock.templateParents.map(gen[SupersBlock]),
         blockOrEmpty(
-          overrideConstuctParamsDefs ++ x.extendsBlock.members.map(gen[DefExpr])))
+          overrideConstuctParamsDefs ++ x.extendsBlock.members.map(gen[DefExpr])),
+        companionDefn)
+
     case x: PsiClassWrapper => //todo get rid of
       gen[DefExpr](x.definition)
 
@@ -234,7 +250,7 @@ object ASTGenerator extends {
         .getOrElse(genType(x.`type`()))
       val isFunc =
         x.getReference.asInstanceOf[ScReferenceExpressionImpl]
-          .shapeResolve//todo use bind
+          .shapeResolve //todo use bind
           .map(_.element)
           .exists(_.isInstanceOf[ScFunction])
       RefExpr(

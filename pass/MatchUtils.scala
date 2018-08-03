@@ -51,6 +51,7 @@ object MatchUtils {
           Seq.empty,
           Some(ParamsConstructor(vals)),
           None,
+          None,
           None)
     }
 

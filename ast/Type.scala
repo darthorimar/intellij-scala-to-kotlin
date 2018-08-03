@@ -9,7 +9,7 @@ case class FunctionType(left: Type, right: Type) extends Type {
   override def asKotlin: String = {
     val leftStr = left match {
       case t: ProductType => t.asKotlin
-      case t => s"($t)"
+      case t => s"(${t.asKotlin})"
     }
     s"$leftStr -> ${right.asKotlin}"
   }
