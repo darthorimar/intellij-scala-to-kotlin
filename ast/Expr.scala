@@ -36,7 +36,7 @@ case class BracketsExpr(exprType: Type, expr: Expr, inBrackets: Expr) extends Ex
 case class AssignExpr(left: Expr, right: Expr) extends Expr {
   override def exprType: Type = SimpleType("Unit")
 }
-case class NewExpr(exprType: Type, name: String, arguments: Seq[Expr]) extends Expr
+case class NewExpr(exprType: Type, instanceType: Type, arguments: Seq[Expr]) extends Expr
 case class LambdaExpr(exprType: Type, parameters: Seq[DefParameter], expr: Expr, needBraces: Boolean) extends Expr
 case class ThrowExpr(exprType: Type, expr: Expr) extends Expr
 case class IfExpr(exprType: Type, condition: Expr, trueBranch: Expr, falseBranch: Option[Expr]) extends Expr

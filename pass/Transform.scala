@@ -154,8 +154,8 @@ trait Transform {
     case AssignExpr(left, right) =>
       AssignExpr(transform[Expr](left), transform[Expr](right))
 
-    case NewExpr(exprType, name, args) =>
-      NewExpr(transform[Type](exprType), name, args.map(transform[Expr]))
+    case NewExpr(exprType, instanceType, args) =>
+      NewExpr(transform[Type](exprType), transform[Type](instanceType), args.map(transform[Expr]))
 
     case LambdaExpr(exprType, params, expr, needBraces) =>
       LambdaExpr(transform[Type](exprType), params.map(transform[DefParameter]), transform[Expr](expr), needBraces)

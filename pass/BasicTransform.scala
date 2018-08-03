@@ -74,14 +74,14 @@ class BasicTransform extends Transform {
       case BlockExpr(_, stmts) if stmts.size == 1 && stmts.head.isInstanceOf[LambdaExpr] =>
         Some(transform[Expr](stmts.head))
 
-      case ParamsConstructor(params)
-        if parent.asInstanceOf[Defn].attributes.contains(CaseAttribute) =>
+      case ParamsConstructor(params) =>
         Some(ParamsConstructor(params.map {
           case ConstructorParam(parType, mod, name, exprType) =>
             val t = if (parType == NoMemberKind) ValKind else parType
-            val m = if (mod == NoAttribute) PublicAttribute else mod
+            val m = if (mod == NoAttribute)   PublicAttribute else mod
             ConstructorParam(t, m, name, transform[Type](exprType))
         }))
+
 
       case ForExpr(exprType, generators, isYield, body) =>
         def wrapToBody(expr: Expr) = expr match {
@@ -120,7 +120,6 @@ class BasicTransform extends Transform {
           namerVal.set(new LocalNamer)
         ) {
           val newDef = copy(x).asInstanceOf[DefnDef]
-
           def handleBody(body: Expr) = body match {
             case b@BlockExpr(exprType, stmts) =>
               val last = stmts.last
@@ -129,8 +128,7 @@ class BasicTransform extends Transform {
               else b
             case b => b
           }
-
-          Some(newDef.copy(attributes = handleAttrs(x), body = newDef.body.map(handleBody)))
+          Some(newDef.copy(attributes = handleAttrs(newDef), body = newDef.body.map(handleBody)))
         }
 
       case x: ValOrVarDef =>
@@ -155,14 +153,15 @@ class BasicTransform extends Transform {
         val defnType =
           if (defn.defnType == TraitDefn) InterfaceDefn
           else defn.defnType
-        val name =
-          if (defn.companionDefn.contains(ObjectCompanion)) ""
-        else defn.name
+
+//        val name =
+//          if (defn.companionDefn.contains(ObjectCompanion)) ""
+//        else defn.name
+
         Some(copy(defn).asInstanceOf[Defn]
           .copy(attributes = handleAttrs(defn),
             defnType = defnType,
-            body = newBody,
-            name = name))
+            body = newBody))
 
       //uncarry
       case x@CallExpr(_, c: CallExpr, _) if c.exprType.isFunction =>

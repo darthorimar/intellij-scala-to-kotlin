@@ -266,8 +266,8 @@ class KotlinBuilder extends KotlinBuilderBase {
 
         str("}")
         unIndent()
-      case NewExpr(exprType, name, args) =>
-        str(name)
+      case NewExpr(exprType, instanceType, args) =>
+        genType(instanceType, false)
         str("(")
         rep(args, ", ")(gen)
         str(")")
@@ -312,6 +312,7 @@ class KotlinBuilder extends KotlinBuilderBase {
 
       case x: Keyword =>
         genKeyword(x)
+
     }
 
   def genAsBlock(e: Expr): Unit = e match {

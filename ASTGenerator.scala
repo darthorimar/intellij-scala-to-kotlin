@@ -23,7 +23,7 @@ import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
 import org.jetbrains.plugins.scala.lang.psi.types.api.TypeParameter
 import org.jetbrains.plugins.scala.lang.psi.types.api.designator.{DesignatorOwner, ScDesignatorType}
 import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ScMethodType, ScTypePolymorphicType}
-import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScParameterizedType, ScType}
+import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
 import org.jetbrains.plugins.scala.lang.psi.types.result.{TypeResult, Typeable}
 import org.jetbrains.plugins.scala.lang.refactoring.util.ScalaNamesUtil
 import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
@@ -73,6 +73,10 @@ object ASTGenerator extends {
       case x: DesignatorOwner =>
         x.extractDesignatorSingleton.map(genType)
           .getOrElse(SimpleType(x.canonicalText))
+      case x: ScExistentialType =>
+        genType(x.quantified)
+      case x: ScExistentialArgument =>
+        SimpleType("*")
       case x =>
         SimpleType(x.canonicalText)
     }
@@ -354,11 +358,13 @@ object ASTGenerator extends {
 
     case x: ScAssignStmt =>
       AssignExpr(gen[Expr](x.getLExpression), gen[Expr](x.getRExpression.get))
+
     case x: ScNewTemplateDefinitionImpl =>
       NewExpr(
         genType(x.`type`()),
-        x.constructor.get.typeElement.getText,
+        genType(Some(x.constructor.get.typeElement)),
         x.constructor.get.args.toSeq.flatMap(_.exprs).map(gen[Expr]))
+
     case x: ScPrimaryConstructor =>
       ParamsConstructor(x.parameters.map(gen[ConstructorParam]))
 
