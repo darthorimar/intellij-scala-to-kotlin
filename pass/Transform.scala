@@ -2,7 +2,7 @@ package org.jetbrains.plugins.kotlinConverter.pass
 
 import com.intellij.formatting.BlockEx
 import org.jetbrains.plugins.kotlinConverter
-import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.ast.{PostfixExpr, _}
 import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renames, ScopedVal}
 import org.scalafmt.internal.SyntacticGroup.Term
 
@@ -142,6 +142,9 @@ trait Transform {
     case PostfixExpr(exprType, obj, op) =>
       PostfixExpr(exprType, transform[Expr](obj), op)
 
+    case PrefixExpr(exprType, obj, op) =>
+      PrefixExpr(exprType, transform[Expr](obj), op)
+
     case AssignExpr(left, right) =>
       AssignExpr(transform[Expr](left), transform[Expr](right))
 
@@ -193,8 +196,8 @@ trait Transform {
     case NoType =>
       NoType
 
-    case DefParameter(exprType, name) =>
-      DefParameter(transform[Type](exprType), name)
+    case DefParameter(exprType, name, isVarArg) =>
+      DefParameter(transform[Type](exprType), name, isVarArg)
 
     case MatchCaseClause(pattern, expr, guard) =>
       MatchCaseClause(pattern, transform[Expr](expr), guard.map(transform[Expr]))
@@ -236,7 +239,7 @@ object Transform {
       new TypeTransform,
       new BasicTransform,
       new CollectionTransform)
-    passes.foldLeft(fileDef)((a, p) => p.transform[FileDef](a))//todo rename
+    passes.foldLeft(fileDef)((a, p) => p.transform[FileDef](a)) //todo rename
   }
 }
 

@@ -2,8 +2,8 @@ package org.jetbrains.plugins.kotlinConverter
 
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.scopes.{BuilderState, ScopedVal}
-
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
+import org.scalafmt.internal.SyntacticGroup.Term
 
 class KotlinBuilder extends KotlinBuilderBase {
   val stateVal: ScopedVal[BuilderState] = new ScopedVal[BuilderState](BuilderState())
@@ -127,7 +127,8 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(" ")
         str(name)
         str("(")
-        rep(args, ", ") { case DefParameter(parameterType, name) =>
+        rep(args, ", ") { case DefParameter(parameterType, name, isVarArg) =>
+          if (isVarArg) str("vararg ")
           str(name)
           genType(parameterType)
         }
@@ -179,7 +180,7 @@ class KotlinBuilder extends KotlinBuilderBase {
       case LambdaExpr(exprType, params, expr, needBraces) =>
         str("{ ")
         if (needBraces) str("(")
-        rep(params, ", ") { case DefParameter(exprType, name) =>
+        rep(params, ", ") { case DefParameter(exprType, name, _) =>
           str(name)
         }
         if (needBraces) str(")")
@@ -223,15 +224,21 @@ class KotlinBuilder extends KotlinBuilderBase {
       case IfExpr(exprType, cond, trueB, falseB) =>
         str("if (")
         gen(cond)
-        str(")")
+        str(") ")
         gen(trueB)
         opt(falseB) { b =>
           str(" else ")
           gen(b)
         }
+
       case PostfixExpr(exprType, obj, op) =>
         gen(obj)
         str(op)
+
+      case PrefixExpr(exprType, obj, op) =>
+        str(op)
+        gen(obj)
+
 
       case LitExpr(exprType, name) =>
         str(name)

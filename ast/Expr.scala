@@ -29,6 +29,7 @@ case class RefExpr(exprType: Type,
                    isFunctionRef: Boolean)
   extends Expr
 case class PostfixExpr(exprType: Type, expr: Expr, op: String) extends Expr
+case class PrefixExpr(exprType: Type, expr: Expr, op: String) extends Expr
 case class MatchExpr(exprType: Type, expr: Expr, clauses: Seq[MatchCaseClause]) extends Expr
 case class WhenExpr(exprType: Type, expr: Option[Expr], clauses: Seq[WhenClause]) extends Expr
 case class BracketsExpr(exprType: Type, expr: Expr, inBrackets: Expr) extends Expr

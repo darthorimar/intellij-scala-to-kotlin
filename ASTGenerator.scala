@@ -113,11 +113,11 @@ object ASTGenerator extends {
 
   def gen[T](psi: PsiElement): T =
     Try(transform[T](psi))
-      .recoverWith { case _ => Try(ErrorExpr.asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorCasePattern.asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorType.asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorForEnumerator.asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorWhenClause.asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorExpr.asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorCasePattern.asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorType.asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorForEnumerator.asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorWhenClause.asInstanceOf[T]) }
       .get
 
   def transform[T](psi: PsiElement): T = (psi match {
@@ -253,6 +253,13 @@ object ASTGenerator extends {
     case x: ScGenericCall =>
       gen[RefExpr](x.referencedExpr).copy(typeParams = genTypeArgs(x.typeArgs))
 
+
+    case psi: ScTypedStmt if psi.isSequenceArg =>
+      PrefixExpr(genType(psi.`type`()), gen[Expr](psi.expr), "*")
+
+    case psi: ScTypedStmt =>
+      Exprs.as(gen[Expr](psi.expr), genType(psi.typeElement))
+
     case x: ScIfStmt =>
       IfExpr(
         genType(x.`type`()),
@@ -358,7 +365,7 @@ object ASTGenerator extends {
       ConstructorParam(kind, modifier, x.name, genType(x.typeElement))
 
     case x: ScParameter =>
-      DefParameter(genType(x.typeElement), x.name)
+      DefParameter(genType(x.typeElement), x.name, x.isVarArgs)
 
     case x: ScTryStmt =>
       ScalaTryExpr(genType(x.`type`()),

@@ -12,7 +12,7 @@ case object ErrorWhenClause extends WhenClause with ErrorAst
 case object ErrorForEnumerator extends ForEnumerator with ErrorAst
 
 
-case class DefParameter(parameterType: Type, name: String) extends AST
+case class DefParameter(parameterType: Type, name: String, isVarArg: Boolean) extends AST
 case class MatchCaseClause(pattern: CasePattern, expr: Expr, guard: Option[Expr]) extends AST
 
 
