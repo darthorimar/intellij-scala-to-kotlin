@@ -15,7 +15,7 @@ class TypeTransform extends Transform {
     case ScalaTypes.STRING | ScalaTypes.JAVA_STRING =>
       Some(KotlinTypes.STRING)
 
-    case ScalaTypes.SEQ | ScalaTypes.SEQ2 | ScalaTypes.LIST | ScalaTypes.LIST2 =>
+    case ScalaTypes.SEQ | ScalaTypes.SEQ2 | ScalaTypes.LIST | ScalaTypes.LIST2 | ScalaTypes.LIST3 =>
       Some(KotlinTypes.LIST)
 
     case SimpleType(name) if name.startsWith("_root_.") =>
