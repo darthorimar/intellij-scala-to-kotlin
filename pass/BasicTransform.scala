@@ -53,7 +53,10 @@ class BasicTransform extends Transform {
             val matchExpr = ExprUtils.blockOf(MatchUtils.convertMatchToWhen(ref, badClauses, exprType, this))
             Seq(KotlinCatchCase(ref.referenceName, ref.exprType, matchExpr))
         }
-        Some(KotlinTryExpr(exprType, tryBlock, goodCatches ++ badCatches, finallyBlock))
+        Some(KotlinTryExpr(exprType,
+          transform[Expr](tryBlock),
+          (goodCatches ++ badCatches).map(transform[KotlinCatchCase]),
+          finallyBlock.map(transform[Expr])))
 
 
       //import _ --> *
@@ -119,8 +122,11 @@ class BasicTransform extends Transform {
           val newDef = copy(x).asInstanceOf[DefnDef]
 
           def handleBody(body: Expr) = body match {
-            case BlockExpr(exprType, stmts) =>
-              BlockExpr(exprType, stmts.init :+ ReturnExpr(None, Some(stmts.last)))
+            case b@BlockExpr(exprType, stmts) =>
+              val last = stmts.last
+              if (!last.isInstanceOf[ReturnExpr] && x.returnType != KotlinTypes.UNIT)
+                BlockExpr(exprType, stmts.init :+ ReturnExpr(None, Some(last)))
+              else b
             case b => b
           }
 
