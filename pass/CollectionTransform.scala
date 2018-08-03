@@ -3,12 +3,15 @@ package org.jetbrains.plugins.kotlinConverter.pass
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.types.TypeUtils.{ListType, WithType}
 import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, TypeUtils}
 import org.scalafmt.internal.SyntacticGroup.Term
 
 class CollectionTransform extends Transform {
 
   override def transform[T](ast: AST): T = {
+    //    if (ast.isInstanceOf[FileDef])
+    //      println(Utils.prettyPrint(ast))
     super.transform(ast)
   }
 
@@ -34,9 +37,10 @@ class CollectionTransform extends Transform {
           typeParams.map(transform[TypeParam]), true),
         Seq(transform[Expr](p))))
 
-    // opt.getOrElse(x) --> opt :? x
-    //    case CallExpr(_, RefExpr(refTy, Some(referenceObject), "getOrElse", _, true), Seq(p)) if referenceObject.exprType.isInstanceOf[NullableType] =>
-    //      Some(InfixExpr(transform[Type](refTy), "?:", referenceObject, transform[Expr](p)))
+    //     opt.getOrElse(x) --> opt :? x
+    case CallExpr(_, RefExpr(refTy, Some(referenceObject@WithType(NullableType(_))), "getOrElse", _, true), Seq(p))
+      if referenceObject.exprType.isInstanceOf[NullableType] =>
+      Some(Exprs.simpleInfix(transform[Type](refTy), ":?", transform[Expr](referenceObject), transform[Expr](p)))
 
     //opt.get --> opt!!
     case CallExpr(_, RefExpr(refTy, Some(referenceObject), "get", _, true), _)
@@ -132,15 +136,14 @@ class CollectionTransform extends Transform {
       Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "isNotEmpty", typeParams, true), Seq.empty))
 
 
-    // seq.nonEmpty --> seq.isNotEmpty
+    // seq.size() --> seq.size
     case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "size", typeParams, _), _)
       if TypeUtils.isKotlinList(referenceObject.exprType) =>
       Some(RefExpr(refTy, Some(transform[Expr](referenceObject)), "size", typeParams, true))
 
-    // seq.nonEmpty --> seq.isNotEmpty
-    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "size", typeParams, _), _)
-      if TypeUtils.isKotlinList(referenceObject.exprType) =>
-      Some(RefExpr(refTy, Some(transform[Expr](referenceObject)), "size", typeParams, true))
+    // seqOfOptions.flatten --> seqOfOptions.filterNotNull()
+    case CallExpr(callType, RefExpr(refTy, Some(referenceObject@WithType(ListType(NullableType(_)))), "flatten", typeParams, _), _) =>
+      Some(CallExpr(callType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "filterNotNull", typeParams, true), Seq.empty))
 
 
     case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(TypeParam(exprType)), false) =>
@@ -151,4 +154,5 @@ class CollectionTransform extends Transform {
 
     case _ => None
   }
+
 }
