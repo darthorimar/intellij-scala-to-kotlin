@@ -146,6 +146,20 @@ class CollectionTransform extends Transform {
       Some(CallExpr(callType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "filterNotNull", typeParams, true), Seq.empty))
 
 
+    //pairs
+
+    //1 -> 2 --> 1 to 2
+    case CallExpr(exprType, RefExpr(refTy, Some(left), "->", _, true), Seq(right)) =>
+      Some(Exprs.simpleInfix(exprType, "to", transform[Expr](left), transform[Expr](right)))
+
+    //p._1 --> p.first
+    case RefExpr(refTy, Some(left), "_1", _, false) =>
+      Some(RefExpr(refTy, Some(transform[Expr](left)), "first", Seq.empty, false))
+
+    //p._2 --> p.second
+    case RefExpr(refTy, Some(left), "_1", _, false) =>
+      Some(RefExpr(refTy, Some(transform[Expr](left)), "first", Seq.empty, false))
+
     case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(TypeParam(exprType)), false) =>
       Some(ParenthesesExpr(Exprs.as(transform[Expr](referenceObject), transform[Type](exprType))))
 

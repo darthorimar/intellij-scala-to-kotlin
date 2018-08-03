@@ -1,8 +1,9 @@
 package org.jetbrains.plugins.kotlinConverter.types
 
-import org.jetbrains.plugins.kotlinConverter.ast.SimpleType
+import org.jetbrains.plugins.kotlinConverter.ast.{SimpleType, Type}
 
 object KotlinTypes {
+  val PAIR = SimpleType("Pair")
   val BOOLEAN = SimpleType("Boolean")
   val NOTHING = SimpleType("Nothing")
   val STRING = SimpleType("String")

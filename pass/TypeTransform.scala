@@ -1,5 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
+import com.android.repository.impl.meta.TypeDetails.GenericType
 import org.jetbrains.plugins.kotlinConverter.types._
 import org.jetbrains.plugins.kotlinConverter.ast._
 
@@ -17,12 +18,14 @@ class TypeTransform extends Transform {
     case ScalaTypes.SEQ | ScalaTypes.SEQ2 | ScalaTypes.LIST | ScalaTypes.LIST2 =>
       Some(KotlinTypes.LIST)
 
-
     case SimpleType(name) if name.startsWith("_root_.") =>
       Some(SimpleType(name.stripPrefix("_root_.")))
 
     case SimpleType("scala.collection.immutable.Nil.type") =>
       Some(GenerecTypes(KotlinTypes.LIST, Seq(NoType)))
+
+    case GenerecTypes(SimpleType("_root_.scala.Tuple2"), Seq(p1, p2)) =>
+      Some(GenerecTypes(KotlinTypes.PAIR, Seq(transform[Type](p1), transform[Type](p2))))
 
 
     case _ => None
