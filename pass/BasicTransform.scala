@@ -147,17 +147,17 @@ class BasicTransform extends Transform {
               Seq(c.copy(attributes = c.attributes :+ CompanionAttribute))
             case _ => Seq.empty
           }
-        val exprs = x.body.toSeq.flatMap(_.exprs) ++ companionObj
+        val exprs = defn.body.toSeq.flatMap(_.exprs) ++ companionObj
         val newBody =
           if (exprs.isEmpty) None
           else Some(BlockExpr(NoType, exprs))
 
         val defnType =
-          if (x.defnType == TraitDefn) InterfaceDefn
-          else x.defnType
+          if (defn.defnType == TraitDefn) InterfaceDefn
+          else defn.defnType
         val name =
-          if (x.companionDefn.contains(ObjectCompanion)) ""
-        else x.name
+          if (defn.companionDefn.contains(ObjectCompanion)) ""
+        else defn.name
         Some(copy(defn).asInstanceOf[Defn]
           .copy(attributes = handleAttrs(defn),
             defnType = defnType,
