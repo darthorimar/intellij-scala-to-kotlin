@@ -8,6 +8,7 @@ import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renames, ScopedVal}
+import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 
 
 class BasicTransform extends Transform {

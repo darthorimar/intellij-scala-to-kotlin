@@ -3,6 +3,7 @@ package org.jetbrains.plugins.kotlinConverter
 import com.intellij.psi.{PsiClass, PsiCodeBlock, PsiElement, PsiStatement}
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.scopes.{ASTGeneratorState, ScopedVal}
 import org.jetbrains.plugins.kotlinConverter.types.ScalaTypes
 import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
 import org.jetbrains.plugins.scala.lang.psi.ScalaPsiUtil
@@ -27,11 +28,15 @@ import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScExistent
 import org.jetbrains.plugins.scala.lang.psi.types.result.{TypeResult, Typeable}
 import org.jetbrains.plugins.scala.lang.refactoring.util.ScalaNamesUtil
 import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
+import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.Try
 
 object ASTGenerator extends {
+  val stateVal = new ScopedVal[ASTGeneratorState](ASTGeneratorState(Map.empty))
+
   private def genDefinitions(file: ScalaFile): Seq[PsiElement] =
     file.getChildren.filter {
       case _: ScFunction => true
@@ -128,7 +133,28 @@ object ASTGenerator extends {
   }
 
   def gen[T](psi: PsiElement): T =
+    stateVal.precalculated.get(psi.getTextRange)
+      .map(_.asInstanceOf[T])
+      .getOrElse(recover[T](psi))
+
+
+
+  def findUnderscores(expr: PsiElement): Seq[ScUnderscoreSection] ={
+    if (expr.getText.indexOf('_') == -1) Seq.empty
+    else inner(expr)
+    def inner(innerExpr: PsiElement): Seq[ScUnderscoreSection] = {
+      innerExpr match {
+        case under: ScUnderscoreSection =>
+              Seq(under)
+        case _ =>
+          innerExpr.getChildren.flatMap(inner)
+      }
+    }
+    inner(expr)
+  }
+  def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
+
       //      .recoverWith { case _ => Try(ErrorExpr.asInstanceOf[T]) }
       //      .recoverWith { case _ => Try(ErrorCasePattern.asInstanceOf[T]) }
       //      .recoverWith { case _ => Try(ErrorType.asInstanceOf[T]) }
@@ -138,22 +164,32 @@ object ASTGenerator extends {
 
   def transform[T](psi: PsiElement): T = (psi match {
     case x: ScalaFile => //todo x --> sth else
-      FileDef(
-        x.getPackageName,
-        Seq.empty,
-        //        x.importStatementsInHeader.flatMap(_.importExprs).map(gen[ImportDef]),
-        genDefinitions(x)
-          .filter {
-            case _: PsiClassWrapper => false
-            case y: ScObject if y.isSyntheticObject => false
-            case _ => true
-          }
-          .map(gen[DefExpr])
-          .filter {
-            case Defn(_, ObjDefn, _, _, _, _, _, Some(_)) => false
-            case _ => true
-          }
-      )
+      val underscores =
+        findUnderscores(x).flatMap(_.overExpr).map { over =>
+          val expr = gen[Expr](over)
+          val lambdaExpr =  LambdaExpr(expr.exprType, Seq.empty, expr, false)
+          over.getTextRange -> lambdaExpr
+        }.toMap
+      scoped(
+        stateVal.set(ASTGeneratorState(underscores))
+      ) {
+
+        FileDef(
+          x.getPackageName,
+          Seq.empty,
+          //        x.importStatementsInHeader.flatMap(_.importExprs).map(gen[ImportDef]),
+          genDefinitions(x)
+            .filter {
+              case _: PsiClassWrapper => false
+              case y: ScObject if y.isSyntheticObject => false
+              case _ => true
+            }
+            .map(gen[DefExpr])
+            .filter {
+              case Defn(_, ObjDefn, _, _, _, _, _, Some(_)) => false
+              case _ => true
+            })
+      }
 
     case x: ScTypeDefinition =>
       x.typeParameters
