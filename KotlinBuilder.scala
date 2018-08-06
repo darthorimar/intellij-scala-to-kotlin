@@ -297,8 +297,8 @@ class KotlinBuilder extends KotlinBuilderBase {
       case ThisExpr(exprType) =>
         str("this")
 
-      case TypeParam(exprType) =>
-        genType(exprType, false)
+      case TypeParam(name) =>
+        str(name)
 
       case EmptyDefExpr =>
 

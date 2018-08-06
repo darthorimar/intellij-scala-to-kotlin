@@ -15,7 +15,15 @@ class TypeTransform extends Transform {
     case ScalaTypes.STRING | ScalaTypes.JAVA_STRING =>
       Some(KotlinTypes.STRING)
 
-    case ScalaTypes.SEQ | ScalaTypes.SEQ2 | ScalaTypes.LIST | ScalaTypes.LIST2 | ScalaTypes.LIST3 =>
+    case ClassType(name) if name.stripPrefix("_root_.").startsWith("scala.collection") =>
+      Some(transform[Type](ScalaCollectionType(name)))
+
+    case ScalaTypes.SEQ |
+         ScalaTypes.SEQ2 |
+         ScalaTypes.LIST |
+         ScalaTypes.LIST2 |
+         ScalaTypes.LIST3 |
+         ScalaTypes.LIST4 =>
       Some(KotlinTypes.LIST)
 
     case SimpleType(name) if name.startsWith("_root_.") =>
@@ -26,7 +34,7 @@ class TypeTransform extends Transform {
 
     case GenerecTypes(SimpleType("_root_.scala.Tuple2"), Seq(p1, p2)) =>
       Some(GenerecTypes(KotlinTypes.PAIR, Seq(transform[Type](p1), transform[Type](p2))))
-
+    //
 
     case _ => None
   }

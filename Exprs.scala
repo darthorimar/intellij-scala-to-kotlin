@@ -26,7 +26,7 @@ object Exprs {
   def emptyList(ty: Type) =
     CallExpr(
       listType(ty),
-      RefExpr(ty, None, "emptyList", Seq(TypeParam(ty)), true),
+      RefExpr(ty, None, "emptyList", Seq(ty), true),
       Seq.empty)
 
   def emptyList =

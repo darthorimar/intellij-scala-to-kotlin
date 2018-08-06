@@ -1,6 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter.types
 
-import org.jetbrains.plugins.kotlinConverter.ast.SimpleType
+import org.jetbrains.plugins.kotlinConverter.ast.{ScalaCollectionType, SimpleType}
 
 object ScalaTypes {
   val OPTION = SimpleType("_root_.scala.Option")
@@ -12,7 +12,8 @@ object ScalaTypes {
   val SEQ2 = SimpleType("scala.Seq")
   val LIST = SimpleType("_root_.scala.collection.List")
   val LIST2 = SimpleType("_root_.scala.collection.immutable.List")
-  val LIST3 = SimpleType("scala.List")
+  val LIST3 = ScalaCollectionType("scala.collection.immutable.List")
+  val LIST4 = SimpleType("scala.List")
 
   val FUNCTION_PREFFIX = "_root_.scala.Function"
 }

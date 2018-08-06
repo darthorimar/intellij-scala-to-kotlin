@@ -35,6 +35,26 @@ case class SimpleType(name: String) extends Type {
   override def asKotlin: String = name
 }
 
+case class ClassType(name: String) extends Type {
+  override def asKotlin: String = name
+}
+
+case class ScalaStdType(name: String) extends Type {
+  override def asKotlin: String = name
+}
+
+case class ScalaCollectionType(name: String) extends Type {
+  override def asKotlin: String = name
+}
+
+case class KotlinCollectionType(name: String) extends Type {
+  override def asKotlin: String = name
+}
+
+case class TypeParamType(typeParam: TypeParam) extends Type {
+  override def asKotlin: String = typeParam.name
+}
+
 case object NoType extends Type {
   override def asKotlin: String = "Any"
 }

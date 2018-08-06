@@ -25,7 +25,7 @@ case class UnderscoreExpr(exprType: Type) extends Expr
 case class RefExpr(exprType: Type,
                    referencedObject: Option[Expr],
                    referenceName: String,
-                   typeParams: Seq[TypeParam],
+                   typeParams: Seq[Type],
                    isFunctionRef: Boolean)
   extends Expr
 case class PostfixExpr(exprType: Type, expr: Expr, op: String) extends Expr

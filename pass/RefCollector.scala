@@ -8,7 +8,7 @@ class RefCollector extends Transform {
       case x: FileDef =>
         Some(copy(x).asInstanceOf[FileDef].copy(imports = x.imports ++ imports.toSeq))
 
-      case SimpleType(name) =>
+      case ClassType(name) =>
         imports = imports + ImportDef(name)
         Some(SimpleType(name.split('.').last))
 

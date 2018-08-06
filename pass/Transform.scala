@@ -1,10 +1,8 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
-import com.intellij.formatting.BlockEx
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.ast.{PostfixExpr, _}
 import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renames, ScopedVal}
-import org.scalafmt.internal.SyntacticGroup.Term
 
 trait Transform {
   protected def action(ast: AST): Option[AST]
@@ -139,7 +137,7 @@ trait Transform {
       UnderscoreExpr(exprType)
 
     case RefExpr(exprType, obj, ref, typeParams, isFunc) =>
-      RefExpr(transform[Type](exprType), obj.map(transform[Expr]), ref, typeParams.map(transform[TypeParam]), isFunc)
+      RefExpr(transform[Type](exprType), obj.map(transform[Expr]), ref, typeParams.map(transform[Type]), isFunc)
 
     case MatchExpr(exprType, expr, clauses) =>
       MatchExpr(transform[Type](exprType), transform[Expr](expr), clauses.map(transform[MatchCaseClause]))
@@ -195,11 +193,26 @@ trait Transform {
     case ProductType(exprTypepes) =>
       ProductType(exprTypepes.map(transform[Type]))
 
+    case ScalaStdType(name) =>
+      ScalaStdType(name)
+
     case SimpleType(name) =>
       SimpleType(name)
 
+    case ClassType(name) =>
+      ClassType(name)
+
     case NullableType(name) =>
       NullableType(transform[Type](name))
+
+    case TypeParamType(name) =>
+      TypeParamType(name)
+
+    case KotlinCollectionType(name) =>
+      KotlinCollectionType(name)
+
+    case ScalaCollectionType(name) =>
+      ScalaCollectionType(name)
 
     case NoType =>
       NoType
@@ -210,8 +223,8 @@ trait Transform {
     case MatchCaseClause(pattern, expr, guard) =>
       MatchCaseClause(pattern, transform[Expr](expr), guard.map(transform[Expr]))
 
-    case TypeParam(exprType) =>
-      TypeParam(transform[Type](exprType))
+    case TypeParam(name) =>
+      TypeParam(name)
 
     case LitPattern(lit) =>
       LitPattern(lit)

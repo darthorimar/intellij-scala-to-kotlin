@@ -18,10 +18,10 @@ import org.jetbrains.plugins.scala.lang.psi.api.toplevel.templates.{ScClassParen
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef._
 import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTemplateDefinitionImpl, ScReferenceExpressionImpl}
 import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
-import org.jetbrains.plugins.scala.lang.psi.impl.toplevel.typedef.TypeDefinitionMembers
+import org.jetbrains.plugins.scala.lang.psi.impl.toplevel.typedef.{ScClassImpl, TypeDefinitionMembers}
 import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
-import org.jetbrains.plugins.scala.lang.psi.types.api.TypeParameter
-import org.jetbrains.plugins.scala.lang.psi.types.api.designator.{DesignatorOwner, ScDesignatorType}
+import org.jetbrains.plugins.scala.lang.psi.types.api.{StdType, TypeParameter, TypeParameterType}
+import org.jetbrains.plugins.scala.lang.psi.types.api.designator.{DesignatorOwner, ScDesignatorType, ScProjectionType, ScThisType}
 import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ScMethodType, ScTypePolymorphicType}
 import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
 import org.jetbrains.plugins.scala.lang.psi.types.result.{TypeResult, Typeable}
@@ -49,16 +49,18 @@ object ASTGenerator extends {
   }
 
 
-  def genTypeArgs(typeArgs: Option[ScTypeArgs]): Seq[TypeParam] = {
+  def genTypeArgs(typeArgs: Option[ScTypeArgs]): Seq[Type] = {
     typeArgs
       .map(_.typeArgs)
       .toSeq
       .flatten
-      .map(z => TypeParam(genType(z.`type`())))
+      .map(z => genType(z.`type`()))
   }
 
   def genType(ty: ScType): Type =
     ty match {
+      case x: StdType =>
+        ScalaStdType(x.name)
       case x: ScParameterizedType if x.designator.canonicalText.startsWith(ScalaTypes.FUNCTION_PREFFIX) =>
         if (x.typeArguments.init.length == 1)
           FunctionType(genType(x.typeArguments.head), genType(x.typeArguments.last))
@@ -71,14 +73,24 @@ object ASTGenerator extends {
       case x: ScMethodType =>
         FunctionType(ProductType(x.params.map(t => genType(t.paramType))), genType(x.returnType))
       case x: DesignatorOwner =>
-        x.extractDesignatorSingleton.map(genType)
-          .getOrElse(SimpleType(x.canonicalText))
+        x.extractClass.map {
+          case c: ScClassImpl => ClassType(c.qualifiedName)
+          case c: PsiClass => ClassType(c.getQualifiedName)
+        }.orElse {
+          x.extractDesignatorSingleton.map(genType)
+        }.get//OrElse(SimpleType(x.canonicalText))
+      case x: ScProjectionType =>
+        genType(x.projected)
+      case x: ScThisType =>
+        genType(x.element.`type`())
       case x: ScExistentialType =>
         genType(x.quantified)
+      case x: TypeParameterType =>
+        TypeParamType(TypeParam(x.typeParameter.name))
       case x: ScExistentialArgument =>
         SimpleType("*")
-      case x =>
-        SimpleType(x.canonicalText)
+//      case x =>
+//        SimpleType(x.canonicalText)
     }
 
 
@@ -208,7 +220,7 @@ object ASTGenerator extends {
       DefnDef(
         genAttributes(x),
         x.name,
-        x.typeParameters.map(z => TypeParam(SimpleType(z.typeParameterText))),
+        x.typeParameters.map(gen[TypeParam]),
         x.parameters.map(gen[DefParameter]),
         genType(x.returnType),
         genFunctionBody(x))
@@ -407,7 +419,7 @@ object ASTGenerator extends {
       ForVal(ast.SimpleValOrVarDef(Seq.empty, true, x.pattern.getText, None, Some(gen[Expr](x.rvalue))))
 
     case x: ScTypeParam =>
-      TypeParam(SimpleType(x.typeParameterText)) //todo improve
+      TypeParam(x.name)
 
     case x: ScPostfixExpr =>
       PostfixExpr(genType(x.`type`()), gen[Expr](x.operand), x.operation.refName)

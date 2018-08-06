@@ -1,14 +1,14 @@
 package org.jetbrains.plugins.kotlinConverter.types
 
-import org.jetbrains.plugins.kotlinConverter.ast.{SimpleType, Type}
+import org.jetbrains.plugins.kotlinConverter.ast.{KotlinCollectionType, SimpleType, Type}
 
 object KotlinTypes {
   val UNIT = SimpleType("Unit")
-  val PAIR = SimpleType("Pair")
   val BOOLEAN = SimpleType("Boolean")
   val NOTHING = SimpleType("Nothing")
   val STRING = SimpleType("String")
-  val LIST = SimpleType("List")
   val INT = SimpleType("Int")
   val THROWABLE = SimpleType("Throwable")
+  val LIST = KotlinCollectionType("List")
+  val PAIR = KotlinCollectionType("Pair")
 }

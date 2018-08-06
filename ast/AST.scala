@@ -22,7 +22,7 @@ case object EmptyConstructor extends Constructor
 
 case class ConstructorParam(kind: MemberKind, modifier: Attribute, name: String, parameterType: Type) extends AST
 
-case class TypeParam(parameterType: Type) extends AST
+case class TypeParam(name: String) extends AST
 
 case class FileDef(packageName: String, imports: Seq[ImportDef], definitions: Seq[DefExpr]) extends AST//todo get rd of imports
 

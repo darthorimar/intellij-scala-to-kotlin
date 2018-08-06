@@ -34,7 +34,7 @@ class CollectionTransform extends Transform {
         RefExpr(transform[Type](refTy),
           Some(kotlinConverter.ast.PostfixExpr(referenceObject.exprType, transform[Expr](referenceObject), "?")),
           "let",
-          typeParams.map(transform[TypeParam]), true),
+          typeParams.map(transform[Type]), true),
         Seq(transform[Expr](p))))
 
     //     opt.getOrElse(x) --> opt :? x
@@ -53,13 +53,13 @@ class CollectionTransform extends Transform {
     case CallExpr(exprType, RefExpr(refTy, Some(RefExpr(_, None, "Seq", typeParams, false)), "apply", _, _), params) =>
       Some(CallExpr(
         transform[Type](exprType),
-        RefExpr(transform[Type](refTy), None, "listOf", typeParams.map(transform[TypeParam]), true),
+        RefExpr(transform[Type](refTy), None, "listOf", typeParams.map(transform[Type]), true),
         params.map(transform[Expr])))
 
     //Seq.empty[T] --> emptyList<T>()
     case CallExpr(_, RefExpr(_, Some(RefExpr(_, None, "Seq" | "List", _, false)), "empty", typeParams, _), Seq()) =>
       if (typeParams.isEmpty) Some(Exprs.emptyList)
-      else Some(Exprs.emptyList(transform[Type](typeParams.head.parameterType)))
+      else Some(Exprs.emptyList(transform[Type](typeParams.head)))
 
     //Nil --> emptytList()
     case RefExpr(SimpleType("scala.Nil.type" | "scala.collection.immutable.Nil.type"), None, "Nil", _, false) =>
@@ -160,11 +160,11 @@ class CollectionTransform extends Transform {
     case RefExpr(refTy, Some(left), "_1", _, false) =>
       Some(RefExpr(refTy, Some(transform[Expr](left)), "first", Seq.empty, false))
 
-    case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(TypeParam(exprType)), false) =>
-      Some(ParenthesesExpr(Exprs.as(transform[Expr](referenceObject), transform[Type](exprType))))
+    case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(typeParam), false) =>
+      Some(ParenthesesExpr(Exprs.as(transform[Expr](referenceObject), typeParam)))
 
-    case RefExpr(refTy, Some(referenceObject), "isInstanceOf", Seq(TypeParam(exprType)), false) =>
-      Some(ParenthesesExpr(Exprs.is(transform[Expr](referenceObject), transform[Type](exprType))))
+    case RefExpr(refTy, Some(referenceObject), "isInstanceOf", Seq(typeParam), false) =>
+      Some(ParenthesesExpr(Exprs.is(transform[Expr](referenceObject), typeParam)))
 
     case _ => None
   }
