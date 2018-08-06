@@ -3,7 +3,7 @@ package org.jetbrains.plugins.kotlinConverter.types
 import org.jetbrains.plugins.kotlinConverter.ast._
 
 object ScalaTypes {
-  val OPTION = SimpleType("scala.Option")
+  val OPTION = ScalaCollectionType("scala.Option")
   val SOME = ScalaCollectionType("scala.Some")
   val NONE = ScalaCollectionType("scala.None$")
   val STRING = SimpleType("scala.Predef.String")

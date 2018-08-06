@@ -71,7 +71,13 @@ class BasicTransform extends Transform {
         Some(ParamsConstructor(params.map {
           case ConstructorParam(parType, mod, name, exprType) =>
             val t = if (parType == NoMemberKind) ValKind else parType
-            val m = if (mod == NoAttribute) PrivateAttribute else mod
+            val m =
+              if (parent.asInstanceOf[Defn].attributes.exists(a => a == DataAttribute | a == CaseAttribute) &&
+                (mod == PublicAttribute || mod == NoAttribute))
+                NoAttribute
+              else if (mod == NoAttribute)
+                PrivateAttribute
+              else mod
             ConstructorParam(t, m, name, transform[Type](exprType))
         }))
 
@@ -113,6 +119,7 @@ class BasicTransform extends Transform {
           namerVal.set(new LocalNamer)
         ) {
           val newDef = copy(x).asInstanceOf[DefnDef]
+
           def handleBody(body: Expr) = body match {
             case b@BlockExpr(exprType, stmts) =>
               val last = stmts.last
@@ -121,6 +128,7 @@ class BasicTransform extends Transform {
               else b
             case b => b
           }
+
           Some(newDef.copy(attributes = handleAttrs(newDef), body = newDef.body.map(handleBody)))
         }
 
@@ -147,9 +155,9 @@ class BasicTransform extends Transform {
           if (defn.defnType == TraitDefn) InterfaceDefn
           else defn.defnType
 
-//        val name =
-//          if (defn.companionDefn.contains(ObjectCompanion)) ""
-//        else defn.name
+        //        val name =
+        //          if (defn.companionDefn.contains(ObjectCompanion)) ""
+        //        else defn.name
 
         Some(copy(defn).asInstanceOf[Defn]
           .copy(attributes = handleAttrs(defn),

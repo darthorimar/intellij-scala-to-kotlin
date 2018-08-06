@@ -10,8 +10,8 @@ import org.scalafmt.internal.SyntacticGroup.Term
 class CollectionTransform extends Transform {
 
   override def transform[T](ast: AST): T = {
-    //    if (ast.isInstanceOf[FileDef])
-    //      println(Utils.prettyPrint(ast))
+//        if (ast.isInstanceOf[FileDef])
+//          println(Utils.prettyPrint(ast))
     super.transform(ast)
   }
 
@@ -23,7 +23,7 @@ class CollectionTransform extends Transform {
       Some(transform[Expr](v))
 
     // None --> null
-    case RefExpr(SimpleType("scala.None.type"), None, "None", _, _) =>
+    case RefExpr(ScalaCollectionType("scala.None$"), None, "None", _, _) =>
       Some(Exprs.nullLit)
 
     // opt.map(f), opt.flatMap(f) --> opt?.let {f(it)}
@@ -62,7 +62,7 @@ class CollectionTransform extends Transform {
       else Some(Exprs.emptyList(transform[Type](typeParams.head)))
 
     //Nil --> emptytList()
-    case RefExpr(SimpleType("scala.Nil.type" | "scala.collection.immutable.Nil.type"), None, "Nil", _, false) =>
+    case RefExpr(ScalaCollectionType("scala.collection.immutable.Nil$"), None, "Nil", _, false) =>
       Some(Exprs.emptyList)
 
     //     (1 :: seq, 1 +: seq)  --> listOf(1) + seq

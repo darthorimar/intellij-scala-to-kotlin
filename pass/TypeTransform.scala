@@ -9,7 +9,7 @@ class TypeTransform extends Transform {
     case FunctionType(ProductType(Seq(left)), right) =>
       Some(FunctionType(transform[Type](left), transform[Type](right)))
 
-    case GenerecTypes(inner, Seq(i)) if TypeUtils.isOption(inner) =>
+    case GenerecTypes(inner, Seq(i)) if TypeUtils.isOption(transform[Type](inner)) =>
       Some(NullableType(transform[Type](i)))
 
     case ScalaTypes.STRING | ScalaTypes.JAVA_STRING =>
@@ -17,7 +17,6 @@ class TypeTransform extends Transform {
 
     case ClassType(name) if name.stripPrefix("_root_.").startsWith("scala.") =>
       Some(transform[Type](ScalaCollectionType(name)))
-
 
     case ClassType(name) if name.stripPrefix("_root_.").startsWith("java.") =>
       Some(transform[Type](JavaType(name)))
