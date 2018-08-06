@@ -78,7 +78,7 @@ object ASTGenerator extends {
           case c: PsiClass => ClassType(c.getQualifiedName)
         }.orElse {
           x.extractDesignatorSingleton.map(genType)
-        }.get//OrElse(SimpleType(x.canonicalText))
+        }.get //OrElse(SimpleType(x.canonicalText))
       case x: ScProjectionType =>
         genType(x.projected)
       case x: ScThisType =>
@@ -89,8 +89,8 @@ object ASTGenerator extends {
         TypeParamType(TypeParam(x.typeParameter.name))
       case x: ScExistentialArgument =>
         SimpleType("*")
-//      case x =>
-//        SimpleType(x.canonicalText)
+      //      case x =>
+      //        SimpleType(x.canonicalText)
     }
 
 
@@ -129,11 +129,11 @@ object ASTGenerator extends {
 
   def gen[T](psi: PsiElement): T =
     Try(transform[T](psi))
-//      .recoverWith { case _ => Try(ErrorExpr.asInstanceOf[T]) }
-//      .recoverWith { case _ => Try(ErrorCasePattern.asInstanceOf[T]) }
-//      .recoverWith { case _ => Try(ErrorType.asInstanceOf[T]) }
-//      .recoverWith { case _ => Try(ErrorForEnumerator.asInstanceOf[T]) }
-//      .recoverWith { case _ => Try(ErrorWhenClause.asInstanceOf[T]) }
+      //      .recoverWith { case _ => Try(ErrorExpr.asInstanceOf[T]) }
+      //      .recoverWith { case _ => Try(ErrorCasePattern.asInstanceOf[T]) }
+      //      .recoverWith { case _ => Try(ErrorType.asInstanceOf[T]) }
+      //      .recoverWith { case _ => Try(ErrorForEnumerator.asInstanceOf[T]) }
+      //      .recoverWith { case _ => Try(ErrorWhenClause.asInstanceOf[T]) }
       .get
 
   def transform[T](psi: PsiElement): T = (psi match {
@@ -141,7 +141,7 @@ object ASTGenerator extends {
       FileDef(
         x.getPackageName,
         Seq.empty,
-//        x.importStatementsInHeader.flatMap(_.importExprs).map(gen[ImportDef]),
+        //        x.importStatementsInHeader.flatMap(_.importExprs).map(gen[ImportDef]),
         genDefinitions(x)
           .filter {
             case _: PsiClassWrapper => false
@@ -188,7 +188,7 @@ object ASTGenerator extends {
         }
 
 
-      val companionDefn =  x.baseCompanionModule.map {
+      val companionDefn = x.baseCompanionModule.map {
         case _ if defnType == ObjDefn => ObjectCompanion
         case c => ClassCompanion(gen[Defn](c))
       }
@@ -272,10 +272,17 @@ object ASTGenerator extends {
         isFunc)
 
     case x: ScMethodCall =>
+      val paramTypes =
+        Try {
+          x.args.callReference.flatMap(_.bind()).get
+            .element.asInstanceOf[ScFunction].parameters.map(_.`type`()).map(genType)
+        }.getOrElse(Stream.continually(NoType))
+
       CallExpr(
         genType(x.`type`()),
         gen[Expr](x.getInvokedExpr),
-        x.args.exprs.map(gen[Expr]))
+        x.args.exprs.map(gen[Expr]),
+        paramTypes)
 
     case x: ScGenericCall =>
       gen[RefExpr](x.referencedExpr).copy(typeParams = genTypeArgs(x.typeArgs))

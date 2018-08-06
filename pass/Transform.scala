@@ -115,10 +115,11 @@ trait Transform {
     case TypeExpr(exprType) =>
       TypeExpr(transform[Type](exprType))
 
-    case CallExpr(exprType, ref, params) =>
+    case CallExpr(exprType, ref, arguments, paramsExpectedTypes) =>
       CallExpr(transform[Type](exprType),
         transform[Expr](ref),
-        params.map(transform[Expr]))
+        arguments.map(transform[Expr]),
+        paramsExpectedTypes.map(transform[Type]))
 
     case WhenExpr(exprType, expr, clauses) =>
       WhenExpr(transform[Type](exprType), expr.map(transform[Expr]), clauses.map(transform[WhenClause]))

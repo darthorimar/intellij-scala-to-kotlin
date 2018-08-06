@@ -193,7 +193,7 @@ class KotlinBuilder extends KotlinBuilderBase {
       case TypeExpr(exprType) =>
         genType(exprType, false)
 
-      case CallExpr(exprType, ref, params) =>
+      case CallExpr(exprType, ref, params, paramsExpectedTypes) =>
         gen(ref)
         if (params.size == 1 && params.head.isInstanceOf[LambdaExpr]) {
           str(" ")

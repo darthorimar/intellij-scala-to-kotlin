@@ -19,7 +19,7 @@ case class InfixExpr(exprType: Type, op: RefExpr, left: Expr, right: Expr, isLef
 case class ParenthesesExpr(inner: Expr) extends Expr {
   override def exprType: Type = inner.exprType
 }
-case class CallExpr(exprType: Type, ref: Expr, params: Seq[Expr]) extends Expr
+case class CallExpr(exprType: Type, ref: Expr, params: Seq[Expr], paramsExpectedTypes: Seq[Type]) extends Expr
 case class LitExpr(exprType: Type, name: String) extends Expr
 case class UnderscoreExpr(exprType: Type) extends Expr
 case class RefExpr(exprType: Type,

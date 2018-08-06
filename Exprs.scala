@@ -1,5 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter
 
+import android.provider.ContactsContract.CommonDataKinds.Callable
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 
@@ -14,7 +15,7 @@ object Exprs {
     simpleInfix(KotlinTypes.BOOLEAN, "&&", left, right)
 
   def letExpr(obj: Expr, lambda: LambdaExpr) =
-    CallExpr(lambda.exprType, RefExpr(NoType, Some(obj), "let", Seq.empty, true), Seq(lambda))
+    CallExpr(lambda.exprType, RefExpr(NoType, Some(obj), "let", Seq.empty, true), Seq(lambda), Seq.empty)
 
   def simpleInfix(resultType: Type, op: String, left: Expr, right: Expr) =
     InfixExpr(FunctionType(right.exprType, resultType),
@@ -27,12 +28,14 @@ object Exprs {
     CallExpr(
       listType(ty),
       RefExpr(ty, None, "emptyList", Seq(ty), true),
+      Seq.empty,
       Seq.empty)
 
   def emptyList =
     CallExpr(
       listType(NoType),
       RefExpr(NoType, None, "emptyList", Seq.empty, true),
+      Seq.empty,
       Seq.empty)
 
   def listType(ty: Type) =
@@ -41,7 +44,7 @@ object Exprs {
   def simpleCall(name: String, returnType: Type, aruments: Seq[Expr]) =
     CallExpr(FunctionType(ProductType(aruments.map(_.exprType)), returnType),
       RefExpr(returnType, None, name, Seq.empty, true),
-      aruments
+      aruments, Seq.empty
     )
 
   def simpleRef(name: String, refType: Type) =

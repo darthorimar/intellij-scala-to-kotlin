@@ -25,12 +25,14 @@ class BasicTransform extends Transform {
   override protected def action(ast: AST): Option[AST] = {
     ast match {
       case x@InfixExpr(exprType, op, _, _, _) if !isDefaultOperator(op) =>
-        val (left, right) = (x.left, x.right)
-        Some(transform[Expr](CallExpr(
-          exprType,
-          op.copy(referencedObject = Some(left)),
-          Seq(transform[Expr](right))
-        )))
+        val (left, right) = (transform[Expr](x.left), transform[Expr](x.right))
+        Some(transform[Expr](
+          CallExpr(
+            exprType,
+            op.copy(referencedObject = Some(left)),
+            Seq(transform[Expr](right)),
+            Seq.empty
+          )))
 
       //scala try --> kotlin try
       case ScalaTryExpr(exprType, tryBlock, catchBlock, finallyBlock) =>
@@ -155,17 +157,18 @@ class BasicTransform extends Transform {
           if (defn.defnType == TraitDefn) InterfaceDefn
           else defn.defnType
 
-        //        val name =
-        //          if (defn.companionDefn.contains(ObjectCompanion)) ""
-        //        else defn.name
+        val name =
+          if (defn.companionDefn.contains(ObjectCompanion)) ""
+          else defn.name
 
         Some(copy(defn).asInstanceOf[Defn]
           .copy(attributes = handleAttrs(defn),
             defnType = defnType,
-            body = newBody))
+            body = newBody,
+            name = name))
 
       //uncarry
-      case x@CallExpr(_, c: CallExpr, _) if c.exprType.isFunction =>
+      case x@CallExpr(_, c: CallExpr, _, _) if c.exprType.isFunction =>
         def collectParams(c: Expr): List[Expr] = c match {
           case x: CallExpr if x.ref.exprType.isFunction =>
             collectParams(x.ref) ++ x.params.toList
@@ -182,11 +185,13 @@ class BasicTransform extends Transform {
         Some(CallExpr(
           transform[Type](x.exprType),
           copy(ref).asInstanceOf[RefExpr],
-          params.map(transform[Expr])))
+          params.map(transform[Expr]),
+          Seq.empty))
 
 
       //a.foo(f) --> a.foo{f(it)}
-      case CallExpr(exprType, ref, params)
+      //a.foo(_ + 1) --> a.foo {it + 1}
+      case CallExpr(exprType, ref, params, paramsExpectedTypes)
         if params.exists {
           case y: RefExpr if y.isFunctionRef => true
           case _ => false
@@ -196,20 +201,22 @@ class BasicTransform extends Transform {
           CallExpr(
             transform[Type](exprType),
             transform[Expr](ref),
-            params.map {
-              case y: RefExpr if y.isFunctionRef =>
+            params.toStream.zip(paramsExpectedTypes.toStream ++ Stream.continually(NoType)).map {
+              case (y: RefExpr, _: FunctionType) if y.isFunctionRef =>
                 LambdaExpr(
                   exprType,
                   Seq.empty,
-                  CallExpr(transform[Type](y.exprType), copy(y).asInstanceOf[Expr], Seq(UnderscoreExpr(y.exprType))),
+                  CallExpr(transform[Type](y.exprType), copy(y).asInstanceOf[Expr], Seq(UnderscoreExpr(y.exprType)), Seq.empty),
                   false)
-              case y => y
-            }))
+              case (y@RefExpr(exprType, obj, ref, typeParams, true), _) =>
+                CallExpr(exprType, copy(y).asInstanceOf[RefExpr], Seq.empty, Seq.empty)
+              case (y, _) => transform[Expr](y)
+            }, Seq.empty))
 
       //x.foo --> x.foo()
-      case x@RefExpr(exprType, obj, ref, exprTypepeParams, true)
+      case x@RefExpr(exprType, obj, ref, typeParams, true)
         if !parent.isInstanceOf[CallExpr] =>
-        Some(CallExpr(exprType, copy(x).asInstanceOf[RefExpr], Seq.empty))
+        Some(CallExpr(exprType, copy(x).asInstanceOf[RefExpr], Seq.empty, Seq.empty))
 
       // matchExpr to when one
       case MatchExpr(exprType, expr, clauses) =>

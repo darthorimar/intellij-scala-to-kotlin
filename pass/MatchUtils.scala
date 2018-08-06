@@ -107,7 +107,8 @@ object MatchUtils {
         val callContructor =
           CallExpr(NoType,
             RefExpr(NoType, None, Utils.escapeName(s"${repr}_data"), Seq.empty, true),
-            params
+            params,
+            Seq.empty
           )
 
         val retExpr = ReturnExpr(Some("lazy"), Some(callContructor))
