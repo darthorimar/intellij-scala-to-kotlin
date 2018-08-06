@@ -209,7 +209,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(ref)
         if (typeParams.nonEmpty) {
           str("<")
-          rep(typeParams, ", ")(gen)
+          rep(typeParams, ", ")(genType(_, false))
           str(">")
         }
 

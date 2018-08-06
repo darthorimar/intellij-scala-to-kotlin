@@ -11,6 +11,7 @@ trait Transform {
   val renamesVal = new ScopedVal[Renames](Renames(Map.empty))
   val namerVal = new ScopedVal[LocalNamer](new LocalNamer)
 
+  var context: FileDef = null
   var imports: Set[ImportDef] = Set.empty
 
   private var parentsStack = List.empty[AST]
@@ -96,7 +97,8 @@ trait Transform {
     case ImportDef(ref) =>
       ImportDef(ref)
 
-    case FileDef(pckg, imports, defns) =>
+    case x@FileDef(pckg, imports, defns) =>
+      context = x
       val newDefns = defns.map(transform[DefExpr])
       FileDef(pckg, (imports ++ collectedImports).map(transform[ImportDef]), newDefns)
 
@@ -211,6 +213,9 @@ trait Transform {
     case KotlinCollectionType(name) =>
       KotlinCollectionType(name)
 
+    case JavaType(name) =>
+      JavaType(name)
+
     case ScalaCollectionType(name) =>
       ScalaCollectionType(name)
 
@@ -250,6 +255,9 @@ trait Transform {
     case ForGenerator(pattern, expr) =>
       ForGenerator(transform[CasePattern](pattern), transform[Expr](expr))
 
+    case BracketsExpr(exprType, expr, inBrackets) =>
+      BracketsExpr(transform[Type](exprType), transform[Expr](expr), transform[Expr](inBrackets))
+
     case EmptyDefExpr => EmptyDefExpr
 
     case x: Keyword => x
@@ -262,6 +270,7 @@ object Transform {
       new TypeTransform,
       new BasicTransform,
       new CollectionTransform,
+      new TypeTransform,//todo get rid of second call
       new RefCollector)
     passes.foldLeft(fileDef)((a, p) => p.transform[FileDef](a)) //todo rename
   }

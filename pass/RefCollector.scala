@@ -9,8 +9,11 @@ class RefCollector extends Transform {
         Some(copy(x).asInstanceOf[FileDef].copy(imports = x.imports ++ imports.toSeq))
 
       case ClassType(name) =>
-        imports = imports + ImportDef(name)
-        Some(SimpleType(name.split('.').last))
+        val importPath = name.stripPrefix(context.packageName)
+        if (importPath.nonEmpty && importPath.contains("."))
+          imports = imports + ImportDef(importPath)
+        val className = name.split('.').last
+        Some(ClassType(className))
 
       case _ => None
     }

@@ -47,6 +47,11 @@ case class ScalaCollectionType(name: String) extends Type {
   override def asKotlin: String = name
 }
 
+case class JavaType(name: String) extends Type {
+  override def asKotlin: String = name
+}
+
+
 case class KotlinCollectionType(name: String) extends Type {
   override def asKotlin: String = name
 }

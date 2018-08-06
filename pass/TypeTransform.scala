@@ -15,8 +15,15 @@ class TypeTransform extends Transform {
     case ScalaTypes.STRING | ScalaTypes.JAVA_STRING =>
       Some(KotlinTypes.STRING)
 
-    case ClassType(name) if name.stripPrefix("_root_.").startsWith("scala.collection") =>
+    case ClassType(name) if name.stripPrefix("_root_.").startsWith("scala.") =>
       Some(transform[Type](ScalaCollectionType(name)))
+
+
+    case ClassType(name) if name.stripPrefix("_root_.").startsWith("java.") =>
+      Some(transform[Type](JavaType(name)))
+
+    case JavaType("java.lang.Exception") =>
+      Some(KotlinCollectionType("Exception"))
 
     case ScalaTypes.SEQ |
          ScalaTypes.SEQ2 |

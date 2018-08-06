@@ -71,7 +71,7 @@ class BasicTransform extends Transform {
         Some(ParamsConstructor(params.map {
           case ConstructorParam(parType, mod, name, exprType) =>
             val t = if (parType == NoMemberKind) ValKind else parType
-            val m = if (mod == NoAttribute)   PublicAttribute else mod
+            val m = if (mod == NoAttribute) PrivateAttribute else mod
             ConstructorParam(t, m, name, transform[Type](exprType))
         }))
 
