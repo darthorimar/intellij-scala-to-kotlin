@@ -7,11 +7,13 @@ import org.jetbrains.plugins.kotlinConverter.{ExprUtils, Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
-import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renames, ScopedVal}
+import org.jetbrains.plugins.kotlinConverter.scopes.{BasicTransformState, LocalNamer, Renames, ScopedVal}
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 
 
 class BasicTransform extends Transform {
+
+  val stateVal: ScopedVal[BasicTransformState] = new ScopedVal[BasicTransformState](BasicTransformState(false))
 
   import org.jetbrains.plugins.kotlinConverter.types.TypeUtils._
 
@@ -142,31 +144,37 @@ class BasicTransform extends Transform {
         Some(copy(x).asInstanceOf[SimpleValOrVarDef].copy(attributes = handleAttrs(x)))
 
       case x: Defn =>
-        val defn = copy(x).asInstanceOf[Defn]
-        val companionObj =
-          defn.companionDefn.toSeq.flatMap {
-            case ClassCompanion(c) =>
-              Seq(c.copy(attributes = c.attributes :+ CompanionAttribute))
-            case _ => Seq.empty
+        scoped(
+          stateVal.updated { s =>
+            BasicTransformState(s.inCompanionObject || x.isObjectDefn && x.defnType == ObjDefn)
           }
-        val exprs = defn.body.toSeq.flatMap(_.exprs) ++ companionObj
-        val newBody =
-          if (exprs.isEmpty) None
-          else Some(BlockExpr(NoType, exprs))
+        ) {
+          val defn = copy(x).asInstanceOf[Defn]
+          val companionObj =
+            defn.companionDefn.toSeq.flatMap {
+              case ClassCompanion(c) =>
+                Seq(c.copy(attributes = c.attributes :+ CompanionAttribute))
+              case _ => Seq.empty
+            }
+          val exprs = defn.body.toSeq.flatMap(_.exprs) ++ companionObj
+          val newBody =
+            if (exprs.isEmpty) None
+            else Some(BlockExpr(NoType, exprs))
 
-        val defnType =
-          if (defn.defnType == TraitDefn) InterfaceDefn
-          else defn.defnType
+          val defnType =
+            if (defn.defnType == TraitDefn) InterfaceDefn
+            else defn.defnType
 
-        val name =
-          if (defn.companionDefn.contains(ObjectCompanion)) ""
-          else defn.name
+          val name =
+            if (defn.companionDefn.contains(ObjectCompanion)) ""
+            else defn.name
 
-        Some(copy(defn).asInstanceOf[Defn]
-          .copy(attributes = handleAttrs(defn),
-            defnType = defnType,
-            body = newBody,
-            name = name))
+          Some(copy(defn).asInstanceOf[Defn]
+            .copy(attributes = handleAttrs(defn),
+              defnType = defnType,
+              body = newBody,
+              name = name))
+        }
 
       //uncarry
       case x@CallExpr(_, c: CallExpr, _, _) if c.exprType.isFunction =>
@@ -207,10 +215,10 @@ class BasicTransform extends Transform {
                 LambdaExpr(
                   exprType,
                   Seq.empty,
-                  CallExpr(transform[Type](y.exprType), copy(y).asInstanceOf[Expr], Seq(UnderscoreExpr(y.exprType)), Seq.empty),
+                  CallExpr(transform[Type](y.exprType), transform[Expr](y), Seq(UnderscoreExpr(y.exprType)), Seq.empty),
                   false)
               case (y@RefExpr(exprType, obj, ref, typeParams, true), _) =>
-                CallExpr(exprType, copy(y).asInstanceOf[RefExpr], Seq.empty, Seq.empty)
+                CallExpr(exprType, transform[Expr](y), Seq.empty, Seq.empty)
               case (y, _) => transform[Expr](y)
             }, Seq.empty))
 
@@ -218,6 +226,12 @@ class BasicTransform extends Transform {
       case x@RefExpr(exprType, obj, ref, typeParams, true)
         if !parent.isInstanceOf[CallExpr] =>
         Some(CallExpr(exprType, copy(x).asInstanceOf[RefExpr], Seq.empty, Seq.empty))
+
+
+      //foo.apply(sth) --> foo(sth)
+      case x@RefExpr(exprType, Some(obj), "apply", typeParams, _)
+        if parent.isInstanceOf[CallExpr] && obj.exprType.isFunction =>
+        Some(transform[Expr](obj))
 
       // matchExpr to when one
       case MatchExpr(exprType, expr, clauses) =>
@@ -241,13 +255,16 @@ class BasicTransform extends Transform {
         x.isClassDefn && !x.attributes.contains(CaseAttribute) &&
         !x.attributes.contains(AbstractAttribute)
 
-
+    val accessModifier =
+      if (!x.isDefn && x.attributes.contains(PrivateAttribute) && stateVal.inCompanionObject)
+        Some(InternalAttribute)
+      else if (x.attributes.contains(PrivateAttribute)) Some(PrivateAttribute)
+      else if (x.attributes.contains(ProtectedAttribute)) Some(ProtectedAttribute)
+      else None
     val attrs =
       (attr(x.attributes.contains(CaseAttribute) && x.isClassDefn, DataAttribute) ::
         attr(isOpen, OpenAttribute) ::
-        //        attr(x.attrs.contains(PublicAttr), PublicAttr) ::
-        attr(x.attributes.contains(PrivateAttribute), PrivateAttribute) ::
-        attr(x.attributes.contains(ProtectedAttribute), ProtectedAttribute) ::
+        accessModifier ::
         attr(x.attributes.contains(AbstractAttribute), AbstractAttribute) ::
         attr(x.attributes.contains(OverrideAttribute), OverrideAttribute) ::
         attr(x.attributes.contains(CompanionAttribute), CompanionAttribute) ::

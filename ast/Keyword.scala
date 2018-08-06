@@ -40,7 +40,9 @@
   case object CompanionAttribute extends Attribute {
     override def name: String = "companion"
   }
-
+  case object InternalAttribute extends Attribute {
+    override def name: String = "internal"
+  }
 
   sealed trait MemberKind extends Keyword
   case object ValKind extends MemberKind {

@@ -73,6 +73,7 @@ sealed trait DefExpr extends Expr {
   def attributes: Seq[Attribute]
   def isDefn: Boolean = false
   def isClassDefn: Boolean = false
+  def isObjectDefn: Boolean = false
   def isValOrVar: Boolean = false
 }
 case class Defn(attributes: Seq[Attribute],
@@ -87,6 +88,7 @@ case class Defn(attributes: Seq[Attribute],
   override def isDefn: Boolean = true
 
   override def isClassDefn: Boolean = defnType == ClassDefn
+  override def isObjectDefn: Boolean = defnType == ObjDefn
 }
 object EmptyDefExpr extends DefExpr {
   override def attributes: Seq[Attribute] = Seq.empty
