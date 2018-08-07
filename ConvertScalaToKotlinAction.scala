@@ -27,26 +27,14 @@ class ConvertScalaToKotlinAction extends AnAction {
     }
 
     try {
-      var elements = LangDataKeys.PSI_ELEMENT_ARRAY.getData(e.getDataContext)
-      if (elements == null) {
-        val file = CommonDataKeys.PSI_FILE.getData(e.getDataContext)
-        if (file != null) elements = Array(file)
-        else elements = Array.empty
-      }
-      for (element <- elements) {
-        element.getContainingFile match {
-          case j: ScalaFile =>
-            val dir = j.getContainingDirectory
-            if (!dir.isWritable) {
-              disable()
-              return
-            }
-          case _ =>
-            disable()
-            return
+      val elements = getElements(e)
+      val enabled =
+        elements.foldLeft(true) {
+          case (acc, s: ScalaFile) => acc && s.getContainingDirectory.isWritable
+          case _ => false
         }
-      }
-      enable()
+      if (enabled) enable()
+      else disable()
     }
     catch {
       case _: Exception => disable()
@@ -54,41 +42,41 @@ class ConvertScalaToKotlinAction extends AnAction {
 
   }
 
+  def getElements(e: AnActionEvent) =
+    Option(LangDataKeys.PSI_ELEMENT_ARRAY.getData(e.getDataContext)).
+      orElse {
+        Option(CommonDataKeys.PSI_FILE.getData(e.getDataContext)).map(e => Array(e))
+      }.getOrElse(Array.empty)
+
 
   def actionPerformed(e: AnActionEvent) {
-    var elements = LangDataKeys.PSI_ELEMENT_ARRAY.getData(e.getDataContext)
-    if (elements == null) {
-      val file = CommonDataKeys.PSI_FILE.getData(e.getDataContext)
-      if (file != null) elements = Array(file)
-      else elements = Array.empty
-    }
+    val elements = getElements(e)
     for (element <- elements) {
       element.getContainingFile match {
         case jFile: ScalaFile =>
           val dir = jFile.getContainingDirectory
           if (dir.isWritable) {
-            ScalaUtils.runWriteAction(new Runnable {
-              def run() {
-                val directory = jFile.getContainingDirectory
-                val name = jFile.getName.substring(0, jFile.getName.length - 5)
-                val nameWithExtension: String = name + "kt"
-                val existingFile: VirtualFile = directory.getVirtualFile.findChild(nameWithExtension)
-                if (existingFile != null) {
-                  NotificationUtil.builder(directory.getProject, s"File $nameWithExtension already exists").
-                    setDisplayType(NotificationDisplayType.BALLOON).
-                    setNotificationType(NotificationType.ERROR).
-                    setGroup("rename.scala.to.kotlin").
-                    setTitle("Cannot create file").
-                    show()
-                  return
-                }
-                val file = directory.createFile(name + "kt")
+            ScalaUtils.runWriteAction(() => {
+              val directory = jFile.getContainingDirectory
+              val name = jFile.getName.stripSuffix(".scala")
+              val nameWithExtension = name + ".kt"
+              val existingFile = Option(directory.getVirtualFile.findChild(nameWithExtension))
+              if (existingFile.isDefined) {
+                NotificationUtil.builder(directory.getProject, s"File $nameWithExtension already exists")
+                  .setDisplayType(NotificationDisplayType.BALLOON)
+                  .setNotificationType(NotificationType.ERROR)
+                  .setGroup("rename.scala.to.kotlin")
+                  .setTitle("Cannot create file")
+                  .show()
+              } else {
+                val file = directory.createFile(nameWithExtension)
                 val newText = Converter.convert(jFile).trim
                 val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
                 document.insertString(0, newText)
                 PsiDocumentManager.getInstance(file.getProject).commitDocument(document)
                 val manager: CodeStyleManager = CodeStyleManager.getInstance(file.getProject)
                 manager.reformatText(file, 0, file.getTextLength)
+                jFile.delete()
                 file.navigate(true)
               }
             }, jFile.getProject, "Convert to Kotlin")
