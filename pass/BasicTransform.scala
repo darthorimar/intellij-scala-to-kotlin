@@ -133,8 +133,16 @@ class BasicTransform extends Transform {
               else b
             case b => b
           }
+          val params = newDef.parameters.map {
+            case DefParameter(parameterType, name, isVarArg, true) =>
+              DefParameter(FunctionType(KotlinTypes.UNIT, parameterType), name, isVarArg, true)
+            case p => p
+          }
 
-          Some(newDef.copy(attributes = handleAttrs(newDef), body = newDef.body.map(handleBody)))
+          Some(newDef.copy(
+            attributes = handleAttrs(newDef),
+            body = newDef.body.map(handleBody),
+            parameters = params))
         }
 
       case x: ValOrVarDef =>

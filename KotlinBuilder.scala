@@ -127,7 +127,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(" ")
         str(name)
         str("(")
-        rep(args, ", ") { case DefParameter(parameterType, name, isVarArg) =>
+        rep(args, ", ") { case DefParameter(parameterType, name, isVarArg, _) =>
           if (isVarArg) str("vararg ")
           str(name)
           genType(parameterType)
@@ -172,7 +172,7 @@ class KotlinBuilder extends KotlinBuilderBase {
       case LambdaExpr(exprType, params, expr, needBraces) =>
         str("{ ")
         if (needBraces) str("(")
-        rep(params, ", ") { case DefParameter(exprType, name, _) =>
+        rep(params, ", ") { case DefParameter(_, name, _, _) =>
           str(name)
         }
         if (needBraces) str(")")
@@ -245,19 +245,19 @@ class KotlinBuilder extends KotlinBuilderBase {
           str(")")
         }
         str(" {")
-        indent()
-        repNl(clauses) {
-          case ExprWhenClause(clause, expr) =>
-            gen(clause)
-            str(" -> ")
-            gen(expr)
-          case ElseWhenClause(expr) =>
-            str("else -> ")
-            gen(expr)
+        indented {
+          repNl(clauses) {
+            case ExprWhenClause(clause, expr) =>
+              gen(clause)
+              str(" -> ")
+              gen(expr)
+            case ElseWhenClause(expr) =>
+              str("else -> ")
+              gen(expr)
+          }
         }
-
         str("}")
-        unIndent()
+
       case NewExpr(exprType, instanceType, args) =>
         genType(instanceType, false)
         str("(")
@@ -314,9 +314,9 @@ class KotlinBuilder extends KotlinBuilderBase {
   def genAsBlock(e: Expr): Unit = e match {
     case BlockExpr(exprType, exprs) =>
       str("{")
-      if (!stateVal.inInterpolatedString) indent() //todo move to func
-      repNl(exprs)(gen)
-      if (!stateVal.inInterpolatedString) unIndent()
+      indentedIf(!stateVal.inInterpolatedString) {
+        repNl(exprs)(gen)
+      }
       str("}")
     case _ =>
       genAsBlock(BlockExpr(NoType, Seq(e)))

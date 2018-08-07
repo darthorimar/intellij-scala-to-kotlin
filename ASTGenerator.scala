@@ -451,7 +451,7 @@ object ASTGenerator extends {
       ConstructorParam(kind, modifier, x.name, genType(x.typeElement))
 
     case x: ScParameter =>
-      DefParameter(genType(x.typeElement), x.name, x.isVarArgs)
+      DefParameter(genType(x.typeElement), x.name, x.isVarArgs, x.isCallByNameParameter)
 
     case x: ScTryStmt =>
       ScalaTryExpr(genType(x.`type`()),

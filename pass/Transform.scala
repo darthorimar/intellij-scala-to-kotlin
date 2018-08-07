@@ -226,8 +226,8 @@ trait Transform {
     case NoType =>
       NoType
 
-    case DefParameter(exprType, name, isVarArg) =>
-      DefParameter(transform[Type](exprType), name, isVarArg)
+    case DefParameter(exprType, name, isVarArg, isCallByName) =>
+      DefParameter(transform[Type](exprType), name, isVarArg, isCallByName)
 
     case MatchCaseClause(pattern, expr, guard) =>
       MatchCaseClause(pattern, transform[Expr](expr), guard.map(transform[Expr]))

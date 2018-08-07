@@ -12,14 +12,24 @@ trait KotlinBuilderBase {
     str(" " * i)
   }
 
-  def indent(): Unit = {
+  private def indent(): Unit = {
     i += indentStep
     nl()
   }
-  def unIndent(): Unit = {//todo add checking
+  private def unIndent(): Unit = {//todo add checking
     i -= indentStep
     nl()
   }
+
+  def indented(block: => Unit): Unit = {
+    indent()
+    block
+    unIndent()
+  }
+
+  def indentedIf(predicate: Boolean)(block: => Unit): Unit =
+    if (predicate) indented(block)
+    else block
 
   def rep[T](values: Seq[T], sep: => Unit)(h: T => Unit): Unit =
     if (values.nonEmpty) {
