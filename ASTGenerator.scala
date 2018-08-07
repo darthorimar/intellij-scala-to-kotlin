@@ -368,7 +368,11 @@ object ASTGenerator extends {
     case x: ScTypedPattern =>
       TypedPattern(x.name, genType(x.typePattern.map(_.typeElement)))
     case x: ScReferencePattern =>
-      ReferencePattern(x.name)
+      x.expectedType.map(genType) match {
+        case Some(t) => TypedPattern(x.name, t)
+        case _ => ReferencePattern(x.name)
+      }
+
     case x: ScReferenceElement =>
       ReferencePattern(x.refName)
     case x: ScStableReferenceElementPattern =>

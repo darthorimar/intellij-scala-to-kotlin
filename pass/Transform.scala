@@ -59,6 +59,9 @@ trait Transform {
 
     case EmptyConstructor => EmptyConstructor
 
+    case ThrowExpr(exprType, expr) =>
+      ThrowExpr(transform[Type](exprType), transform[Expr](expr))
+
     case ForInExpr(exprType, value, range, body) =>
       ForInExpr(transform[Type](exprType), transform[RefExpr](value), transform[Expr](range), transform[Expr](body))
 
@@ -271,7 +274,7 @@ object Transform {
       new TypeTransform,
       new BasicTransform,
       new CollectionTransform,
-      new TypeTransform,//todo get rid of second call
+      new TypeTransform, //todo get rid of second call
       new RefCollector)
     passes.foldLeft(fileDef)((a, p) => p.transform[FileDef](a)) //todo rename
   }

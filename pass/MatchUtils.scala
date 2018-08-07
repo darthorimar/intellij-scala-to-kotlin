@@ -45,7 +45,7 @@ object MatchUtils {
       case MatchCaseClause(pattern@ConstructorPattern(_, _, _, repr), _, _) =>
         val name = Utils.escapeName(s"${repr}_data")
         val vals = collectVals(pattern)
-        Defn(Seq(CaseAttribute),
+        Defn(Seq(DataAttribute),
           ClassDefn,
           name,
           Seq.empty,
@@ -186,8 +186,16 @@ object MatchUtils {
         .span(_.isInstanceOf[ExprWhenClause]) match { //take all before first `else` including it
         case (h, t) => h ++ t.headOption.toSeq
       }
+    val elseClause = if (!whenClauses.exists {
+      case _: ElseWhenClause => true
+      case _ => false
+    }) {
+      val exception = NewExpr(KotlinTypes.EXCEPTION, KotlinTypes.THROWABLE, Seq(LitExpr(KotlinTypes.STRING, "\"Match exception\"")))
+      Seq(ElseWhenClause(ThrowExpr(KotlinTypes.NOTHING, exception)))
+    }
+    else Seq.empty
 
-    val whenExpr = WhenExpr(NoType, None, whenClauses)
+    val whenExpr = WhenExpr(NoType, None, whenClauses ++ elseClause)
     (caseClasses ++ lazyDefs) :+ whenExpr
   }
 

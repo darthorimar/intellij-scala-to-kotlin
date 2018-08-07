@@ -300,6 +300,10 @@ class KotlinBuilder extends KotlinBuilderBase {
       case TypeParam(name) =>
         str(name)
 
+      case ThrowExpr(exprType, expr) =>
+        str("throw ")
+        gen(expr)
+
       case EmptyDefExpr =>
 
       case x: Keyword =>

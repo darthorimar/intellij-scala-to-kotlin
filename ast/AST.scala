@@ -48,7 +48,7 @@ case class ConstructorPattern(ref: String,
   override def name: String = representation
 }
 case class TypedPattern(referenceName: String, patternType: Type) extends CasePattern {
-  override def name: String = s"$referenceName: $patternType"
+  override def name: String = s"$referenceName: ${patternType.asKotlin}"
 }
 case class ReferencePattern(referenceName: String) extends CasePattern {
   override def name: String = referenceName

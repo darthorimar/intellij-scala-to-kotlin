@@ -9,6 +9,7 @@ object KotlinTypes {
   val STRING = ScalaStdType("String")
   val INT = ScalaStdType("Int")
   val THROWABLE = KotlinCollectionType("Throwable")
+  val EXCEPTION = KotlinCollectionType("Exception")
   val LIST = KotlinCollectionType("List")
   val PAIR = KotlinCollectionType("Pair")
 }
