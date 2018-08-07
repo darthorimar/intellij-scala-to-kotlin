@@ -42,11 +42,11 @@ class KotlinBuilder extends KotlinBuilderBase {
         opt(consruct)(gen)
         opt(supersBlock) { case SupersBlock(constuctor, supers) =>
           str(" : ")
-          opt(constuctor) { case SuperConstructor(exprType, exprs) =>
+          opt(constuctor) { case SuperConstructor(exprType, exprs, needBrackets) =>
             genType(exprType, false)
-            str("(")
+            if (needBrackets || exprs.nonEmpty) str("(")
             rep(exprs, ", ")(gen)
-            str(")")
+            if (needBrackets || exprs.nonEmpty) str(")")
           }
           if (constuctor.isDefined && supers.nonEmpty) {
             str(", ")

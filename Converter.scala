@@ -17,6 +17,8 @@ object Converter {
     new ImplicitTransform()
   )
 
+  def convert(file: ScalaFile, doPrint: Boolean): String =
+    convert(Seq(file), doPrint).head._1
 
   def convert(files: Seq[ScalaFile], doPrint: Boolean = false): Seq[(String, ScalaFile)] = {
     files.map { file =>

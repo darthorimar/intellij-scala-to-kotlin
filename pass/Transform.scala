@@ -54,8 +54,8 @@ trait Transform {
     case SupersBlock(constructor, supers) =>
       SupersBlock(constructor.map(transform[SuperConstructor]), supers.map(transform[Type]))
 
-    case SuperConstructor(exprType, exprs) =>
-      SuperConstructor(transform[Type](exprType), exprs.map(transform[Expr]))
+    case SuperConstructor(exprType, exprs, needBrackets) =>
+      SuperConstructor(transform[Type](exprType), exprs.map(transform[Expr]), needBrackets)
 
     case EmptyConstructor => EmptyConstructor
 

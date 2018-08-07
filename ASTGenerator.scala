@@ -247,7 +247,16 @@ object ASTGenerator extends {
     case x: ScTemplateParents =>
       val constructor = x match {
         case y: ScClassParents => y.constructor.map { c =>
-          SuperConstructor(genType(c.typeElement.`type`()), c.args.toSeq.flatMap(_.exprs).map(gen[Expr]))
+          val needBrackets =
+            x.typeElements
+              .headOption
+              .flatMap(_.`type`().toOption)
+              .collect {
+                case d: DesignatorOwner => d.extractClass
+              }
+              .flatten
+              .exists(!_.isInstanceOf[ScTrait])
+          SuperConstructor(genType(c.typeElement.`type`()), c.args.toSeq.flatMap(_.exprs).map(gen[Expr]), needBrackets)
         }
         case _ => None
       }
