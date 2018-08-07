@@ -10,8 +10,8 @@ class KotlinBuilder extends KotlinBuilderBase {
 
   def gen(ast: AST): Unit =
     ast match {
-      case _: ErrorAst =>
-        str("/* ERROR */")
+      case e: ErrorAst =>
+        str(s"/* ERROR converting `${e.text}`*/")
 
       case FileDef(pckg, imports, defns) =>
         if (pckg.trim.nonEmpty) {

@@ -61,6 +61,10 @@ class ConvertScalaToKotlinAction extends AnAction {
           val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
           document.deleteString(0, document.getTextLength)
           document.insertString(0, text)
+          PsiDocumentManager.getInstance(file.getProject).commitDocument(document)
+          val kotlinFile = PsiDocumentManager.getInstance(file.getProject).getPsiFile(document)
+          val manager = CodeStyleManager.getInstance(file.getProject)
+          manager.reformatRange(kotlinFile, 0, kotlinFile.getTextLength)
         }
       }, files.head.getProject, "Convert to Kotlin")
     }
