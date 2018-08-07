@@ -27,12 +27,9 @@ class ConvertScalaToKotlinAction extends AnAction {
     }
 
     try {
-      val elements = getElements(e)
+      val elements = getSelectedFiles(e)
       val enabled =
-        elements.foldLeft(true) {
-          case (acc, s: ScalaFile) => acc && s.getContainingDirectory.isWritable
-          case _ => false
-        }
+        elements.forall(s => s.getContainingDirectory.isWritable)
       if (enabled) enable()
       else disable()
     }
@@ -42,49 +39,31 @@ class ConvertScalaToKotlinAction extends AnAction {
 
   }
 
-  def getElements(e: AnActionEvent) =
+  def getSelectedFiles(e: AnActionEvent): Seq[ScalaFile] =
     Option(LangDataKeys.PSI_ELEMENT_ARRAY.getData(e.getDataContext)).
       orElse {
         Option(CommonDataKeys.PSI_FILE.getData(e.getDataContext)).map(e => Array(e))
       }.getOrElse(Array.empty)
+      .collect {
+        case f: ScalaFile if f.getContainingDirectory.isWritable => f
+      }.toSeq
 
 
   def actionPerformed(e: AnActionEvent) {
-    val elements = getElements(e)
-    for (element <- elements) {
-      element.getContainingFile match {
-        case jFile: ScalaFile =>
-          val dir = jFile.getContainingDirectory
-          if (dir.isWritable) {
-            ScalaUtils.runWriteAction(() => {
-              val directory = jFile.getContainingDirectory
-              val name = jFile.getName.stripSuffix(".scala")
-              val nameWithExtension = name + ".kt"
-              val existingFile = Option(directory.getVirtualFile.findChild(nameWithExtension))
-              if (existingFile.isDefined) {
-                NotificationUtil.builder(directory.getProject, s"File $nameWithExtension already exists")
-                  .setDisplayType(NotificationDisplayType.BALLOON)
-                  .setNotificationType(NotificationType.ERROR)
-                  .setGroup("rename.scala.to.kotlin")
-                  .setTitle("Cannot create file")
-                  .show()
-              } else {
-                val file = directory.createFile(nameWithExtension)
-                val newText = Converter.convert(jFile).trim
-                val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
-                document.insertString(0, newText)
-                PsiDocumentManager.getInstance(file.getProject).commitDocument(document)
-                val manager: CodeStyleManager = CodeStyleManager.getInstance(file.getProject)
-                manager.reformatText(file, 0, file.getTextLength)
-                jFile.delete()
-                file.navigate(true)
-              }
-            }, jFile.getProject, "Convert to Kotlin")
-          }
-        case _ =>
-      }
+    val files = getSelectedFiles(e)
+    if (files.nonEmpty) {
+      ScalaUtils.runWriteAction(() => {
+        val converted = Converter.convert(files)
+        for ((text, file) <- converted) {
+          val nameWithoutExtension = file.getName.stripSuffix(".scala")
+          val newName = nameWithoutExtension + ".kt"
+          file.getVirtualFile.rename(this, newName)
+          val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
+          document.deleteString(0, document.getTextLength)
+          document.insertString(0, text)
+        }
+      }, files.head.getProject, "Convert to Kotlin")
     }
   }
-
 
 }

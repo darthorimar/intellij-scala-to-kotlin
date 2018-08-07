@@ -138,28 +138,29 @@ object ASTGenerator extends {
       .getOrElse(recover[T](psi))
 
 
-
-  def findUnderscores(expr: PsiElement): Seq[ScUnderscoreSection] ={
+  def findUnderscores(expr: PsiElement): Seq[ScUnderscoreSection] = {
     if (expr.getText.indexOf('_') == -1) Seq.empty
     else inner(expr)
+
     def inner(innerExpr: PsiElement): Seq[ScUnderscoreSection] = {
       innerExpr match {
         case under: ScUnderscoreSection =>
-              Seq(under)
+          Seq(under)
         case _ =>
           innerExpr.getChildren.flatMap(inner)
       }
     }
+
     inner(expr)
   }
+
   def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
-
-      //      .recoverWith { case _ => Try(ErrorExpr.asInstanceOf[T]) }
-      //      .recoverWith { case _ => Try(ErrorCasePattern.asInstanceOf[T]) }
-      //      .recoverWith { case _ => Try(ErrorType.asInstanceOf[T]) }
-      //      .recoverWith { case _ => Try(ErrorForEnumerator.asInstanceOf[T]) }
-      //      .recoverWith { case _ => Try(ErrorWhenClause.asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorExpr.asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorCasePattern.asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorType.asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorForEnumerator.asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorWhenClause.asInstanceOf[T]) }
       .get
 
   def transform[T](psi: PsiElement): T = (psi match {
@@ -167,7 +168,7 @@ object ASTGenerator extends {
       val underscores =
         findUnderscores(x).flatMap(_.overExpr).map { over =>
           val expr = gen[Expr](over)
-          val lambdaExpr =  LambdaExpr(expr.exprType, Seq.empty, expr, false)
+          val lambdaExpr = LambdaExpr(expr.exprType, Seq.empty, expr, false)
           over.getTextRange -> lambdaExpr
         }.toMap
       scoped(

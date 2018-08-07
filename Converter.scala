@@ -1,6 +1,7 @@
 package org.jetbrains.plugins.kotlinConverter
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.pass.Transform
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
@@ -16,17 +17,20 @@ object Converter {
     new ImplicitTransform()
   )
 
-  def convert(file: ScalaFile, doPrint: Boolean = false): String = {
-    ApplicationManager.getApplication.runWriteAction(new Runnable {
-      override def run(): Unit = Transformer.transform(file, None, transformers)
-    })
 
-    val builder: KotlinBuilder = new KotlinBuilder
-    val ast: FileDef = ASTGenerator.gen[FileDef](file)
-    if (doPrint)
-      println(Utils.prettyPrint(ast))
-    val newAst: AST = Transform.applyPasses(ast)
-    builder.gen(newAst)
-    builder.text
+  def convert(files: Seq[ScalaFile], doPrint: Boolean = false): Seq[(String, ScalaFile)] = {
+    files.map { file =>
+      ApplicationManager.getApplication.runWriteAction(new Runnable {
+        override def run(): Unit =
+          Transformer.transform(file, None, transformers)
+      })
+      val builder: KotlinBuilder = new KotlinBuilder
+      val ast: FileDef = ASTGenerator.gen[FileDef](file)
+      if (doPrint)
+        println(Utils.prettyPrint(ast))
+      val newAst: AST = Transform.applyPasses(ast)
+      builder.gen(newAst)
+      (builder.text, file)
+    }
   }
 }
