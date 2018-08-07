@@ -7,12 +7,11 @@ import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renamer, Scoped
 trait Transform {
   protected def action(ast: AST): Option[AST]
 
-  var collectedImports: List[ImportDef] = Nil
   val renamerVal = new ScopedVal[Renamer](Renamer(Map.empty))
   val namerVal = new ScopedVal[LocalNamer](new LocalNamer)
 
-  var context: FileDef = null
-  var imports: Set[ImportDef] = Set.empty
+  var context: File = null
+  var imports: Set[Import] = Set.empty
 
   private var parentsStack = List.empty[AST]
 
@@ -97,13 +96,13 @@ trait Transform {
         transform[Type](retType),
         body.map(transform[Expr]))
 
-    case ImportDef(ref) =>
-      ImportDef(ref)
+    case Import(ref) =>
+      Import(ref)
 
-    case x@FileDef(pckg, imports, defns) =>
+    case x@File(pckg, fileImports, defns) =>
       context = x
       val newDefns = defns.map(transform[DefExpr])
-      FileDef(pckg, (imports ++ collectedImports).map(transform[ImportDef]), newDefns)
+      File(pckg, (imports ++ fileImports).map(transform[Import]), newDefns)
 
     case InfixExpr(exprType, op, left, right, isLeftAssoc) =>
       InfixExpr(transform[Type](exprType),
@@ -272,14 +271,14 @@ trait Transform {
 }
 
 object Transform {
-  def applyPasses(fileDef: FileDef): FileDef = {
+  def applyPasses(fileDef: File): File = {
     val passes = Seq(
       new TypeTransform,
       new BasicTransform,
       new CollectionTransform,
       new TypeTransform, //todo get rid of second call
       new RefCollector)
-    passes.foldLeft(fileDef)((a, p) => p.transform[FileDef](a)) //todo rename
+    passes.foldLeft(fileDef)((a, p) => p.transform[File](a)) //todo rename
   }
 }
 

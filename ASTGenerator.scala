@@ -175,9 +175,9 @@ object ASTGenerator extends {
         stateVal.set(ASTGeneratorState(underscores))
       ) {
 
-        FileDef(
+        File(
           x.getPackageName,
-          Seq.empty,
+          Set.empty,
           //        x.importStatementsInHeader.flatMap(_.importExprs).map(gen[ImportDef]),
           genDefinitions(x)
             .filter {

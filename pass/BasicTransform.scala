@@ -112,7 +112,7 @@ class BasicTransform extends Transform {
               acc))
         }
         if (isYield) {
-          collectedImports = ImportDef("kotlin.coroutines.experimental.buildSequence") :: collectedImports
+          imports = imports + Import("kotlin.coroutines.experimental.buildSequence")
           Some(
             Exprs.simpleCall("buildSequence",
               exprType,
@@ -217,7 +217,7 @@ class BasicTransform extends Transform {
 
       //a.foo(f) --> a.foo{f(it)}
       //a.foo(_ + 1) --> a.foo {it + 1}
-        //handle call by name params
+      //handle call by name params
       case CallExpr(exprType, ref, params, paramsExpectedTypes) =>
         val paramsInfo =
           paramsExpectedTypes ++ Seq.fill(params.length - paramsExpectedTypes.length)(CallParameterInfo(NoType, false))

@@ -50,6 +50,9 @@ object Exprs {
   def simpleRef(name: String, refType: Type) =
     RefExpr(refType, None, name, Seq.empty, false)
 
+  def runExpr(expr: Expr) =
+    simpleCall("run", expr.exprType, Seq(LambdaExpr(expr.exprType, Seq.empty, expr, false)))
+
 
   val falseLit = LitExpr(KotlinTypes.BOOLEAN, "false")
   val trueLit = LitExpr(KotlinTypes.BOOLEAN, "true")

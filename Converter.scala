@@ -27,7 +27,7 @@ object Converter {
           Transformer.transform(file, None, transformers)
       })
       val builder: KotlinBuilder = new KotlinBuilder
-      val ast: FileDef = ASTGenerator.gen[FileDef](file)
+      val ast: File = ASTGenerator.gen[File](file)
       if (doPrint)
         println(Utils.prettyPrint(ast))
       val newAst: AST = Transform.applyPasses(ast)

@@ -26,7 +26,7 @@ case class ConstructorParam(kind: MemberKind, modifier: Attribute, name: String,
 
 case class TypeParam(name: String) extends AST
 
-case class FileDef(packageName: String, imports: Seq[ImportDef], definitions: Seq[DefExpr]) extends AST//todo get rd of imports
+case class File(packageName: String, imports: Set[Import], definitions: Seq[DefExpr]) extends AST
 
 sealed trait CasePattern extends AST {
   def name: String
@@ -79,3 +79,4 @@ case class ClassCompanion(companion: Defn) extends CompanionModule
 case object ObjectCompanion extends CompanionModule
 
 case class CallParameterInfo(expectedType: Type, isCallByName: Boolean) extends AST
+case class Import(ref: String) extends AST
