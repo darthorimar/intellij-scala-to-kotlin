@@ -36,12 +36,16 @@ class CollectionTransform extends Transform {
           "let",
           typeParams.map(transform[Type]), true),
         Seq(transform[Expr](p)),
-        paramsExpectedTypes.map(transform[Type])))
+        paramsExpectedTypes.map(transform[CallParameterInfo])))
 
     //     opt.getOrElse(x) --> opt :? x
     case CallExpr(_, RefExpr(refTy, Some(referenceObject@WithType(NullableType(_))), "getOrElse", _, true), Seq(p), paramsExpectedTypes)
       if referenceObject.exprType.isInstanceOf[NullableType] =>
-      Some(Exprs.simpleInfix(transform[Type](refTy), ":?", transform[Expr](referenceObject), transform[Expr](p)))
+      val param = p match {
+        case LambdaExpr(_, _, expr, _) => expr
+        case _ => p
+      }
+      Some(Exprs.simpleInfix(transform[Type](refTy), ":?", transform[Expr](referenceObject), transform[Expr](param)))
 
     //opt.get --> opt!!
     case CallExpr(_, RefExpr(refTy, Some(referenceObject), "get", _, true), _, paramsExpectedTypes)
@@ -56,7 +60,7 @@ class CollectionTransform extends Transform {
         transform[Type](exprType),
         RefExpr(transform[Type](refTy), None, "listOf", typeParams.map(transform[Type]), true),
         params.map(transform[Expr]),
-        paramsExpectedTypes.map(transform[Type])))
+        paramsExpectedTypes.map(transform[CallParameterInfo])))
 
     //Seq.empty[T] --> emptyList<T>()
     case CallExpr(_, RefExpr(_, Some(RefExpr(_, None, "Seq" | "List", _, false)), "empty", typeParams, _), Seq(), paramsExpectedTypes) =>
@@ -77,7 +81,7 @@ class CollectionTransform extends Transform {
           transform[Type](exprType),
           RefExpr(transform[Type](exprType), None, "listOf", Seq.empty, true),
           Seq(transform[Expr](left)),
-          paramsExpectedTypes.map(transform[Type])),
+          paramsExpectedTypes.map(transform[CallParameterInfo])),
         transform[Expr](right)))
 
 
@@ -100,7 +104,7 @@ class CollectionTransform extends Transform {
           "joinToString",
           typeParams, true),
         newParams,
-        paramsExpectedTypes.map(transform[Type])))
+        paramsExpectedTypes.map(transform[CallParameterInfo])))
 
     // seq.tail --> seq.drop(1)
     case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "tail", typeParams, true), _, paramsExpectedTypes)
@@ -108,32 +112,32 @@ class CollectionTransform extends Transform {
       Some(CallExpr(exprType,
         RefExpr(refTy, Some(transform[Expr](referenceObject)), "drop", typeParams, true),
         Seq(LitExpr(KotlinTypes.INT, "1")),
-        paramsExpectedTypes.map(transform[Type])))
+        paramsExpectedTypes.map(transform[CallParameterInfo])))
 
     // seq.head --> seq.first
     case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "head", typeParams, true), _, paramsExpectedTypes)
       if TypeUtils.isKotlinList(referenceObject.exprType) =>
       Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "first", typeParams, true), Seq.empty,
-        paramsExpectedTypes.map(transform[Type])))
+        paramsExpectedTypes.map(transform[CallParameterInfo])))
 
 
     // seq.init --> seq.dropLast(1)
     case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "init", typeParams, true), _, paramsExpectedTypes)
       if TypeUtils.isKotlinList(referenceObject.exprType) =>
       Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "dropLast", typeParams, true), Seq(LitExpr(KotlinTypes.INT, "1")),
-        paramsExpectedTypes.map(transform[Type])))
+        paramsExpectedTypes.map(transform[CallParameterInfo])))
 
     //seq.foreach --> seq.forEach
     case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "foreach", typeParams, true), params, paramsExpectedTypes)
       if TypeUtils.isKotlinList(referenceObject.exprType) =>
       Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "forEach", typeParams, true), params.map(transform[Expr]),
-        paramsExpectedTypes.map(transform[Type])))
+        paramsExpectedTypes.map(transform[CallParameterInfo])))
 
     //     str * i => str.repeat(i)
     case CallExpr(exprType, RefExpr(refTy, Some(left), "*", _, _), Seq(right), paramsExpectedTypes)
       if left.exprType == KotlinTypes.STRING && right.exprType == KotlinTypes.INT =>
       Some(CallExpr(exprType, RefExpr(exprType, Some(transform[Expr](left)), "repeat", Seq.empty, true), Seq(right),
-        paramsExpectedTypes.map(transform[Type])))
+        paramsExpectedTypes.map(transform[CallParameterInfo])))
 
     //seq(i) --> seq[i]
     case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "apply", typeParams, true), Seq(i), paramsExpectedTypes)
@@ -149,7 +153,7 @@ class CollectionTransform extends Transform {
     case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "nonEmpty", typeParams, _), _, paramsExpectedTypes)
       if TypeUtils.isKotlinList(referenceObject.exprType) =>
       Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "isNotEmpty", typeParams, true), Seq.empty,
-        paramsExpectedTypes.map(transform[Type])))
+        paramsExpectedTypes.map(transform[CallParameterInfo])))
 
 
     // seq.size() --> seq.size
@@ -160,7 +164,7 @@ class CollectionTransform extends Transform {
     // seqOfOptions.flatten --> seqOfOptions.filterNotNull()
     case CallExpr(callType, RefExpr(refTy, Some(referenceObject@WithType(ListType(NullableType(_)))), "flatten", typeParams, _), _, paramsExpectedTypes) =>
       Some(CallExpr(callType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "filterNotNull", typeParams, true), Seq.empty,
-        paramsExpectedTypes.map(transform[Type])))
+        paramsExpectedTypes.map(transform[CallParameterInfo])))
 
 
     //pairs

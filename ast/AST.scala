@@ -77,3 +77,5 @@ case class KotlinCatchCase(name: String, valueType: Type, expr: Expr) extends AS
 sealed trait CompanionModule extends AST
 case class ClassCompanion(companion: Defn) extends CompanionModule
 case object ObjectCompanion extends CompanionModule
+
+case class CallParameterInfo(expectedType: Type, isCallByName: Boolean) extends AST

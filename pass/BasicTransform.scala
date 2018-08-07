@@ -7,8 +7,10 @@ import org.jetbrains.plugins.kotlinConverter.{ExprUtils, Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
-import org.jetbrains.plugins.kotlinConverter.scopes.{BasicTransformState, LocalNamer, Renames, ScopedVal}
+import org.jetbrains.plugins.kotlinConverter.scopes.{BasicTransformState, LocalNamer, Renamer, ScopedVal}
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
+
+import scala.util.Try
 
 
 class BasicTransform extends Transform {
@@ -65,8 +67,8 @@ class BasicTransform extends Transform {
 
 
       //rename refs
-      case x: RefExpr if renamesVal.call(_.renames.contains(x.referenceName)) =>
-        Some(x.copy(referenceName = renamesVal.get.renames(x.referenceName)))
+      case x: RefExpr if renamerVal.call(_.renames.contains(x.referenceName)) =>
+        Some(renamerVal.get.renames(x.referenceName))
 
       //Remove renault brackets for lambda like in seq.map {x => x * 2}
       case BlockExpr(_, stmts) if stmts.size == 1 && stmts.head.isInstanceOf[LambdaExpr] =>
@@ -120,8 +122,13 @@ class BasicTransform extends Transform {
 
       // sort fun attrs, add return to the function end
       case x: DefnDef =>
+        val renames = x.parameters.collect {
+          case p: DefParameter if p.isCallByName =>
+            p.name -> Exprs.simpleCall(p.name, p.parameterType, Seq.empty)
+        }
         scoped(
-          namerVal.set(new LocalNamer)
+          namerVal.set(new LocalNamer),
+          renamerVal.updated(_.addAll(renames.toMap))
         ) {
           val newDef = copy(x).asInstanceOf[DefnDef]
 
@@ -133,6 +140,7 @@ class BasicTransform extends Transform {
               else b
             case b => b
           }
+
           val params = newDef.parameters.map {
             case DefParameter(parameterType, name, isVarArg, true) =>
               DefParameter(FunctionType(KotlinTypes.UNIT, parameterType), name, isVarArg, true)
@@ -144,6 +152,7 @@ class BasicTransform extends Transform {
             body = newDef.body.map(handleBody),
             parameters = params))
         }
+
 
       case x: ValOrVarDef =>
         Some(copy(x).asInstanceOf[ValOrVarDef].copy(attributes = handleAttrs(x)))
@@ -208,18 +217,16 @@ class BasicTransform extends Transform {
 
       //a.foo(f) --> a.foo{f(it)}
       //a.foo(_ + 1) --> a.foo {it + 1}
-      case CallExpr(exprType, ref, params, paramsExpectedTypes)
-        if params.exists {
-          case y: RefExpr if y.isFunctionRef => true
-          case _ => false
-        } =>
-
+        //handle call by name params
+      case CallExpr(exprType, ref, params, paramsExpectedTypes) =>
+        val paramsInfo =
+          paramsExpectedTypes ++ Seq.fill(params.length - paramsExpectedTypes.length)(CallParameterInfo(NoType, false))
         Some(
           CallExpr(
             transform[Type](exprType),
             transform[Expr](ref),
-            params.toStream.zip(paramsExpectedTypes.toStream ++ Stream.continually(NoType)).map {
-              case (y: RefExpr, _: FunctionType) if y.isFunctionRef =>
+            params.zip(paramsInfo).map {
+              case (y: RefExpr, CallParameterInfo(_: FunctionType, _)) if y.isFunctionRef =>
                 LambdaExpr(
                   exprType,
                   Seq.empty,
@@ -228,7 +235,12 @@ class BasicTransform extends Transform {
               case (y@RefExpr(exprType, obj, ref, typeParams, true), _) =>
                 CallExpr(exprType, transform[Expr](y), Seq.empty, Seq.empty)
               case (y, _) => transform[Expr](y)
-            }, Seq.empty))
+            }.zip(paramsInfo).map {
+              case (e, CallParameterInfo(_, true)) =>
+                LambdaExpr(e.exprType, Seq.empty, e, false)
+              case (e, _) => e
+            },
+            Seq.empty))
 
       //x.foo --> x.foo()
       case x@RefExpr(exprType, obj, ref, typeParams, true)

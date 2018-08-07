@@ -318,17 +318,21 @@ object ASTGenerator extends {
         isFunc)
 
     case x: ScMethodCall =>
-      val paramTypes =
-        Try {
-          x.args.callReference.flatMap(_.bind()).get
-            .element.asInstanceOf[ScFunction].parameters.map(_.`type`()).map(genType)
-        }.getOrElse(Stream.continually(NoType))
+      val paramsInfo =
+        x.args.callReference.flatMap(_.bind()).map(_.element).toSeq.flatMap {
+          case f: ScFunction => f.parameters.map { p =>
+            CallParameterInfo(genType(p.typeElement), p.isCallByNameParameter)
+          }
+          case _ =>
+            Seq.fill(x.args.exprs.length)(CallParameterInfo(NoType, false))
+        }
+
 
       CallExpr(
         genType(x.`type`()),
         gen[Expr](x.getInvokedExpr),
         x.args.exprs.map(gen[Expr]),
-        paramTypes)
+        paramsInfo)
 
     case x: ScGenericCall =>
       gen[RefExpr](x.referencedExpr).copy(typeParams = genTypeArgs(x.typeArgs))

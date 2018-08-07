@@ -2,13 +2,13 @@ package org.jetbrains.plugins.kotlinConverter.pass
 
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.ast.{PostfixExpr, _}
-import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renames, ScopedVal}
+import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renamer, ScopedVal}
 
 trait Transform {
   protected def action(ast: AST): Option[AST]
 
   var collectedImports: List[ImportDef] = Nil
-  val renamesVal = new ScopedVal[Renames](Renames(Map.empty))
+  val renamerVal = new ScopedVal[Renamer](Renamer(Map.empty))
   val namerVal = new ScopedVal[LocalNamer](new LocalNamer)
 
   var context: FileDef = null
@@ -122,7 +122,10 @@ trait Transform {
       CallExpr(transform[Type](exprType),
         transform[Expr](ref),
         arguments.map(transform[Expr]),
-        paramsExpectedTypes.map(transform[Type]))
+        paramsExpectedTypes.map(transform[CallParameterInfo]))
+
+    case CallParameterInfo(expectedType, isCallByName) =>
+      CallParameterInfo(transform[Type](expectedType), isCallByName)
 
     case WhenExpr(exprType, expr, clauses) =>
       WhenExpr(transform[Type](exprType), expr.map(transform[Expr]), clauses.map(transform[WhenClause]))

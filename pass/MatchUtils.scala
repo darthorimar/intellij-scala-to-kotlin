@@ -155,7 +155,7 @@ object MatchUtils {
 
         case MatchCaseClause(ReferencePattern(ref), e, guard) =>
           scoped(
-            renamesVal.updated(_.add(ref -> valRef.referenceName))
+            renamerVal.updated(_.add(ref -> valRef))
           ) {
             guard match {
               case Some(g) => ExprWhenClause(transform[Expr](g), transform[Expr](e))
@@ -165,7 +165,7 @@ object MatchUtils {
 
         case MatchCaseClause(TypedPattern(ref, patternTy), e, guard) =>
           scoped(
-            renamesVal.updated(_.add(ref -> valRef.referenceName))
+            renamerVal.updated(_.add(ref -> valRef))
           ) {
             ExprWhenClause(addGuardExpr(Exprs.is(valRef, patternTy), guard.map(transform[Expr])), transform[Expr](e))
           }
