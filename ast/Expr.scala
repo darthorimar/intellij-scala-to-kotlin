@@ -6,7 +6,7 @@ import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
 sealed trait Expr extends AST {
   def exprType: Type
 }
-case object ErrorExpr extends Expr with ErrorAst {
+case class ErrorExpr(text: String) extends Expr with ErrorAst {
   override def exprType: Type = NoType
 }
 

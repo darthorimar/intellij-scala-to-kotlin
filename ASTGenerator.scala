@@ -156,11 +156,11 @@ object ASTGenerator extends {
 
   def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
-      .recoverWith { case _ => Try(ErrorExpr.asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorCasePattern.asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorType.asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorForEnumerator.asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorWhenClause.asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
       .get
 
   def transform[T](psi: PsiElement): T = (psi match {

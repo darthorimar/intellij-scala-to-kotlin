@@ -64,6 +64,6 @@ case object NoType extends Type {
   override def asKotlin: String = "Any"
 }
 
-case object ErrorType extends Type with ErrorAst {
+case class ErrorType(text: String) extends Type with ErrorAst {
   override def asKotlin: String = ""
 }
