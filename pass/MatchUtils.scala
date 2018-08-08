@@ -74,7 +74,7 @@ object MatchUtils {
               Some(condition),
               Some(local -> c))
 
-          case c@ConstructorPattern(UnapplyCallConstuctorRef(objectDefn, unapplyDef), _, label, _) =>
+          case c@ConstructorPattern(UnapplyCallConstuctorRef(objectName, unapplyReturnType), _, label, _) =>
             val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
 
             val condition = null
@@ -137,8 +137,6 @@ object MatchUtils {
 
         val innerBodyExprs =
           handleConstructors(Seq((refName, pattern)), finalExpr)
-
-
 
         val condition = r match {
           case CaseClassConstructorRef(ref) =>

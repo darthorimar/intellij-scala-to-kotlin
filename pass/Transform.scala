@@ -240,6 +240,9 @@ trait Transform {
     case LitPattern(lit) =>
       LitPattern(lit)
 
+    case TuplePattern(parts) =>
+      TuplePattern(parts.map(transform[CasePattern]))
+
     case ConstructorPattern(ref, args, label, repr) =>
       ConstructorPattern(transform[ConstructorRef](ref), args.map(transform[CasePattern]), label, repr)
 

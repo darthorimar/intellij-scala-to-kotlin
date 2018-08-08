@@ -38,6 +38,11 @@ case class CompositePattern(parts: Seq[CasePattern]) extends CasePattern {
   override def name: String = parts.mkString(" | ")
 }
 
+case class TuplePattern(parts: Seq[CasePattern]) extends CasePattern {
+  override def name: String = parts.mkString("(", ", ", ")")
+}
+
+
 case class LitPattern(expr: Expr) extends CasePattern {
   override def name: String = expr match {
     case LitExpr(_, name) => name

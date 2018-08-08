@@ -361,6 +361,13 @@ object ASTGenerator extends {
         x.expr.map(gen[Expr]).get, //todo fix
         x.guard.flatMap(_.expr).map(gen[Expr]))
 
+    case x: ScTuplePattern =>
+      ConstructorPattern(
+        CaseClassConstructorRef("Tuple" + x.patternList.toSeq.flatMap(_.patterns).size),
+        x.patternList.toSeq.flatMap(_.patterns.map(gen[CasePattern])),
+        None,
+        x.getText)
+
     case x: ScCompositePattern =>
       CompositePattern(x.subpatterns.map(gen[CasePattern]))
     case x: ScLiteralPattern =>
