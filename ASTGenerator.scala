@@ -3,6 +3,7 @@ package org.jetbrains.plugins.kotlinConverter
 import com.intellij.psi.{PsiClass, PsiCodeBlock, PsiElement, PsiStatement}
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.builder.codegen.{Definition, TupleDefinition}
 import org.jetbrains.plugins.kotlinConverter.scopes.{ASTGeneratorState, ScopedVal}
 import org.jetbrains.plugins.kotlinConverter.types.ScalaTypes
 import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
@@ -37,6 +38,7 @@ import scala.util.Try
 
 object ASTGenerator extends {
   val stateVal = new ScopedVal[ASTGeneratorState](ASTGeneratorState(Map.empty))
+  var neededDefinitions: List[Definition] = Nil
 
   private def genDefinitions(file: ScalaFile): Seq[PsiElement] =
     file.getChildren.filter {
@@ -175,7 +177,6 @@ object ASTGenerator extends {
       scoped(
         stateVal.set(ASTGeneratorState(underscores))
       ) {
-
         File(
           x.getPackageName,
           Set.empty,
@@ -190,7 +191,8 @@ object ASTGenerator extends {
             .filter {
               case Defn(_, ObjDefn, _, _, _, _, _, Some(_)) => false
               case _ => true
-            })
+            },
+          neededDefinitions)
       }
 
     case x: ScTypeDefinition =>
@@ -362,8 +364,10 @@ object ASTGenerator extends {
         x.guard.flatMap(_.expr).map(gen[Expr]))
 
     case x: ScTuplePattern =>
+      val arity = x.patternList.toSeq.flatMap(_.patterns).size
+      neededDefinitions = new TupleDefinition(arity) :: neededDefinitions
       ConstructorPattern(
-        CaseClassConstructorRef("Tuple" + x.patternList.toSeq.flatMap(_.patterns).size),
+        CaseClassConstructorRef(s"Tuple$arity"),
         x.patternList.toSeq.flatMap(_.patterns.map(gen[CasePattern])),
         None,
         x.getText)

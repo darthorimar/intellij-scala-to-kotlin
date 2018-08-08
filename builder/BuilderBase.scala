@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter
+package org.jetbrains.plugins.kotlinConverter.builder
 
-trait KotlinBuilderBase {
+trait BuilderBase {
   private val builder = new StringBuffer()
   private var i = 0
   private val indentStep = 2

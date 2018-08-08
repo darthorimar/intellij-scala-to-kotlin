@@ -3,6 +3,8 @@ package org.jetbrains.plugins.kotlinConverter
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.builder.KotlinBuilder
+import org.jetbrains.plugins.kotlinConverter.builder.codegen.Definition
 import org.jetbrains.plugins.kotlinConverter.pass.Transform
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.extensions._
@@ -13,15 +15,17 @@ import org.jetbrains.plugins.scala.lang.transformation.calls._
 object Converter {
   val transformers: Set[Transformer] = Set(
     new ExpandApplyCall(),
-//    new ExpandUpdateCall(),
+    //    new ExpandUpdateCall(),
     new ImplicitTransform()
   )
 
   def convert(file: ScalaFile, doPrint: Boolean): String =
-    convert(Seq(file), doPrint).head._1
+    convert(Seq(file), doPrint).files.head._1
 
-  def convert(files: Seq[ScalaFile], doPrint: Boolean = false): Seq[(String, ScalaFile)] = {
-    files.map { file =>
+  case class ConvertResult(files: Seq[(String, ScalaFile)], definitions: Seq[Definition])
+
+  def convert(files: Seq[ScalaFile], doPrint: Boolean = false): ConvertResult = {
+    val convertedFiles = files.map { file =>
       ApplicationManager.getApplication.runWriteAction(new Runnable {
         override def run(): Unit =
           Transformer.transform(file, None, transformers)
@@ -30,9 +34,12 @@ object Converter {
       val ast: File = ASTGenerator.gen[File](file)
       if (doPrint)
         println(Utils.prettyPrint(ast))
-      val newAst: AST = Transform.applyPasses(ast)
+      val newAst: File = Transform.applyPasses(ast)
       builder.gen(newAst)
-      (builder.text, file)
+      (builder.text, file, newAst.neededDefinitions)
     }
+    ConvertResult(
+      convertedFiles.map { case (t, f, _) => (t, f) },
+      convertedFiles.flatMap(_._3).distinctBy(_.name))
   }
 }

@@ -99,10 +99,10 @@ trait Transform {
     case Import(ref) =>
       Import(ref)
 
-    case x@File(pckg, fileImports, defns) =>
+    case x@File(pckg, fileImports, defns, neededDefinitions) =>
       context = x
       val newDefns = defns.map(transform[DefExpr])
-      File(pckg, (imports ++ fileImports).map(transform[Import]), newDefns)
+      File(pckg, (imports ++ fileImports).map(transform[Import]), newDefns, neededDefinitions)
 
     case InfixExpr(exprType, op, left, right, isLeftAssoc) =>
       InfixExpr(transform[Type](exprType),

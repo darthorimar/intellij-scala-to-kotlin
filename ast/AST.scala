@@ -1,5 +1,7 @@
 package org.jetbrains.plugins.kotlinConverter.ast
 
+import org.jetbrains.plugins.kotlinConverter.builder.codegen.Definition
+
 trait AST
 
 trait ErrorAst extends AST {
@@ -28,7 +30,10 @@ case class ConstructorParam(kind: MemberKind, modifier: Attribute, name: String,
 
 case class TypeParam(name: String) extends AST
 
-case class File(packageName: String, imports: Set[Import], definitions: Seq[DefExpr]) extends AST
+case class File(packageName: String,
+                imports: Set[Import],
+                definitions: Seq[DefExpr],
+                neededDefinitions: Seq[Definition]) extends AST
 
 sealed trait CasePattern extends AST {
   def name: String

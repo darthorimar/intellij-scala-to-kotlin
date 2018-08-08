@@ -1,11 +1,10 @@
-package org.jetbrains.plugins.kotlinConverter
+package org.jetbrains.plugins.kotlinConverter.builder
 
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.scopes.{BuilderState, ScopedVal}
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
-import org.scalafmt.internal.SyntacticGroup.Term
+import org.jetbrains.plugins.kotlinConverter.scopes.{BuilderState, ScopedVal}
 
-class KotlinBuilder extends KotlinBuilderBase {
+class KotlinBuilder extends BuilderBase {
   val stateVal: ScopedVal[BuilderState] = new ScopedVal[BuilderState](BuilderState())
 
   def gen(ast: AST): Unit =
@@ -13,7 +12,7 @@ class KotlinBuilder extends KotlinBuilderBase {
       case e: ErrorAst =>
         str(s"/* ERROR converting `${e.text}`*/")
 
-      case File(pckg, imports, defns) =>
+      case File(pckg, imports, defns, _) =>
         if (pckg.trim.nonEmpty) {
           str("package ")
           str(pckg)
