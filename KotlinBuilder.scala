@@ -100,7 +100,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("val ")
         str(name)
         str(" by lazy ")
-        gen(expr)
+        genBlockOrExpr(expr)
 
 
       case ReturnExpr(label, expr) =>

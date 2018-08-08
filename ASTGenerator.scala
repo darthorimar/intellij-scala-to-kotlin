@@ -29,6 +29,7 @@ import org.jetbrains.plugins.scala.lang.psi.types.result.{TypeResult, Typeable}
 import org.jetbrains.plugins.scala.lang.refactoring.util.ScalaNamesUtil
 import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
+import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScTemplateDefinition.Kind.ScObject
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -368,7 +369,26 @@ object ASTGenerator extends {
     case x: ScNamingPattern =>
       gen[ConstructorPattern](x.named).copy(label = Some(x.name))
     case x: ScConstructorPattern =>
-      ConstructorPattern(x.ref.qualName, x.args.patterns.map(gen[CasePattern]), None, x.getText)
+      val bindResult = x.ref.bind()
+      val obj = bindResult.flatMap(_.getActualElement match {
+        case o: ScObject => Some(o)
+        case _ => None
+      })
+      val unapplyRef = bindResult.flatMap(_.element match {
+        case f: ScFunction => Some(f)
+        case _ => None
+      })
+      val isCaseClass =
+       obj.flatMap(_.baseCompanionModule).exists(_.isCase)
+      val constuctorRef = (obj, unapplyRef) match {
+        case (Some(o), Some(r)) if !isCaseClass =>
+          UnapplyCallConstuctorRef(o.name, genType(r.returnType))
+        case _ =>
+          CaseClassConstructorRef(x.ref.qualName)
+      }
+      ConstructorPattern(constuctorRef, x.args.patterns.map(gen[CasePattern]), None, x.getText)
+
+
     case x: ScTypedPattern =>
       TypedPattern(x.name, genType(x.typePattern.map(_.typeElement)))
     case x: ScReferencePattern =>

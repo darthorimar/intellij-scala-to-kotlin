@@ -232,7 +232,7 @@ trait Transform {
       DefParameter(transform[Type](exprType), name, isVarArg, isCallByName)
 
     case MatchCaseClause(pattern, expr, guard) =>
-      MatchCaseClause(pattern, transform[Expr](expr), guard.map(transform[Expr]))
+      MatchCaseClause(transform[CasePattern](pattern), transform[Expr](expr), guard.map(transform[Expr]))
 
     case TypeParam(name) =>
       TypeParam(name)
@@ -241,7 +241,13 @@ trait Transform {
       LitPattern(lit)
 
     case ConstructorPattern(ref, args, label, repr) =>
-      ConstructorPattern(ref, args.map(transform[CasePattern]), label, repr)
+      ConstructorPattern(transform[ConstructorRef](ref), args.map(transform[CasePattern]), label, repr)
+
+    case x@CaseClassConstructorRef(name) =>
+      x
+
+    case UnapplyCallConstuctorRef(objectName, unapplyReturnType) =>
+      UnapplyCallConstuctorRef(objectName, transform[Type](unapplyReturnType))
 
     case TypedPattern(ref, exprType) =>
       TypedPattern(ref, transform[Type](exprType))
