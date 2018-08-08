@@ -9,6 +9,7 @@ import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 import org.jetbrains.plugins.kotlinConverter.scopes.{BasicTransformState, LocalNamer, Renamer, ScopedVal}
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
+import org.jetbrains.plugins.scala.conversion.ast.ClassConstruction
 
 import scala.util.Try
 
@@ -166,13 +167,47 @@ class BasicTransform extends Transform {
             BasicTransformState(s.inCompanionObject || x.isObjectDefn && x.defnType == ObjDefn)
           }
         ) {
+
           val defn = copy(x).asInstanceOf[Defn]
-          val companionObj =
-            defn.companionDefn.toSeq.flatMap {
-              case ClassCompanion(c) =>
-                Seq(c.copy(attributes = c.attributes :+ CompanionAttribute))
-              case _ => Seq.empty
+
+          def generateFakeCompanion: Defn = {
+            val defnType = ClassType(defn.name)
+            val applyDef = {
+              val parameters = defn.constructor
+                .collect {
+                  case ParamsConstructor(ps) => ps
+                }
+                .toSeq
+                .flatten
+                .map { case ConstructorParam(_, _, paramName, parameterType) =>
+                  DefParameter(parameterType, paramName, false, false)
+                }
+              val arguments =
+                parameters.map { case DefParameter(parameterType,paramName , _, _) =>
+                  Exprs.simpleRef(paramName, parameterType)
+                }
+              val body = NewExpr(defnType, defnType, arguments)
+              DefnDef(Seq.empty, "apply", Seq.empty, parameters, defnType, Some(body))
             }
+            val unapplyDef = {
+              val parameters =
+                Seq(DefParameter(defnType, "x", false, false))
+              val body = Exprs.simpleRef("x", defnType)
+              DefnDef(Seq.empty, "unapply", Seq.empty, parameters, NullableType(defnType), Some(body))
+            }
+            Defn(Seq(CompanionAttribute), ObjDefn, "", Seq.empty, None, None, Some(BlockExpr(NoType, Seq(applyDef, unapplyDef))), None)
+          }
+
+          val companionObj =
+            defn.companionDefn.flatMap {
+              case ClassCompanion(c) =>
+                Some(c.copy(attributes = c.attributes :+ CompanionAttribute))
+              case _ => None
+            }.orElse {
+              if (x.attributes.contains(CaseAttribute) | x.attributes.contains(DataAttribute)) {
+                Some(generateFakeCompanion)
+              } else None
+            }.toSeq
           val exprs = defn.body.toSeq.flatMap(_.exprs) ++ companionObj
           val newBody =
             if (exprs.isEmpty) None

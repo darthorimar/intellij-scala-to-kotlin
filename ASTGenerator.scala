@@ -194,7 +194,6 @@ object ASTGenerator extends {
       }
 
     case x: ScTypeDefinition =>
-      x.typeParameters
       val construct = x match {
         case y: ScClass => Some(y.constructor.map(gen[Constructor]).getOrElse(EmptyConstructor))
         case _ => None
@@ -379,7 +378,7 @@ object ASTGenerator extends {
         case _ => None
       })
       val isCaseClass =
-       obj.flatMap(_.baseCompanionModule).exists(_.isCase)
+        obj.flatMap(_.baseCompanionModule).exists(_.isCase)
       val constuctorRef = (obj, unapplyRef) match {
         case (Some(o), Some(r)) if !isCaseClass =>
           UnapplyCallConstuctorRef(o.name, genType(r.returnType))

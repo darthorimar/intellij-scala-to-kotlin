@@ -21,9 +21,7 @@ case class MatchCaseClause(pattern: CasePattern, expr: Expr, guard: Option[Expr]
 
 
 sealed trait Constructor extends AST
-
 case class ParamsConstructor(parameters: Seq[ConstructorParam]) extends Constructor
-
 case object EmptyConstructor extends Constructor
 
 case class ConstructorParam(kind: MemberKind, modifier: Attribute, name: String, parameterType: Type) extends AST
