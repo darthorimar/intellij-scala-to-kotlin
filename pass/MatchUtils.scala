@@ -190,7 +190,7 @@ object MatchUtils {
       case _: ElseWhenClause => true
       case _ => false
     }) {
-      val exception = NewExpr(KotlinTypes.EXCEPTION, KotlinTypes.THROWABLE, Seq(LitExpr(KotlinTypes.STRING, "\"Match exception\"")))
+      val exception = NewExpr(KotlinTypes.EXCEPTION, KotlinTypes.EXCEPTION, Seq(LitExpr(KotlinTypes.STRING, "\"Match exception\"")))
       Seq(ElseWhenClause(ThrowExpr(KotlinTypes.NOTHING, exception)))
     }
     else Seq.empty

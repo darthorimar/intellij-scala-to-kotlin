@@ -54,7 +54,7 @@ class KotlinBuilder extends KotlinBuilderBase {
           rep(supers, ", ")(genType(_, false))
         }
         str(" ")
-        opt(block)(genAsBlock(_, false))
+        opt(block)(genAsBlock)
 
 
       case EmptyConstructor =>
@@ -139,22 +139,22 @@ class KotlinBuilder extends KotlinBuilderBase {
           if (!b.isInstanceOf[BlockExpr]) {
             str("=")
             gen(b)
-          } else genAsBlock(b, false)
+          } else genAsBlock(b)
         }
 
       case KotlinTryExpr(exprType, tryBlock, catches, finallyBlock) =>
         str("try ")
-        genAsBlock(tryBlock, false)
+        genAsBlock(tryBlock)
         rep(catches, " ") { case KotlinCatchCase(name, valueType, expr) =>
           str("catch (")
           str(name)
           genType(valueType)
           str(") ")
-          genAsBlock(expr, false)
+          genAsBlock(expr)
         }
         opt(finallyBlock) { f =>
           str(" finally ")
-          genAsBlock(f, false)
+          genAsBlock(f)
         }
 
       case Import(reference) =>
@@ -219,10 +219,10 @@ class KotlinBuilder extends KotlinBuilderBase {
         str("if (")
         gen(cond)
         str(") ")
-        gen(trueB)
+        genBlockOrExpr(trueB)
         opt(falseB) { b =>
           str(" else ")
-          gen(b)
+          genBlockOrExpr(b)
         }
 
       case PostfixExpr(exprType, obj, op) =>
@@ -252,10 +252,10 @@ class KotlinBuilder extends KotlinBuilderBase {
             case ExprWhenClause(clause, expr) =>
               gen(clause)
               str(" -> ")
-              genAsBlock(expr, false)
+              genAsBlock(expr)
             case ElseWhenClause(expr) =>
               str("else -> ")
-              genAsBlock(expr, false)
+              genBlockOrExpr(expr)
           }
         }
         str("}")
@@ -267,7 +267,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(")")
 
       case e: BlockExpr =>
-        genAsBlock(e, true)
+        genRunBlock(e)
 
       case ForInExpr(exprType, ref, range, body) =>
         str("for (")
@@ -275,7 +275,7 @@ class KotlinBuilder extends KotlinBuilderBase {
         str(" in ")
         gen(range)
         str(") ")
-        genAsBlock(body, false)
+        genBlockOrExpr(body)
 
       case InterpolatedStringExpr(parts, injected) =>
         scoped(
@@ -313,16 +313,29 @@ class KotlinBuilder extends KotlinBuilderBase {
 
     }
 
-  def genAsBlock(e: Expr, isRun: Boolean): Unit = e match {
+  def genAsBlock(e: Expr): Unit = e match {
     case BlockExpr(exprType, exprs) =>
-      if (isRun && !stateVal.inInterpolatedString) str("run ")
       str("{")
       indentedIf(!stateVal.inInterpolatedString) {
         repNl(exprs)(gen)
       }
       str("}")
     case _ =>
-      genAsBlock(BlockExpr(NoType, Seq(e)), isRun)
+      genAsBlock(BlockExpr(NoType, Seq(e)))
+  }
+
+  def genBlockOrExpr(expr: Expr): Unit = expr match {
+    case b: BlockExpr => genAsBlock(b)
+    case e => gen(e)
+  }
+
+  def genRunBlock(blockExpr: BlockExpr): Unit = {
+    if (!stateVal.inInterpolatedString) str("run ")
+    str("{")
+    indentedIf(!stateVal.inInterpolatedString) {
+      repNl(blockExpr.exprs)(gen)
+    }
+    str("}")
   }
 
   def genKeyword(k: Keyword): Unit =
