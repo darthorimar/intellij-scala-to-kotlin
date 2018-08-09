@@ -1,19 +1,28 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
-import com.android.repository.impl.meta.TypeDetails.GenericType
+import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.types._
 import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.builder.codegen.TupleDefinition
+import org.jetbrains.plugins.kotlinConverter.types.TypeUtils.ScalaTuple
 
 class TypeTransform extends Transform {
   override protected def action(ast: AST): Option[AST] = ast match {
     case FunctionType(ProductType(Seq(left)), right) =>
       Some(FunctionType(transform[Type](left), transform[Type](right)))
 
-    case GenerecTypes(inner, Seq(i)) if TypeUtils.isOption(transform[Type](inner)) =>
+    case GenericType(inner, Seq(i)) if TypeUtils.isOption(transform[Type](inner)) =>
       Some(NullableType(transform[Type](i)))
 
     case ScalaTypes.STRING | ScalaTypes.JAVA_STRING =>
       Some(KotlinTypes.STRING)
+
+    case ScalaTuple(2) =>
+      Some(KotlinTypes.PAIR)
+
+    case ScalaTuple(arity) =>
+      addDefinition(new TupleDefinition(arity))
+      Some(LibTypes.tupleType(arity))
 
     case ClassType(name) if name.stripPrefix("_root_.").startsWith("scala.") =>
       Some(transform[Type](ScalaCollectionType(name)))
@@ -36,10 +45,10 @@ class TypeTransform extends Transform {
       Some(SimpleType(name.stripPrefix("_root_.")))
 
     case SimpleType("scala.collection.immutable.Nil.type") =>
-      Some(GenerecTypes(KotlinTypes.LIST, Seq(NoType)))
+      Some(GenericType(KotlinTypes.LIST, Seq(NoType)))
 
-    case GenerecTypes(SimpleType("_root_.scala.Tuple2"), Seq(p1, p2)) =>
-      Some(GenerecTypes(KotlinTypes.PAIR, Seq(transform[Type](p1), transform[Type](p2))))
+    case GenericType(SimpleType("_root_.scala.Tuple2"), Seq(p1, p2)) =>
+      Some(GenericType(KotlinTypes.PAIR, Seq(transform[Type](p1), transform[Type](p2))))
     //
 
     case _ => None

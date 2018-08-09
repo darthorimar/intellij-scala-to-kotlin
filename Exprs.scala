@@ -39,7 +39,7 @@ object Exprs {
       Seq.empty)
 
   def listType(ty: Type) =
-    GenerecTypes(KotlinTypes.LIST, Seq(ty))
+    GenericType(KotlinTypes.LIST, Seq(ty))
 
   def simpleCall(name: String, returnType: Type, aruments: Seq[Expr]) =
     CallExpr(FunctionType(ProductType(aruments.map(_.exprType)), returnType),

@@ -17,7 +17,7 @@ case class FunctionType(left: Type, right: Type) extends Type {
   override def isFunction: Boolean = true
 }
 
-case class GenerecTypes(baseType: Type, parameters: Seq[Type]) extends Type {
+case class GenericType(baseType: Type, parameters: Seq[Type]) extends Type {
   override def asKotlin: String =
     parameters.map(_.asKotlin).mkString(baseType.asKotlin + "<", ", ", ">")
 }

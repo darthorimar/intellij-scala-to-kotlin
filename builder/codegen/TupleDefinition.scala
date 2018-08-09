@@ -1,6 +1,5 @@
 package org.jetbrains.plugins.kotlinConverter.builder.codegen
 
-import org.jetbrains.plugins.kotlinConverter.builder.BuilderBase
 
 class TupleDefinition(arity: Int) extends Definition {
   def generate(): Unit = {
@@ -8,12 +7,12 @@ class TupleDefinition(arity: Int) extends Definition {
     str(arity)
     str("<")
     rep(1 to arity, ", ") { i =>
-      str("T")
+      str("out T")
       str(i)
     }
     str(">(")
     rep(1 to arity, ", ") { i =>
-      str("val x")
+      str("val _")
       str(i)
       str(": T")
       str(i)

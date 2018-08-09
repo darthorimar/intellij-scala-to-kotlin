@@ -36,9 +36,8 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.Try
 
-object ASTGenerator extends {
+object ASTGenerator extends Collector {
   val stateVal = new ScopedVal[ASTGeneratorState](ASTGeneratorState(Map.empty))
-  var neededDefinitions: List[Definition] = Nil
 
   private def genDefinitions(file: ScalaFile): Seq[PsiElement] =
     file.getChildren.filter {
@@ -75,7 +74,7 @@ object ASTGenerator extends {
         else
           FunctionType(ProductType(x.typeArguments.init.map(genType)), genType(x.typeArguments.last))
       case x: ScParameterizedType =>
-        GenerecTypes(genType(x.designator), x.typeArguments.map(genType))
+        GenericType(genType(x.designator), x.typeArguments.map(genType))
       case x: ScTypePolymorphicType =>
         genType(x.internalType)
       case x: ScMethodType =>
@@ -192,7 +191,7 @@ object ASTGenerator extends {
               case Defn(_, ObjDefn, _, _, _, _, _, Some(_)) => false
               case _ => true
             },
-          neededDefinitions)
+          collectedDefinitions)
       }
 
     case x: ScTypeDefinition =>
@@ -365,7 +364,7 @@ object ASTGenerator extends {
 
     case x: ScTuplePattern =>
       val arity = x.patternList.toSeq.flatMap(_.patterns).size
-      neededDefinitions = new TupleDefinition(arity) :: neededDefinitions
+      addDefinition(new TupleDefinition(arity))
       ConstructorPattern(
         CaseClassConstructorRef(s"Tuple$arity"),
         x.patternList.toSeq.flatMap(_.patterns.map(gen[CasePattern])),

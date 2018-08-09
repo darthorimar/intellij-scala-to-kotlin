@@ -10,8 +10,8 @@ import org.scalafmt.internal.SyntacticGroup.Term
 class CollectionTransform extends Transform {
 
   override def transform[T](ast: AST): T = {
-    //        if (ast.isInstanceOf[FileDef])
-    //          println(Utils.prettyPrint(ast))
+//    if (ast.isInstanceOf[File])
+//      println(Utils.prettyPrint(ast))
     super.transform(ast)
   }
 
@@ -173,13 +173,9 @@ class CollectionTransform extends Transform {
     case CallExpr(exprType, RefExpr(refTy, Some(left), "->", _, true), Seq(right), paramsExpectedTypes) =>
       Some(Exprs.simpleInfix(exprType, "to", transform[Expr](left), transform[Expr](right)))
 
-    //p._1 --> p.first
-    case RefExpr(refTy, Some(left), "_1", _, false) =>
-      Some(RefExpr(refTy, Some(transform[Expr](left)), "first", Seq.empty, false))
-
-    //p._2 --> p.second
-    case RefExpr(refTy, Some(left), "_1", _, false) =>
-      Some(RefExpr(refTy, Some(transform[Expr](left)), "first", Seq.empty, false))
+    //p._1 --> p.first`
+    case RefExpr(refTy, Some(left@WithType(GenericType(KotlinTypes.PAIR, _))), index@("_1" | "_2"), _, false) =>
+      Some(RefExpr(refTy, Some(transform[Expr](left)), if (index == "_1") "first" else "second", Seq.empty, false))
 
     case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(typeParam), false) =>
       Some(ParenthesesExpr(Exprs.as(transform[Expr](referenceObject), typeParam)))

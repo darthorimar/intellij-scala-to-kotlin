@@ -16,4 +16,5 @@ object ScalaTypes {
   val LIST4 = ScalaCollectionType("scala.List")
 
   val FUNCTION_PREFFIX = "_root_.scala.Function"
+
 }

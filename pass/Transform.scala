@@ -1,10 +1,11 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
 import org.jetbrains.plugins.kotlinConverter
+import org.jetbrains.plugins.kotlinConverter.Collector
 import org.jetbrains.plugins.kotlinConverter.ast.{PostfixExpr, _}
 import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renamer, ScopedVal}
 
-trait Transform {
+trait Transform extends Collector {
   protected def action(ast: AST): Option[AST]
 
   val renamerVal = new ScopedVal[Renamer](Renamer(Map.empty))
@@ -102,7 +103,7 @@ trait Transform {
     case x@File(pckg, fileImports, defns, neededDefinitions) =>
       context = x
       val newDefns = defns.map(transform[DefExpr])
-      File(pckg, (imports ++ fileImports).map(transform[Import]), newDefns, neededDefinitions)
+      File(pckg, (imports ++ fileImports).map(transform[Import]), newDefns, neededDefinitions ++ collectedDefinitions)
 
     case InfixExpr(exprType, op, left, right, isLeftAssoc) =>
       InfixExpr(transform[Type](exprType),
@@ -192,8 +193,8 @@ trait Transform {
     case KotlinCatchCase(name, valueType, expr) =>
       KotlinCatchCase(name, transform[Type](valueType), transform[Expr](expr))
 
-    case GenerecTypes(des, params) =>
-      GenerecTypes(transform[Type](des), params.map(transform[Type]))
+    case GenericType(des, params) =>
+      GenericType(transform[Type](des), params.map(transform[Type]))
 
     case FunctionType(left, right) =>
       FunctionType(transform[Type](left), transform[Type](right))
