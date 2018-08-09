@@ -158,11 +158,11 @@ object ASTGenerator extends Collector {
 
   def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
-      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
       .get
 
   def transform[T](psi: PsiElement): T = (psi match {
@@ -458,7 +458,6 @@ object ASTGenerator extends Collector {
 
     case x: ScNewTemplateDefinitionImpl =>
       NewExpr(
-        genType(x.`type`()),
         genType(Some(x.constructor.get.typeElement)),
         x.constructor.get.args.toSeq.flatMap(_.exprs).map(gen[Expr]))
 

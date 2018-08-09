@@ -259,7 +259,7 @@ class KotlinBuilder extends BuilderBase {
         }
         str("}")
 
-      case NewExpr(exprType, instanceType, args) =>
+      case NewExpr(instanceType, args) =>
         genType(instanceType, false)
         str("(")
         rep(args, ", ")(gen)
@@ -301,7 +301,7 @@ class KotlinBuilder extends BuilderBase {
       case TypeParam(name) =>
         str(name)
 
-      case ThrowExpr(exprType, expr) =>
+      case ThrowExpr(expr) =>
         str("throw ")
         gen(expr)
 

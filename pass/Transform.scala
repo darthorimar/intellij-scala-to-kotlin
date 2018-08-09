@@ -59,8 +59,8 @@ trait Transform extends Collector {
 
     case EmptyConstructor => EmptyConstructor
 
-    case ThrowExpr(exprType, expr) =>
-      ThrowExpr(transform[Type](exprType), transform[Expr](expr))
+    case ThrowExpr(expr) =>
+      ThrowExpr(transform[Expr](expr))
 
     case ForInExpr(exprType, value, range, body) =>
       ForInExpr(transform[Type](exprType), transform[RefExpr](value), transform[Expr](range), transform[Expr](body))
@@ -163,8 +163,8 @@ trait Transform extends Collector {
     case AssignExpr(left, right) =>
       AssignExpr(transform[Expr](left), transform[Expr](right))
 
-    case NewExpr(exprType, instanceType, args) =>
-      NewExpr(transform[Type](exprType), transform[Type](instanceType), args.map(transform[Expr]))
+    case NewExpr(instanceType, args) =>
+      NewExpr(transform[Type](instanceType), args.map(transform[Expr]))
 
     case LambdaExpr(exprType, params, expr, needBraces) =>
       LambdaExpr(transform[Type](exprType), params.map(transform[DefParameter]), transform[Expr](expr), needBraces)

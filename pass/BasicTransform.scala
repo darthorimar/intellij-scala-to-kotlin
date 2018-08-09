@@ -186,7 +186,7 @@ class BasicTransform extends Transform {
                 parameters.map { case DefParameter(parameterType,paramName , _, _) =>
                   Exprs.simpleRef(paramName, parameterType)
                 }
-              val body = NewExpr(defnType, defnType, arguments)
+              val body = NewExpr(defnType, arguments)
               DefnDef(Seq.empty, "apply", Seq.empty, parameters, defnType, Some(body))
             }
             val unapplyDef = {
