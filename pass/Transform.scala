@@ -223,8 +223,8 @@ trait Transform extends Collector {
     case JavaType(name) =>
       JavaType(name)
 
-    case ScalaCollectionType(name) =>
-      ScalaCollectionType(name)
+    case ScalaType(name) =>
+      ScalaType(name)
 
     case NoType =>
       NoType

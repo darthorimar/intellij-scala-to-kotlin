@@ -4,7 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.builder.KotlinBuilder
-import org.jetbrains.plugins.kotlinConverter.builder.codegen.Definition
+import org.jetbrains.plugins.kotlinConverter.definition.Definition
 import org.jetbrains.plugins.kotlinConverter.pass.Transform
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.extensions._
@@ -19,8 +19,7 @@ object Converter {
     new ImplicitTransform()
   )
 
-  def convert(file: ScalaFile, doPrint: Boolean): String =
-    convert(Seq(file), doPrint).files.head._1
+
 
   case class ConvertResult(files: Seq[(String, ScalaFile)], definitions: Seq[Definition])
 

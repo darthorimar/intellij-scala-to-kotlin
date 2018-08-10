@@ -1,6 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter.ast
 
-import org.jetbrains.plugins.kotlinConverter.builder.codegen.Definition
+import org.jetbrains.plugins.kotlinConverter.definition.Definition
 
 trait AST
 

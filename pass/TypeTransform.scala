@@ -4,6 +4,7 @@ import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.types._
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.builder.codegen.TupleDefinition
+import org.jetbrains.plugins.kotlinConverter.definition.Definition
 import org.jetbrains.plugins.kotlinConverter.types.TypeUtils.ScalaTuple
 
 class TypeTransform extends Transform {
@@ -24,8 +25,12 @@ class TypeTransform extends Transform {
       addDefinition(new TupleDefinition(arity))
       Some(LibTypes.tupleType(arity))
 
+    case ScalaType("scala.util.Try") =>
+      addDefinition(Definition.tryDefinition)
+      Some(ClassType("Try"))
+
     case ClassType(name) if name.stripPrefix("_root_.").startsWith("scala.") =>
-      Some(transform[Type](ScalaCollectionType(name)))
+      Some(transform[Type](ScalaType(name)))
 
     case ClassType(name) if name.stripPrefix("_root_.").startsWith("java.") =>
       Some(transform[Type](JavaType(name)))

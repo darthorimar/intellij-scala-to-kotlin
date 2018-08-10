@@ -1,5 +1,7 @@
 package org.jetbrains.plugins.kotlinConverter
 
+import com.intellij.psi.PsiFile
+import com.intellij.psi.codeStyle.CodeStyleManager
 import org.jetbrains.plugins.kotlinConverter.ast.Type
 
 object Utils {
@@ -44,5 +46,10 @@ object Utils {
         }
       case _ => a.toString
     }
+  }
+
+  def reformatFile(file: PsiFile): Unit = {
+    val manager = CodeStyleManager.getInstance(file.getProject)
+    manager.reformatRange(file, 0, file.getTextLength)
   }
 }

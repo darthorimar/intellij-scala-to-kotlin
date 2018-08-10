@@ -3,9 +3,9 @@ package org.jetbrains.plugins.kotlinConverter
 import com.intellij.psi.{PsiClass, PsiCodeBlock, PsiElement, PsiStatement}
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.builder.codegen.{Definition, TupleDefinition}
+import org.jetbrains.plugins.kotlinConverter.builder.codegen.TupleDefinition
 import org.jetbrains.plugins.kotlinConverter.scopes.{ASTGeneratorState, ScopedVal}
-import org.jetbrains.plugins.kotlinConverter.types.ScalaTypes
+import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, LibTypes, ScalaTypes}
 import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
 import org.jetbrains.plugins.scala.lang.psi.ScalaPsiUtil
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
@@ -290,6 +290,16 @@ object ASTGenerator extends Collector {
         gen[Expr](x.left),
         gen[Expr](x.right),
         x.isLeftAssoc)
+
+    case psi: ScTuple =>
+      val arity = psi.exprs.length
+      val exprs = psi.exprs.map(gen[Expr])
+      if (arity == 2) {
+        NewExpr(GenericType(KotlinTypes.PAIR, exprs.map(_.exprType)), exprs)
+      } else {
+        addDefinition(new TupleDefinition(arity))
+        NewExpr(GenericType(LibTypes.tupleType(arity), exprs.map(_.exprType)), exprs)
+      }
 
     case x: ScInterpolatedStringLiteral =>
       InterpolatedStringExpr(x.getStringParts, x.getInjections.map(gen[Expr]))

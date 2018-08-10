@@ -43,7 +43,7 @@ case class ScalaStdType(name: String) extends Type {
   override def asKotlin: String = name
 }
 
-case class ScalaCollectionType(name: String) extends Type {
+case class ScalaType(name: String) extends Type {
   override def asKotlin: String = name
 }
 

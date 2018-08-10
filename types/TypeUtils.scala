@@ -39,7 +39,7 @@ object TypeUtils {
   object ScalaTuple {
     private val tuplePrefix = "scala.Tuple"
     def unapply(t: Type): Option[Int] = t match {
-      case ScalaCollectionType(name) if name.startsWith(tuplePrefix) =>
+      case ScalaType(name) if name.startsWith(tuplePrefix) =>
         val arity = name.stripPrefix(tuplePrefix).toInt
         Some(arity)
       case _ => None

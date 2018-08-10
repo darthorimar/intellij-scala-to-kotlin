@@ -1,9 +1,9 @@
 package org.jetbrains.plugins.kotlinConverter
 
-import org.jetbrains.plugins.kotlinConverter.builder.codegen.Definition
+import org.jetbrains.plugins.kotlinConverter.definition.{Definition, FileDefinition}
 
 trait Collector {
-  private var definitions: List[Definition] = Nil
+  private var definitions: List[Definition] =  Nil
   def addDefinition(definition: Definition): Unit =
     definitions = definition :: definitions
 

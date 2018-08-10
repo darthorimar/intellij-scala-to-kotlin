@@ -1,7 +1,9 @@
 package org.jetbrains.plugins.kotlinConverter.builder.codegen
 
+import org.jetbrains.plugins.kotlinConverter.definition.{Definition, TextDefinition}
 
-class TupleDefinition(arity: Int) extends Definition {
+
+class TupleDefinition(arity: Int) extends TextDefinition {
   def generate(): Unit = {
     str("data class Tuple")
     str(arity)

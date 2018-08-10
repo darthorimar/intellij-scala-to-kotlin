@@ -3,6 +3,7 @@ package org.jetbrains.plugins.kotlinConverter.pass
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.pass.Helpers.ApplyCall
 import org.jetbrains.plugins.kotlinConverter.types.TypeUtils.{ListType, WithType}
 import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, TypeUtils}
 import org.scalafmt.internal.SyntacticGroup.Term
@@ -23,7 +24,7 @@ class CollectionTransform extends Transform {
       Some(transform[Expr](v))
 
     // None --> null
-    case RefExpr(ScalaCollectionType("scala.None$"), None, "None", _, _) =>
+    case RefExpr(ScalaType("scala.None$"), None, "None", _, _) =>
       Some(Exprs.nullLit)
 
     // opt.map(f), opt.flatMap(f) --> opt?.let {f(it)}
@@ -68,7 +69,7 @@ class CollectionTransform extends Transform {
       else Some(Exprs.emptyList(transform[Type](typeParams.head)))
 
     //Nil --> emptytList()
-    case RefExpr(ScalaCollectionType("scala.collection.immutable.Nil$"), None, "Nil", _, false) =>
+    case RefExpr(ScalaType("scala.collection.immutable.Nil$"), None, "Nil", _, false) =>
       Some(Exprs.emptyList)
 
     //     (1 :: seq, 1 +: seq)  --> listOf(1) + seq
@@ -173,9 +174,14 @@ class CollectionTransform extends Transform {
     case CallExpr(exprType, RefExpr(refTy, Some(left), "->", _, true), Seq(right), paramsExpectedTypes) =>
       Some(Exprs.simpleInfix(exprType, "to", transform[Expr](left), transform[Expr](right)))
 
-    //p._1 --> p.first`
+    //p._1 --> p.first
+    //p._2 --> p.second
     case RefExpr(refTy, Some(left@WithType(GenericType(KotlinTypes.PAIR, _))), index@("_1" | "_2"), _, false) =>
       Some(RefExpr(refTy, Some(transform[Expr](left)), if (index == "_1") "first" else "second", Seq.empty, false))
+
+    // Some(x) --> x
+    case a@ApplyCall(RefExpr(ScalaType("scala.util.Try$"), None, "Try", _, _), Seq(p)) =>
+      Some(Exprs.simpleCall("runTry", a.exprType, Seq(transform[Expr](p))))
 
     case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(typeParam), false) =>
       Some(ParenthesesExpr(Exprs.as(transform[Expr](referenceObject), typeParam)))
