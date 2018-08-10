@@ -16,7 +16,7 @@ class TypeTransform extends Transform {
       Some(NullableType(transform[Type](i)))
 
     case ScalaTypes.STRING | ScalaTypes.JAVA_STRING =>
-      Some(KotlinTypes.STRING)
+      Some(StdTypes.STRING)
 
     case ScalaTuple(2) =>
       Some(KotlinTypes.PAIR)
@@ -36,7 +36,7 @@ class TypeTransform extends Transform {
       Some(transform[Type](JavaType(name)))
 
     case JavaType("java.lang.Exception") =>
-      Some(KotlinCollectionType("Exception"))
+      Some(KotlinType("Exception"))
 
     case ScalaTypes.SEQ |
          ScalaTypes.SEQ2 |

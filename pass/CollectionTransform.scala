@@ -5,7 +5,7 @@ import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.pass.Helpers.ApplyCall
 import org.jetbrains.plugins.kotlinConverter.types.TypeUtils.{ListType, WithType}
-import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, TypeUtils}
+import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes, TypeUtils}
 import org.scalafmt.internal.SyntacticGroup.Term
 
 class CollectionTransform extends Transform {
@@ -112,7 +112,7 @@ class CollectionTransform extends Transform {
       if TypeUtils.isKotlinList(referenceObject.exprType) =>
       Some(CallExpr(exprType,
         RefExpr(refTy, Some(transform[Expr](referenceObject)), "drop", typeParams, true),
-        Seq(LitExpr(KotlinTypes.INT, "1")),
+        Seq(LitExpr(StdTypes.INT, "1")),
         paramsExpectedTypes.map(transform[CallParameterInfo])))
 
     // seq.head --> seq.first
@@ -125,7 +125,7 @@ class CollectionTransform extends Transform {
     // seq.init --> seq.dropLast(1)
     case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "init", typeParams, true), _, paramsExpectedTypes)
       if TypeUtils.isKotlinList(referenceObject.exprType) =>
-      Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "dropLast", typeParams, true), Seq(LitExpr(KotlinTypes.INT, "1")),
+      Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "dropLast", typeParams, true), Seq(LitExpr(StdTypes.INT, "1")),
         paramsExpectedTypes.map(transform[CallParameterInfo])))
 
     //seq.foreach --> seq.forEach
@@ -136,7 +136,7 @@ class CollectionTransform extends Transform {
 
     //     str * i => str.repeat(i)
     case CallExpr(exprType, RefExpr(refTy, Some(left), "*", _, _), Seq(right), paramsExpectedTypes)
-      if left.exprType == KotlinTypes.STRING && right.exprType == KotlinTypes.INT =>
+      if left.exprType == StdTypes.STRING && right.exprType == StdTypes.INT =>
       Some(CallExpr(exprType, RefExpr(exprType, Some(transform[Expr](left)), "repeat", Seq.empty, true), Seq(right),
         paramsExpectedTypes.map(transform[CallParameterInfo])))
 

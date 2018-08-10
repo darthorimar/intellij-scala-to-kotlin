@@ -4,7 +4,7 @@ import com.intellij.formatting.BlockEx
 import com.sun.source.doctree.AttributeTree.ValueKind
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.{ExprUtils, Exprs, Utils}
-import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
+import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 import org.jetbrains.plugins.kotlinConverter.scopes.{BasicTransformState, LocalNamer, Renamer, ScopedVal}
@@ -22,9 +22,10 @@ class BasicTransform extends Transform {
 
   def isDefaultOperator(op: RefExpr): Boolean =
     op match {
-      case RefExpr(FunctionType(NumericType(_), NumericType(_)), None, "*" | "/" | "+" | "-", _, _) => true
-      case RefExpr(FunctionType(NumericType(_), KotlinTypes.BOOLEAN), None, ">" | "<" | ">=" | "<=" | "==" | "!=", _, _) => true
-      case RefExpr(FunctionType(KotlinTypes.STRING, KotlinTypes.STRING), None, "+", _, _) => true
+      case RefExpr(FunctionType(NumericType(_), NumericType(_)), None, "*" | "/" | "+" | "-" | "%", _, _) => true
+      case RefExpr(FunctionType(NumericType(_), StdTypes.BOOLEAN), None, ">" | "<" | ">=" | "<=" , _, _) => true
+      case RefExpr(FunctionType(_, StdTypes.BOOLEAN), None, "==" | "!=" , _, _) => true
+      case RefExpr(FunctionType(StdTypes.STRING, StdTypes.STRING), None, "+", _, _) => true
       case _ => false
     }
 
@@ -136,7 +137,7 @@ class BasicTransform extends Transform {
           def handleBody(body: Expr) = body match {
             case b@BlockExpr(exprType, stmts) =>
               val last = stmts.last
-              if (!last.isInstanceOf[ReturnExpr] && x.returnType != KotlinTypes.UNIT)
+              if (!last.isInstanceOf[ReturnExpr] && x.returnType != StdTypes.UNIT)
                 BlockExpr(exprType, stmts.init :+ ReturnExpr(None, Some(last)))
               else b
             case b => b
@@ -144,7 +145,7 @@ class BasicTransform extends Transform {
 
           val params = newDef.parameters.map {
             case DefParameter(parameterType, name, isVarArg, true) =>
-              DefParameter(FunctionType(KotlinTypes.UNIT, parameterType), name, isVarArg, true)
+              DefParameter(FunctionType(StdTypes.UNIT, parameterType), name, isVarArg, true)
             case p => p
           }
 

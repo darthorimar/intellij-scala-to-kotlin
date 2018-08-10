@@ -1,7 +1,7 @@
 package org.jetbrains.plugins.kotlinConverter.ast
 
 import org.jetbrains.plugins.kotlinConverter.ast
-import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
+import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
 
 sealed trait Expr extends AST {
   def exprType: Type
@@ -42,7 +42,7 @@ case class NewExpr(instanceType: Type, arguments: Seq[Expr]) extends Expr {
 }
 case class LambdaExpr(exprType: Type, parameters: Seq[DefParameter], expr: Expr, needBraces: Boolean) extends Expr
 case class ThrowExpr(expr: Expr) extends Expr {
-  override def exprType: Type = KotlinTypes.NOTHING
+  override def exprType: Type = StdTypes.NOTHING
 }
 case class IfExpr(exprType: Type, condition: Expr, trueBranch: Expr, falseBranch: Option[Expr]) extends Expr
 case class ForExpr(exprType: Type, generators: Seq[ForEnumerator], isYield: Boolean, body: Expr) extends Expr
@@ -50,10 +50,10 @@ case class ForInExpr(exprType: Type, value: RefExpr, range: Expr, body: Expr) ex
 case class WhileExpr(exprType: Type, condition: Expr, body: BlockExpr) extends Expr
 case class ThisExpr(exprType: Type) extends Expr
 case class InterpolatedStringExpr(parts: Seq[String], injected: Seq[Expr]) extends Expr {
-  override def exprType: Type = KotlinTypes.STRING
+  override def exprType: Type = StdTypes.STRING
 }
 case class ReturnExpr(label: Option[String], expr: Option[Expr]) extends Expr {
-  override def exprType: Type = KotlinTypes.NOTHING
+  override def exprType: Type = StdTypes.NOTHING
 }
 case class ScalaTryExpr(exprType: Type,
                         tryBlock: Expr,

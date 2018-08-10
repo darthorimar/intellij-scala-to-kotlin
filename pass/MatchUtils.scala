@@ -4,7 +4,7 @@ import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.scopes.LocalNamer
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
-import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
+import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 
 
@@ -68,7 +68,7 @@ object MatchUtils {
             val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
 
             val condition =
-              if (ref == "Some") Exprs.simpleInfix(KotlinTypes.BOOLEAN, "!=", LitExpr(exprType, local), Exprs.nullLit)
+              if (ref == "Some") Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", LitExpr(exprType, local), Exprs.nullLit)
               else Exprs.is(LitExpr(exprType, local), SimpleType(ref))
             (ReferencePattern(local),
               Some(condition),
@@ -140,11 +140,11 @@ object MatchUtils {
 
         val condition = r match {
           case CaseClassConstructorRef(ref) =>
-            if (ref == "Some") Exprs.simpleInfix(KotlinTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
+            if (ref == "Some") Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
             else Exprs.is(valRef, SimpleType(ref))
           case UnapplyCallConstuctorRef(_, unapplyReturnType) =>
             val ref = Exprs.simpleRef(refName, unapplyReturnType)
-            val notNullExpr = Exprs.simpleInfix(KotlinTypes.BOOLEAN, "!=", ref, Exprs.nullLit)
+            val notNullExpr = Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", ref, Exprs.nullLit)
             val isExpr = Exprs.is(ref,
               unapplyReturnType match {
                 case NullableType(inner) => inner
@@ -183,7 +183,7 @@ object MatchUtils {
     val whenClauses =
       expandedClauses.map {
         case MatchCaseClause(LitPattern(lit), e, guard) =>
-          val equlasExpr = Exprs.simpleInfix(KotlinTypes.BOOLEAN, "==", valRef, lit)
+          val equlasExpr = Exprs.simpleInfix(StdTypes.BOOLEAN, "==", valRef, lit)
           ExprWhenClause(addGuardExpr(equlasExpr, guard), transform[Expr](e))
 
         case MatchCaseClause(WildcardPattern, e, guard) =>
@@ -211,7 +211,7 @@ object MatchUtils {
 
         case MatchCaseClause(pattern@ConstructorPattern(_, _, _, repr), e, _) =>
           val lazyRef = RefExpr(NoType, None, Utils.escapeName(repr), Seq.empty, false)
-          val notEqulasExpr = Exprs.simpleInfix(KotlinTypes.BOOLEAN, "!=", lazyRef, Exprs.nullLit)
+          val notEqulasExpr = Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", lazyRef, Exprs.nullLit)
           val vals = collectVals(pattern)
           val valDef = ValOrVarDef(Seq.empty, true, vals.map(p => ReferencePattern(p.name)), Some(lazyRef))
           val body = e match {
@@ -229,7 +229,7 @@ object MatchUtils {
       case _: ElseWhenClause => true
       case _ => false
     }) {
-      val exception = NewExpr(KotlinTypes.EXCEPTION, Seq(LitExpr(KotlinTypes.STRING, "\"Match exception\"")))
+      val exception = NewExpr(KotlinTypes.EXCEPTION, Seq(LitExpr(StdTypes.STRING, "\"Match exception\"")))
       Seq(ElseWhenClause(ThrowExpr(exception)))
     }
     else Seq.empty

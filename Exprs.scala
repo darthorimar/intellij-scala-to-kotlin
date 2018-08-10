@@ -2,17 +2,17 @@ package org.jetbrains.plugins.kotlinConverter
 
 import android.provider.ContactsContract.CommonDataKinds.Callable
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.types.KotlinTypes
+import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
 
 object Exprs {
   def is(expr: Expr, ty: Type) =
-    simpleInfix(KotlinTypes.BOOLEAN, "is", expr, TypeExpr(ty))
+    simpleInfix(StdTypes.BOOLEAN, "is", expr, TypeExpr(ty))
 
   def as(expr: Expr, ty: Type) =
-    simpleInfix(KotlinTypes.BOOLEAN, "as", expr, TypeExpr(ty))
+    simpleInfix(StdTypes.BOOLEAN, "as", expr, TypeExpr(ty))
 
   def and(left: Expr, right: Expr) =
-    simpleInfix(KotlinTypes.BOOLEAN, "&&", left, right)
+    simpleInfix(StdTypes.BOOLEAN, "&&", left, right)
 
   def letExpr(obj: Expr, lambda: LambdaExpr) =
     CallExpr(lambda.exprType, RefExpr(NoType, Some(obj), "let", Seq.empty, true), Seq(lambda), Seq.empty)
@@ -54,7 +54,7 @@ object Exprs {
     simpleCall("run", expr.exprType, Seq(LambdaExpr(expr.exprType, Seq.empty, expr, false)))
 
 
-  val falseLit = LitExpr(KotlinTypes.BOOLEAN, "false")
-  val trueLit = LitExpr(KotlinTypes.BOOLEAN, "true")
+  val falseLit = LitExpr(StdTypes.BOOLEAN, "false")
+  val trueLit = LitExpr(StdTypes.BOOLEAN, "true")
   val nullLit = LitExpr(NoType, "null") //TODO fix
 }

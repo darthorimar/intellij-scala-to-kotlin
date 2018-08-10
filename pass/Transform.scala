@@ -202,8 +202,8 @@ trait Transform extends Collector {
     case ProductType(exprTypepes) =>
       ProductType(exprTypepes.map(transform[Type]))
 
-    case ScalaStdType(name) =>
-      ScalaStdType(name)
+    case StdType(name) =>
+      StdType(name)
 
     case SimpleType(name) =>
       SimpleType(name)
@@ -217,8 +217,8 @@ trait Transform extends Collector {
     case TypeParamType(name) =>
       TypeParamType(name)
 
-    case KotlinCollectionType(name) =>
-      KotlinCollectionType(name)
+    case KotlinType(name) =>
+      KotlinType(name)
 
     case JavaType(name) =>
       JavaType(name)

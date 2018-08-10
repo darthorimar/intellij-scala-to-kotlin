@@ -20,7 +20,7 @@ object TypeUtils {
 
   object NumericType {
     def unapply(t: Type): Option[Type] = t match {
-      case KotlinTypes.INT => Some(t)
+      case StdTypes.INT => Some(t)
       case _ => None
     }
   }

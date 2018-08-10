@@ -39,7 +39,7 @@ case class ClassType(name: String) extends Type {
   override def asKotlin: String = name
 }
 
-case class ScalaStdType(name: String) extends Type {
+case class StdType(name: String) extends Type {
   override def asKotlin: String = name
 }
 
@@ -52,7 +52,7 @@ case class JavaType(name: String) extends Type {
 }
 
 
-case class KotlinCollectionType(name: String) extends Type {
+case class KotlinType(name: String) extends Type {
   override def asKotlin: String = name
 }
 

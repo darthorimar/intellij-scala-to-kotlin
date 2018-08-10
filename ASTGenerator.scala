@@ -67,7 +67,7 @@ object ASTGenerator extends Collector {
   def genType(ty: ScType): Type =
     ty match {
       case x: StdType =>
-        ScalaStdType(x.name)
+        ast.StdType(x.name)
       case x: ScParameterizedType if x.designator.canonicalText.startsWith(ScalaTypes.FUNCTION_PREFFIX) =>
         if (x.typeArguments.init.length == 1)
           FunctionType(genType(x.typeArguments.head), genType(x.typeArguments.last))
