@@ -287,6 +287,7 @@ object Transform {
       new BasicTransform,
       new CollectionTransform,
       new TypeTransform, //todo get rid of second call
+      new CollectorTransform,
       new RefCollector)
     passes.foldLeft(fileDef)((a, p) => p.transform[File](a)) //todo rename
   }

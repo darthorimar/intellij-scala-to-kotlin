@@ -8,6 +8,10 @@ trait Definition {
 }
 
 object Definition {
-  val tryDefinition = FileDefinition("Try", "Try.kt")
+  val tryDefinition = FileDefinition("Try")
+  val unzip3 = FileDefinition("unzip3")
+  val partialFunction = FileDefinition("PartialFunction", Seq(matchError))
+  val matchError = FileDefinition("MatchError")
+
   def tupleDefinition(arity: Int) = new TupleDefinition(arity)
 }

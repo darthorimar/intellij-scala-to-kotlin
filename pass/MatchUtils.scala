@@ -2,6 +2,7 @@ package org.jetbrains.plugins.kotlinConverter.pass
 
 import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.ast._
+import org.jetbrains.plugins.kotlinConverter.definition.Definition
 import org.jetbrains.plugins.kotlinConverter.scopes.LocalNamer
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
@@ -229,7 +230,8 @@ object MatchUtils {
       case _: ElseWhenClause => true
       case _ => false
     }) {
-      val exception = NewExpr(KotlinTypes.EXCEPTION, Seq(LitExpr(StdTypes.STRING, "\"Match exception\"")))
+      addDefinition(Definition.matchError)
+      val exception = NewExpr(ClassType("MatchError"), Seq(valRef))
       Seq(ElseWhenClause(ThrowExpr(exception)))
     }
     else Seq.empty

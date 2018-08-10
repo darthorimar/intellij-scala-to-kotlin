@@ -13,9 +13,10 @@ object DefinitionGenerator {
       definitions
         .distinctBy(_.name)
         .map {
-          case FileDefinition(_, file) =>
+          case d: FileDefinition =>
+            val filename = d.filename
             //todo use resource path
-            Source.fromFile(s"/home/ilya/code/intellij-scala/scala/scala-impl/resources/org/jetbrains/plugins/kotlinConverter/definition/$file")
+            Source.fromFile(s"/home/ilya/code/intellij-scala/scala/scala-impl/resources/org/jetbrains/plugins/kotlinConverter/definition/$filename")
               .getLines()
               .mkString("\n")
           case textDef: TextDefinition =>

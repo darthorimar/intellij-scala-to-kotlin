@@ -52,10 +52,6 @@ class TypeTransform extends Transform {
     case SimpleType("scala.collection.immutable.Nil.type") =>
       Some(GenericType(KotlinTypes.LIST, Seq(NoType)))
 
-    case GenericType(SimpleType("_root_.scala.Tuple2"), Seq(p1, p2)) =>
-      Some(GenericType(KotlinTypes.PAIR, Seq(transform[Type](p1), transform[Type](p2))))
-    //
-
     case _ => None
   }
 }
