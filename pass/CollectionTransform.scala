@@ -20,7 +20,7 @@ class CollectionTransform extends Transform {
     //Options
 
     // Some(x) --> x
-    case CallExpr(_, RefExpr(_, Some(RefExpr(_, None, "Some", _, false)), "apply", _, _), Seq(v), paramsExpectedTypes) =>
+    case ApplyCall(WithType(ScalaType("scala.Some$")), Seq(v)) =>
       Some(transform[Expr](v))
 
     // None --> null
@@ -134,6 +134,13 @@ class CollectionTransform extends Transform {
       Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "forEach", typeParams, true), params.map(transform[Expr]),
         paramsExpectedTypes.map(transform[CallParameterInfo])))
 
+    //seq.forall --> seq.all
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "forall", typeParams, true), params, paramsExpectedTypes)
+      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+      Some(CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "all", typeParams, true), params.map(transform[Expr]),
+        paramsExpectedTypes.map(transform[CallParameterInfo])))
+
+
     //     str * i => str.repeat(i)
     case CallExpr(exprType, RefExpr(refTy, Some(left), "*", _, _), Seq(right), paramsExpectedTypes)
       if left.exprType == StdTypes.STRING && right.exprType == StdTypes.INT =>
@@ -168,6 +175,8 @@ class CollectionTransform extends Transform {
         paramsExpectedTypes.map(transform[CallParameterInfo])))
 
 
+    case ApplyCall(WithType(ScalaType("scala.Option$")), Seq(p)) =>
+      Some(transform[Expr](p))
     //pairs
 
     //1 -> 2 --> 1 to 2
@@ -180,7 +189,7 @@ class CollectionTransform extends Transform {
       Some(RefExpr(refTy, Some(transform[Expr](left)), if (index == "_1") "first" else "second", Seq.empty, false))
 
     // Some(x) --> x
-    case a@ApplyCall(RefExpr(ScalaType("scala.util.Try$"), None, "Try", _, _), Seq(p)) =>
+    case a@ApplyCall(WithType(ScalaType("scala.util.Try$")), Seq(p)) =>
       Some(Exprs.simpleCall("runTry", a.exprType, Seq(transform[Expr](p))))
 
     case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(typeParam), false) =>
