@@ -22,12 +22,16 @@ class TypeTransform extends Transform {
       Some(KotlinTypes.PAIR)
 
     case ScalaTuple(arity) =>
-      addDefinition(new TupleDefinition(arity))
+      addDefinition(Definition.tuple(arity))
       Some(LibTypes.tupleType(arity))
 
     case ScalaType("scala.util.Try") =>
       addDefinition(Definition.tryDefinition)
       Some(ClassType("Try"))
+
+    case ScalaType("scala.PartialFunction") =>
+      addDefinition(Definition.partialFunction)
+      Some(ClassType("PartialFunction"))
 
     case ClassType(name) if name.stripPrefix("_root_.").startsWith("scala.") =>
       Some(transform[Type](ScalaType(name)))
