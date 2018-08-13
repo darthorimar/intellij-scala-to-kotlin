@@ -50,9 +50,9 @@ class BasicTransform extends Transform {
           case _ => false
         }
         val goodCatches = goodClauses.map {
-          case MatchCaseClause(TypedPattern(referenceName, patternType), expr, None) =>
+          case MatchCaseClause(TypedPattern(referenceName, patternType, _), expr, None) =>
             KotlinCatchCase(referenceName, patternType, expr)
-          case MatchCaseClause(ReferencePattern(referenceName), expr, None) =>
+          case MatchCaseClause(ReferencePattern(referenceName, _), expr, None) =>
             KotlinCatchCase(referenceName, KotlinTypes.THROWABLE, expr)
         }
         val badCatches = badClauses match {
@@ -105,7 +105,7 @@ class BasicTransform extends Transform {
 
         val result = generators.reverse.foldLeft(transform[Expr](yieldedBody): Expr) {
           case (acc, ForGenerator(pattern, expr)) =>
-            ForInExpr(NoType, RefExpr(NoType, None, pattern.name, Seq.empty, false), transform[Expr](expr), wrapToBody(acc))
+            ForInExpr(NoType, RefExpr(NoType, None, pattern.representation, Seq.empty, false), transform[Expr](expr), wrapToBody(acc))
           case (acc, ForGuard(condition)) =>
             IfExpr(NoType, transform[Expr](condition), wrapToBody(acc), None)
           case (acc, ForVal(valDefExpr)) =>

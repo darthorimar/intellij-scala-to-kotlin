@@ -9,7 +9,8 @@ trait ErrorAst extends AST {
 }
 
 case class ErrorCasePattern(text: String) extends CasePattern with ErrorAst {
-  override def name: String = ""
+  override def representation: String = ""
+  override def label: Option[String] = None
 }
 
 case class ErrorWhenClause(text: String) extends WhenClause with ErrorAst
@@ -36,20 +37,21 @@ case class File(packageName: String,
                 neededDefinitions: Seq[Definition]) extends AST
 
 sealed trait CasePattern extends AST {
-  def name: String
+  def representation: String
+  def label: Option[String]
 }
 
-case class CompositePattern(parts: Seq[CasePattern]) extends CasePattern {
-  override def name: String = parts.mkString(" | ")
+case class CompositePattern(parts: Seq[CasePattern], label: Option[String]) extends CasePattern {
+  override def representation: String = parts.mkString(" | ")
 }
 
-case class TuplePattern(parts: Seq[CasePattern]) extends CasePattern {
-  override def name: String = parts.mkString("(", ", ", ")")
-}
+//case class TuplePattern(parts: Seq[CasePattern]) extends CasePattern {
+//  override def name: String = parts.mkString("(", ", ", ")")
+//}
 
 
-case class LitPattern(expr: Expr) extends CasePattern {
-  override def name: String = expr match {
+case class LitPattern(expr: Expr, label: Option[String]) extends CasePattern {
+  override def representation: String = expr match {
     case LitExpr(_, name) => name
     case RefExpr(_, _, ref, _, _) => ref
   }
@@ -63,20 +65,18 @@ case class UnapplyCallConstuctorRef(objectName: String, unapplyReturnType: Type)
 case class ConstructorPattern(ref: ConstructorRef,
                               args: Seq[CasePattern],
                               label: Option[String],
-                              representation: String) extends CasePattern {
-  override def name: String = representation
+                              representation: String) extends CasePattern
+
+case class TypedPattern(referenceName: String, patternType: Type, label: Option[String]) extends CasePattern {
+  override def representation: String = s"$referenceName: ${patternType.asKotlin}"
 }
 
-case class TypedPattern(referenceName: String, patternType: Type) extends CasePattern {
-  override def name: String = s"$referenceName: ${patternType.asKotlin}"
+case class ReferencePattern(referenceName: String, label: Option[String]) extends CasePattern {
+  override def representation: String = referenceName
 }
 
-case class ReferencePattern(referenceName: String) extends CasePattern {
-  override def name: String = referenceName
-}
-
-case object WildcardPattern extends CasePattern {
-  override def name: String = "_"
+case class WildcardPattern(label: Option[String]) extends CasePattern {
+  override def representation: String = "_"
 }
 
 

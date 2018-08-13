@@ -112,7 +112,7 @@ class KotlinBuilder extends BuilderBase {
         opt(expr)(gen)
 
       case p: CasePattern =>
-        str(p.name)
+        str(p.representation)
 
       case DefnDef(attrs, name, typeParams, args, retType, body) =>
         rep(attrs, " ")(gen)

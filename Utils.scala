@@ -6,7 +6,7 @@ import org.jetbrains.plugins.kotlinConverter.ast.Type
 
 object Utils {
   def escapeName(name: String): String =
-    s"`$name`"
+    s"`$name`".replaceAllLiterally(":", "")
 
 
   def prettyPrint(a: Any, indentSize: Int = 2, depth: Int = 0): String = {

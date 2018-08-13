@@ -238,11 +238,11 @@ trait Transform extends Collector {
     case TypeParam(name) =>
       TypeParam(name)
 
-    case LitPattern(lit) =>
-      LitPattern(lit)
+    case LitPattern(lit, label) =>
+      LitPattern(lit, label)
 
-    case TuplePattern(parts) =>
-      TuplePattern(parts.map(transform[CasePattern]))
+//    case TuplePattern(parts, label) =>
+//      TuplePattern(parts.map(transform[CasePattern]), label)
 
     case ConstructorPattern(ref, args, label, repr) =>
       ConstructorPattern(transform[ConstructorRef](ref), args.map(transform[CasePattern]), label, repr)
@@ -253,14 +253,14 @@ trait Transform extends Collector {
     case UnapplyCallConstuctorRef(objectName, unapplyReturnType) =>
       UnapplyCallConstuctorRef(objectName, transform[Type](unapplyReturnType))
 
-    case TypedPattern(ref, exprType) =>
-      TypedPattern(ref, transform[Type](exprType))
+    case TypedPattern(ref, exprType, label) =>
+      TypedPattern(ref, transform[Type](exprType), label)
 
-    case ReferencePattern(ref) =>
-      ReferencePattern(ref)
+    case ReferencePattern(ref, label) =>
+      ReferencePattern(ref, label)
 
-    case WildcardPattern =>
-      WildcardPattern
+    case WildcardPattern(label) =>
+      WildcardPattern(label)
 
     case ThisExpr(exprType) =>
       ThisExpr(transform[Type](exprType))

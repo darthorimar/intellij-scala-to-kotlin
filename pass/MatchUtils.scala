@@ -7,12 +7,13 @@ import org.jetbrains.plugins.kotlinConverter.scopes.LocalNamer
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
+import org.jetbrains.plugins.scala.lang.dependency.DependencyKind.Reference
 
 
 object MatchUtils {
   def expandCompositePattern(clauses: Seq[MatchCaseClause]): Seq[MatchCaseClause] =
     clauses.flatMap {
-      case MatchCaseClause(CompositePattern(parts), expr, guard) =>
+      case MatchCaseClause(CompositePattern(parts, _), expr, guard) =>
         parts.map { p =>
           MatchCaseClause(p, expr, guard)
         }
@@ -29,15 +30,15 @@ object MatchUtils {
 
     def collectVals(constructorPatternMatch: ConstructorPattern): Seq[ConstructorParam] = {
       constructorPatternMatch.args.flatMap {
-        case LitPattern(_) =>
+        case _: LitPattern =>
           Seq.empty
-        case ReferencePattern(ref) =>
+        case ReferencePattern(ref, _) =>
           Seq(ConstructorParam(ValKind, PublicAttribute, ref, NoType))
-        case WildcardPattern =>
+        case _: WildcardPattern =>
           Seq.empty
         case c: ConstructorPattern =>
           collectVals(c)
-        case TypedPattern(ref, exprTypePattern) =>
+        case TypedPattern(ref, exprTypePattern, _) =>
           Seq(ConstructorParam(ValKind, PublicAttribute, ref, exprTypePattern))
       }
     }
@@ -57,39 +58,38 @@ object MatchUtils {
     }
 
     def collectConstructors(constructors: Seq[(String, CasePattern)]): (Seq[ValOrVarDef], Seq[Expr], Seq[(String, ConstructorPattern)]) = {
-      val (vals, conds, refs) = constructors.collect { case (r, ConstructorPattern(_, patterns, _, _)) =>
+      val (vals, conds, refs) = constructors.collect { case (r, ConstructorPattern(constructorRef, patterns, _, _)) =>
         val (destructors, conds, refs) = patterns.map {
-          case LitPattern(litPattern) =>
-            (LitPattern(litPattern), None, None)
-          case ReferencePattern(ref) =>
-            (ReferencePattern(ref), None, None)
-          case WildcardPattern =>
-            (WildcardPattern, None, None)
-          case c@ConstructorPattern(CaseClassConstructorRef(ref), _, label, _) =>
+          case LitPattern(_, label) =>
+            (label.map(ReferencePattern(_, None)).getOrElse(WildcardPattern(None)), None, None)
+          case p: ReferencePattern =>
+            (p, None, None)
+          case p@WildcardPattern(label) =>
+            (label.map(ReferencePattern(_, None)).getOrElse(p), None, None)
+          case p@ConstructorPattern(CaseClassConstructorRef(name), _, label, _) =>
             val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
-
-            val condition =
-              if (ref == "Some") Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", LitExpr(exprType, local), Exprs.nullLit)
-              else Exprs.is(LitExpr(exprType, local), SimpleType(ref))
-            (ReferencePattern(local),
-              Some(condition),
-              Some(local -> c))
-
-          case c@ConstructorPattern(UnapplyCallConstuctorRef(objectName, unapplyReturnType), _, label, _) =>
+            (ReferencePattern(local, None),
+              Some(Exprs.is(LitExpr(NoType, local), ClassType(name))),
+              Some(local -> p))
+          case p@ConstructorPattern(_: UnapplyCallConstuctorRef, _, label, _) =>
             val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
-
-            val condition = null
-            //              if (ref == "Some") Exprs.simpleInfix(KotlinTypes.BOOLEAN, "!=", LitExpr(exprType, local), Exprs.nullLit)
-            //              else Exprs.is(LitExpr(exprType, local), SimpleType(ref))
-            (ReferencePattern(local),
-              Some(condition),
-              Some(local -> c))
-          case TypedPattern(ref, exprTypePattern) =>
-            (ReferencePattern(ref),
-              Some(Exprs.is(LitExpr(exprTypePattern, ref), exprTypePattern)),
-              None)
+            (ReferencePattern(local, None),
+              None,
+              Some(local -> p))
+          case p@TypedPattern(referenceName, _, _) =>
+            (ReferencePattern(referenceName, None), Some(Exprs.is(LitExpr(NoType, referenceName), p.patternType)), None)
         }.unzip3
-        (ValOrVarDef(Seq.empty, true, destructors, Some(RefExpr(NoType, None, r, Seq.empty, false))),
+
+        def rightSide = constructorRef match {
+          case CaseClassConstructorRef(_) => Exprs.simpleRef(r, NoType)
+          case UnapplyCallConstuctorRef(objectName, unapplyReturnType) =>
+            val unapplyRef = RefExpr(NoType, Some(Exprs.simpleRef(objectName, NoType)), "unapply", Seq.empty, true)
+            val callExpr = CallExpr(unapplyReturnType, unapplyRef, Seq(Exprs.simpleRef(r, NoType)), Seq.empty)
+            Exprs.simpleInfix(unapplyReturnType, "?:", callExpr, ReturnExpr(Some("lazy"), Some(Exprs.nullLit)))
+        }
+
+        val valDef = ValOrVarDef(Seq.empty, isVal = true, destructors, Some(rightSide))
+        (valDef,
           conds.flatten,
           refs.flatten)
       }.unzip3
@@ -114,7 +114,7 @@ object MatchUtils {
     }
 
     val lazyDefs = expandedClauses.collect {
-      case MatchCaseClause(pattern@ConstructorPattern(r, _, _, repr), _, guard) =>
+      case MatchCaseClause(pattern@ConstructorPattern(constructorRef, _, _, repr), _, guard) =>
         val params = collectVals(pattern).map(v => RefExpr(NoType, None, v.name, Seq.empty, false))
         val callContructor =
           CallExpr(NoType,
@@ -129,7 +129,7 @@ object MatchUtils {
           case None => retExpr
         }
 
-        val refName = r match {
+        val refName = constructorRef match {
           case CaseClassConstructorRef(ref) => valRef.referenceName
           case UnapplyCallConstuctorRef(_, _) =>
             namerVal.newName("l")
@@ -139,10 +139,10 @@ object MatchUtils {
         val innerBodyExprs =
           handleConstructors(Seq((refName, pattern)), finalExpr)
 
-        val condition = r match {
+        val condition = constructorRef match {
           case CaseClassConstructorRef(ref) =>
             if (ref == "Some") Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
-            else Exprs.is(valRef, SimpleType(ref))
+            else Exprs.is(valRef, ClassType(ref))
           case UnapplyCallConstuctorRef(_, unapplyReturnType) =>
             val ref = Exprs.simpleRef(refName, unapplyReturnType)
             val notNullExpr = Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", ref, Exprs.nullLit)
@@ -154,7 +154,7 @@ object MatchUtils {
             Exprs.and(notNullExpr, isExpr)
         }
 
-        val valForUnapplyConstrRef = r match {
+        val valForUnapplyConstrRef = constructorRef match {
           case UnapplyCallConstuctorRef(objectName, _) =>
             val unapplyRef = RefExpr(NoType, Some(Exprs.simpleRef(objectName, NoType)), "unapply", Seq.empty, true)
             val unapplyCall = CallExpr(NoType, unapplyRef, Seq(valRef), Seq.empty)
@@ -183,17 +183,17 @@ object MatchUtils {
 
     val whenClauses =
       expandedClauses.map {
-        case MatchCaseClause(LitPattern(lit), e, guard) =>
+        case MatchCaseClause(LitPattern(lit, _), e, guard) =>
           val equlasExpr = Exprs.simpleInfix(StdTypes.BOOLEAN, "==", valRef, lit)
           ExprWhenClause(addGuardExpr(equlasExpr, guard), transform[Expr](e))
 
-        case MatchCaseClause(WildcardPattern, e, guard) =>
+        case MatchCaseClause(WildcardPattern(_), e, guard) =>
           guard match {
             case Some(g) => ExprWhenClause(transform[Expr](g), transform[Expr](e))
             case None => ElseWhenClause(transform[Expr](e))
           }
 
-        case MatchCaseClause(ReferencePattern(ref), e, guard) =>
+        case MatchCaseClause(ReferencePattern(ref, _), e, guard) =>
           scoped(
             renamerVal.updated(_.add(ref -> valRef))
           ) {
@@ -203,7 +203,7 @@ object MatchUtils {
             }
           }
 
-        case MatchCaseClause(TypedPattern(ref, patternTy), e, guard) =>
+        case MatchCaseClause(TypedPattern(ref, patternTy, _), e, guard) =>
           scoped(
             renamerVal.updated(_.add(ref -> valRef))
           ) {
@@ -214,7 +214,7 @@ object MatchUtils {
           val lazyRef = RefExpr(NoType, None, Utils.escapeName(repr), Seq.empty, false)
           val notEqulasExpr = Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", lazyRef, Exprs.nullLit)
           val vals = collectVals(pattern)
-          val valDef = ValOrVarDef(Seq.empty, true, vals.map(p => ReferencePattern(p.name)), Some(lazyRef))
+          val valDef = ValOrVarDef(Seq.empty, true, vals.map(p => ReferencePattern(p.name, None)), Some(lazyRef))
           val body = e match {
             case BlockExpr(exprType, exprs) =>
               BlockExpr(exprType, valDef +: exprs)

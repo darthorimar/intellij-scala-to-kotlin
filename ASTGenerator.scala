@@ -158,11 +158,11 @@ object ASTGenerator extends Collector {
 
   def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
-      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
       .get
 
   def transform[T](psi: PsiElement): T = (psi match {
@@ -382,9 +382,9 @@ object ASTGenerator extends Collector {
         x.getText)
 
     case x: ScCompositePattern =>
-      CompositePattern(x.subpatterns.map(gen[CasePattern]))
+      CompositePattern(x.subpatterns.map(gen[CasePattern]), None)
     case x: ScLiteralPattern =>
-      LitPattern(gen[LitExpr](x.getLiteral))
+      LitPattern(gen[LitExpr](x.getLiteral), None)
     case x: ScNamingPattern =>
       gen[ConstructorPattern](x.named).copy(label = Some(x.name))
     case x: ScConstructorPattern =>
@@ -409,19 +409,19 @@ object ASTGenerator extends Collector {
 
 
     case x: ScTypedPattern =>
-      TypedPattern(x.name, genType(x.typePattern.map(_.typeElement)))
+      TypedPattern(x.name, genType(x.typePattern.map(_.typeElement)), None)
     case x: ScReferencePattern =>
       x.expectedType.map(genType) match {
-        case Some(t) => TypedPattern(x.name, t)
-        case _ => ReferencePattern(x.name)
+        case Some(t) => TypedPattern(x.name, t, None)
+        case _ => ReferencePattern(x.name, None)
       }
 
     case x: ScReferenceElement =>
-      ReferencePattern(x.refName)
+      ReferencePattern(x.refName, None)
     case x: ScStableReferenceElementPattern =>
-      LitPattern(gen[Expr](x.getReferenceExpression.get))
+      LitPattern(gen[Expr](x.getReferenceExpression.get), None)
     case _: ScWildcardPattern =>
-      WildcardPattern
+      WildcardPattern(None)
 
     case x: ScPatternDefinition if x.isSimple =>
       SimpleValOrVarDef(
