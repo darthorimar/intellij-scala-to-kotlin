@@ -40,7 +40,7 @@ class CollectionTransform extends Transform {
         paramsExpectedTypes.map(transform[CallParameterInfo])))
 
     //     opt.getOrElse(x) --> opt :? x
-    case CallExpr(_, RefExpr(refTy, Some(referenceObject@WithType(NullableType(_))), "getOrElse", _, true), Seq(p), paramsExpectedTypes)
+    case CallExpr(_, RefExpr(refTy, Some(referenceObject@WithType(NullableType(_))), "getOrElse" | "orElse", _, true), Seq(p), paramsExpectedTypes)
       if referenceObject.exprType.isInstanceOf[NullableType] =>
       val param = p match {
         case LambdaExpr(_, _, expr, _) => expr
