@@ -7,4 +7,5 @@ object KotlinTypes {
   val EXCEPTION = KotlinType("Exception")
   val LIST = KotlinType("List")
   val PAIR = KotlinType("Pair")
+  val ARRAY = KotlinType("Array")
 }

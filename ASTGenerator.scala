@@ -22,7 +22,7 @@ import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTem
 import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
 import org.jetbrains.plugins.scala.lang.psi.impl.toplevel.typedef.{ScClassImpl, TypeDefinitionMembers}
 import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
-import org.jetbrains.plugins.scala.lang.psi.types.api.{StdType, TypeParameter, TypeParameterType}
+import org.jetbrains.plugins.scala.lang.psi.types.api.{JavaArrayType, StdType, TypeParameter, TypeParameterType}
 import org.jetbrains.plugins.scala.lang.psi.types.api.designator.{DesignatorOwner, ScDesignatorType, ScProjectionType, ScThisType}
 import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ScMethodType, ScTypePolymorphicType}
 import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
@@ -96,6 +96,8 @@ object ASTGenerator extends Collector {
         TypeParamType(TypeParam(x.typeParameter.name))
       case x: ScExistentialArgument =>
         SimpleType("*")
+      case x: JavaArrayType =>
+        GenericType(KotlinTypes.ARRAY, Seq(genType(x.argument)))
       //      case x =>
       //        SimpleType(x.canonicalText)
     }
