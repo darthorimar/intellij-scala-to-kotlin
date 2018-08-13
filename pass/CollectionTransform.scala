@@ -1,6 +1,7 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
 import org.jetbrains.plugins.kotlinConverter
+import org.jetbrains.plugins.kotlinConverter.Exprs.listType
 import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.pass.Helpers.ApplyCall
@@ -11,8 +12,8 @@ import org.scalafmt.internal.SyntacticGroup.Term
 class CollectionTransform extends Transform {
 
   override def transform[T](ast: AST): T = {
-//    if (ast.isInstanceOf[File])
-//      println(Utils.prettyPrint(ast))
+    //    if (ast.isInstanceOf[File])
+    //      println(Utils.prettyPrint(ast))
     super.transform(ast)
   }
 
@@ -63,10 +64,28 @@ class CollectionTransform extends Transform {
         params.map(transform[Expr]),
         paramsExpectedTypes.map(transform[CallParameterInfo])))
 
+    //Array(1,2,3) --> arrayOf(1,2,3)
+    case CallExpr(exprType, RefExpr(refTy, Some(RefExpr(_, None, "Array", typeParams, false)), "apply", _, _), params, paramsExpectedTypes) =>
+      Some(CallExpr(
+        transform[Type](exprType),
+        RefExpr(transform[Type](refTy), None, "arrayOf", typeParams.map(transform[Type]), true),
+        params.map(transform[Expr]),
+        paramsExpectedTypes.map(transform[CallParameterInfo])))
+
     //Seq.empty[T] --> emptyList<T>()
     case CallExpr(_, RefExpr(_, Some(RefExpr(_, None, "Seq" | "List", _, false)), "empty", typeParams, _), Seq(), paramsExpectedTypes) =>
       if (typeParams.isEmpty) Some(Exprs.emptyList)
       else Some(Exprs.emptyList(transform[Type](typeParams.head)))
+
+    //Array.empty[T] --> emptyList<T>()
+    case CallExpr(_, RefExpr(_, Some(RefExpr(ty, None, "Array", _, false)), "empty", typeParams, _), Seq(), paramsExpectedTypes) =>
+      if (typeParams.isEmpty) Some(Exprs.simpleCall("emptyArray", ty, Seq.empty))
+      else Some(
+        CallExpr(
+          listType(ty),
+          RefExpr(ty, None, "emptyArray", Seq(ty), true),
+          Seq.empty,
+          Seq.empty))
 
     //Nil --> emptytList()
     case RefExpr(ScalaType("scala.collection.immutable.Nil$"), None, "Nil", _, false) =>

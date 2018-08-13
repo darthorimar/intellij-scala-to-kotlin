@@ -85,7 +85,7 @@ object ASTGenerator extends Collector {
           case c: PsiClass => ClassType(c.getQualifiedName)
         }.orElse {
           x.extractDesignatorSingleton.map(genType)
-        }.get //OrElse(SimpleType(x.canonicalText))
+        }.getOrElse(ClassType(x.canonicalText))
       case x: ScProjectionType =>
         genType(x.projected)
       case x: ScThisType =>
@@ -160,11 +160,11 @@ object ASTGenerator extends Collector {
 
   def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
-//      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
-//      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
-//      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
-//      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
-//      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
       .get
 
   def transform[T](psi: PsiElement): T = (psi match {
