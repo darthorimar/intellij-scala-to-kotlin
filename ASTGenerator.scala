@@ -1,6 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter
 
-import com.intellij.psi.{PsiClass, PsiCodeBlock, PsiElement, PsiStatement}
+import com.intellij.psi._
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.builder.codegen.TupleDefinition
@@ -320,7 +320,7 @@ object ASTGenerator extends Collector {
         x.getReference.asInstanceOf[ScReferenceExpressionImpl]
           .shapeResolve //todo use bind
           .map(_.element)
-          .exists(_.isInstanceOf[ScFunction])
+          .exists {p => p.isInstanceOf[ScFunction] || p.isInstanceOf[PsiMethod] }
       RefExpr(
         ty,
         x.qualifier.map(gen[Expr]),
