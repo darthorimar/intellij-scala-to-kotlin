@@ -1,5 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter
 
+import com.intellij.lang.jvm.JvmModifier
 import com.intellij.psi._
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.ast._
@@ -326,7 +327,7 @@ object ASTGenerator extends Collector {
           case c: PsiClass => c.getQualifiedName
           case m: PsiMember =>
             Option(m.getContainingClass)
-              .filter(_ != containingClass(x).orNull)
+              .filter {_ != containingClass(x).orNull && m.hasModifier(JvmModifier.STATIC)}
               .map(canonicalName(_)+ ".").getOrElse("")  + m.getName
 
           case p: ScParameterImpl => p.getName
