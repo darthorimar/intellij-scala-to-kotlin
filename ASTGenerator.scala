@@ -312,13 +312,23 @@ object ASTGenerator extends Collector {
       ParenthesesExpr(gen[Expr](x.innerElement.get))
 
     case x: ScReferenceExpression =>
+      @tailrec
+      def containingClass(p: PsiElement): Option[PsiClass] = p match {
+        case c: PsiClass => Some(c)
+        case _: PsiFile => None
+        case _ => containingClass(p.getParent)
+      }
+
       def canonicalName(p: PsiElement): String =
         p match {
           case clazz: ScObject if clazz.isStatic => clazz.qualifiedName
           case c: ScClass => c.qualifiedName
           case c: PsiClass => c.getQualifiedName
           case m: PsiMember =>
-            Option(m.getContainingClass).map(canonicalName(_)+ ".").getOrElse("")  + m.getName
+            Option(m.getContainingClass)
+              .filter(_ != containingClass(x).orNull)
+              .map(canonicalName(_)+ ".").getOrElse("")  + m.getName
+
           case p: ScParameterImpl => p.getName
         }
 
