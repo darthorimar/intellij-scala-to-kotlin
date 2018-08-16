@@ -42,6 +42,9 @@ class TypeTransform extends Transform {
     case JavaType("java.lang.Exception") =>
       Some(KotlinType("Exception"))
 
+    case ScalaType("scala.collection.immutable.Nil$") =>
+      Some(GenericType(KotlinTypes.LIST, Seq(StdTypes.NOTHING)))
+
     case ScalaTypes.SEQ |
          ScalaTypes.SEQ2 |
          ScalaTypes.LIST |

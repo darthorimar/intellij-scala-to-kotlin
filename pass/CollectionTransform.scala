@@ -25,7 +25,7 @@ class CollectionTransform extends Transform {
       Some(transform[Expr](v))
 
     // None --> null
-    case RefExpr(ScalaType("scala.None$"), None, "None", _, _) =>
+    case RefExpr(ScalaType("scala.None$"), None, _, _, _) =>
       Some(Exprs.nullLit)
 
     // opt.map(f), opt.flatMap(f) --> opt?.let {f(it)}
@@ -57,7 +57,7 @@ class CollectionTransform extends Transform {
     //Seqs
 
     //Seq(1,2,3) --> listOf(1,2,3)
-    case CallExpr(exprType, RefExpr(refTy, Some(RefExpr(_, None, "Seq", typeParams, false)), "apply", _, _), params, paramsExpectedTypes) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(RefExpr(_, None, "scala.Seq", typeParams, false)), "apply", _, _), params, paramsExpectedTypes) =>
       Some(CallExpr(
         transform[Type](exprType),
         RefExpr(transform[Type](refTy), None, "listOf", typeParams.map(transform[Type]), true),
@@ -73,7 +73,7 @@ class CollectionTransform extends Transform {
         paramsExpectedTypes.map(transform[CallParameterInfo])))
 
     //Seq.empty[T] --> emptyList<T>()
-    case CallExpr(_, RefExpr(_, Some(RefExpr(_, None, "Seq" | "List", _, false)), "empty", typeParams, _), Seq(), paramsExpectedTypes) =>
+    case CallExpr(_, RefExpr(_, Some(RefExpr(_, None, "scala.Seq" | "scala.List", _, false)), "empty", typeParams, _), Seq(), paramsExpectedTypes) =>
       if (typeParams.isEmpty) Some(Exprs.emptyList)
       else Some(Exprs.emptyList(transform[Type](typeParams.head)))
 
@@ -88,7 +88,7 @@ class CollectionTransform extends Transform {
           Seq.empty))
 
     //Nil --> emptytList()
-    case RefExpr(ScalaType("scala.collection.immutable.Nil$"), None, "Nil", _, false) =>
+    case RefExpr(GenericType(KotlinTypes.LIST, _), None, "scala.Nil", _, false) =>
       Some(Exprs.emptyList)
 
     //     (1 :: seq, 1 +: seq)  --> listOf(1) + seq
@@ -100,9 +100,9 @@ class CollectionTransform extends Transform {
         CallExpr(
           transform[Type](exprType),
           RefExpr(transform[Type](exprType), None, "listOf", Seq.empty, true),
-          Seq(transform[Expr](left)),
+          Seq(transform[Expr](right)),
           paramsExpectedTypes.map(transform[CallParameterInfo])),
-        transform[Expr](right)))
+        transform[Expr](left)))
 
 
     // seq :+ 1  --> seq + 1

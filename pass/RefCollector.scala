@@ -5,15 +5,23 @@ import org.jetbrains.plugins.kotlinConverter.ast._
 class RefCollector extends Transform {
   override protected def action(ast: AST): Option[AST] =
     ast match {
-//      case f: File if f.neededDefinitions.nonEmpty =>
-//        imports = imports + ""
       case ClassType(name) =>
-        val importPath = name.stripPrefix(context.packageName).stripPrefix(".").stripSuffix("$")
-        if (!name.startsWith(context.packageName) && name.contains("."))
-          imports = imports + Import(importPath)
-        val className = name.split('.').last
+        val className = addImport(name)
         Some(ClassType(className))
-
+      case JavaType(name) =>
+        val className = addImport(name)
+        Some(JavaType(className))
+      case r@RefExpr(_, None, name, _, _) =>
+        val className = addImport(name)
+        Some(copy(r).asInstanceOf[RefExpr].copy(referenceName = className))
       case _ => None
     }
+
+  private def addImport(name: String) = {
+    val importPath = name.stripSuffix("$")
+    if (name.contains(".") && !name.startsWith("scala."))
+      imports = imports + Import(importPath)
+    val className = name.split('.').last
+    className
+  }
 }

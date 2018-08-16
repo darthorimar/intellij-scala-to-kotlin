@@ -22,24 +22,17 @@ class BasicTransform extends Transform {
 
   def isDefaultOperator(op: RefExpr): Boolean =
     op match {
-      case RefExpr(FunctionType(NumericType(_), NumericType(_)), None, "*" | "/" | "+" | "-" | "%", _, _) => true
-      case RefExpr(FunctionType(NumericType(_), StdTypes.BOOLEAN), None, ">" | "<" | ">=" | "<=" , _, _) => true
-      case RefExpr(FunctionType(_, StdTypes.BOOLEAN), None, "==" | "!=" , _, _) => true
-      case RefExpr(FunctionType(StdTypes.STRING, StdTypes.STRING), None, "+", _, _) => true
+      case RefExpr(FunctionType(NumericType(_), NumericType(_)), _, "*" | "/" | "+" | "-" | "%", _, _) => true
+      case RefExpr(FunctionType(NumericType(_), StdTypes.BOOLEAN), _, ">" | "<" | ">=" | "<=" , _, _) => true
+      case RefExpr(FunctionType(_, StdTypes.BOOLEAN), _, "==" | "!=" , _, _) => true
+      case RefExpr(FunctionType(StdTypes.STRING, StdTypes.STRING), _, "+", _, _) => true
       case _ => false
     }
 
   override protected def action(ast: AST): Option[AST] = {
     ast match {
-      case x@InfixExpr(exprType, op, _, _, _) if !isDefaultOperator(op) =>
-        val (left, right) = (transform[Expr](x.left), transform[Expr](x.right))
-        Some(transform[Expr](
-          CallExpr(
-            exprType,
-            op.copy(referencedObject = Some(left)),
-            Seq(transform[Expr](right)),
-            Seq.empty
-          )))
+      case CallExpr(exprType, ref@RefExpr(_, Some(left), refName, _, _), Seq(right), _) if isDefaultOperator(ref) =>
+        Some(Exprs.simpleInfix(exprType, refName, transform[Expr](left), transform[Expr](right)))
 
       //scala try --> kotlin try
       case ScalaTryExpr(exprType, tryBlock, catchBlock, finallyBlock) =>

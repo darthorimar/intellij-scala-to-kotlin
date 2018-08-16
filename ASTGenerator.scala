@@ -25,12 +25,13 @@ import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
 import org.jetbrains.plugins.scala.lang.psi.types.api.{JavaArrayType, StdType, TypeParameter, TypeParameterType}
 import org.jetbrains.plugins.scala.lang.psi.types.api.designator.{DesignatorOwner, ScDesignatorType, ScProjectionType, ScThisType}
 import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ScMethodType, ScTypePolymorphicType}
-import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
+import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScAbstractType, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
 import org.jetbrains.plugins.scala.lang.psi.types.result.{TypeResult, Typeable}
 import org.jetbrains.plugins.scala.lang.refactoring.util.ScalaNamesUtil
 import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
 import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScTemplateDefinition.Kind.ScObject
+import org.jetbrains.plugins.scala.lang.psi.impl.statements.params.ScParameterImpl
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -98,6 +99,8 @@ object ASTGenerator extends Collector {
         SimpleType("*")
       case x: JavaArrayType =>
         GenericType(KotlinTypes.ARRAY, Seq(genType(x.argument)))
+      case x: ScAbstractType =>
+        genType(x.inferValueType)
       //      case x =>
       //        SimpleType(x.canonicalText)
     }
@@ -160,11 +163,11 @@ object ASTGenerator extends Collector {
 
   def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
-      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
+      //      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
+      //      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
+      //      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
+      //      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
+      //      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
       .get
 
   def transform[T](psi: PsiElement): T = (psi match {
@@ -286,12 +289,6 @@ object ASTGenerator extends Collector {
     case x: ScBlock =>
       BlockExpr(genType(x.`type`()), x.statements.map(gen[Expr]))
 
-    case x: ScInfixExpr =>
-      InfixExpr(genType(x.`type`()),
-        gen[RefExpr](x.operation),
-        gen[Expr](x.left),
-        gen[Expr](x.right),
-        x.isLeftAssoc)
 
     case psi: ScTuple =>
       val arity = psi.exprs.length
@@ -313,6 +310,17 @@ object ASTGenerator extends Collector {
       ParenthesesExpr(gen[Expr](x.innerElement.get))
 
     case x: ScReferenceExpression =>
+      x.getCanonicalText
+      def canonicalName(p: PsiElement): String =
+        p match {
+          case clazz: ScObject if clazz.isStatic => clazz.qualifiedName
+          case c: ScClass => c.qualifiedName
+          case c: PsiClass => c.getQualifiedName
+          case m: PsiMember =>
+            Option(m.getContainingClass).map(canonicalName(_)+ ".").getOrElse("")  + m.getName
+          case p: ScParameterImpl => p.getName
+        }
+
       val ty = x.multiType
         .headOption
         .flatMap(_.toOption)
@@ -322,29 +330,30 @@ object ASTGenerator extends Collector {
         x.getReference.asInstanceOf[ScReferenceExpressionImpl]
           .shapeResolve //todo use bind
           .map(_.element)
-          .exists {p => p.isInstanceOf[ScFunction] || p.isInstanceOf[PsiMethod] }
+          .exists { p => p.isInstanceOf[ScFunction] || p.isInstanceOf[PsiMethod] }
+
+      val refName =
+        if (x.smartQualifier.isDefined) x.refName
+        else canonicalName(x.resolve())
+
       RefExpr(
         ty,
-        x.qualifier.map(gen[Expr]),
-        x.refName,
+        x.smartQualifier.map(gen[Expr]),
+        refName,
         Seq.empty,
         isFunc)
 
-    case x: ScMethodCall =>
+    case x: MethodInvocation =>
       val paramsInfo =
-        x.args.callReference.flatMap(_.bind()).map(_.element).toSeq.flatMap {
-          case f: ScFunction => f.parameters.map { p =>
-            CallParameterInfo(genType(p.typeElement), p.isCallByNameParameter)
-          }
-          case _ =>
-            Seq.fill(x.args.exprs.length)(CallParameterInfo(NoType, false))
+        x.matchedParameters.map {
+          case (_, p) => CallParameterInfo(genType(p.expectedType), p.isByName)
         }
 
 
       CallExpr(
         genType(x.`type`()),
         gen[Expr](x.getInvokedExpr),
-        x.args.exprs.map(gen[Expr]),
+        x.argumentExpressions.map(gen[Expr]),
         paramsInfo)
 
     case x: ScGenericCall =>
@@ -527,6 +536,16 @@ object ASTGenerator extends Collector {
 
     case x: ScThisReference =>
       ThisExpr(genType(x.`type`()))
+
+    case x: ScReturnStmt =>
+      ReturnExpr(None, x.expr.map(gen[Expr]))
+
+    case x: ScInfixExpr =>
+      InfixExpr(genType(x.`type`()),
+        gen[RefExpr](x.operation),
+        gen[Expr](x.left),
+        gen[Expr](x.right),
+        x.isLeftAssoc)
 
   }).asInstanceOf[T]
 
