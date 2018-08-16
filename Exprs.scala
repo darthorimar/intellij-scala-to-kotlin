@@ -14,6 +14,9 @@ object Exprs {
   def and(left: Expr, right: Expr) =
     simpleInfix(StdTypes.BOOLEAN, "&&", left, right)
 
+  def or(left: Expr, right: Expr) =
+    simpleInfix(StdTypes.BOOLEAN, "||", left, right)
+
   def letExpr(obj: Expr, lambda: LambdaExpr) =
     CallExpr(lambda.exprType, RefExpr(NoType, Some(obj), "let", Seq.empty, true), Seq(lambda), Seq.empty)
 
