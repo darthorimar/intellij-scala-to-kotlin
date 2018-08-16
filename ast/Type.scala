@@ -8,6 +8,7 @@ sealed trait Type extends AST {
 case class FunctionType(left: Type, right: Type) extends Type {
   override def asKotlin: String = {
     val leftStr = left match {
+      case StdType("Unit") => "()"
       case t: ProductType => t.asKotlin
       case t => s"(${t.asKotlin})"
     }
@@ -16,6 +17,7 @@ case class FunctionType(left: Type, right: Type) extends Type {
 
   override def isFunction: Boolean = true
 }
+
 
 case class GenericType(baseType: Type, parameters: Seq[Type]) extends Type {
   override def asKotlin: String =
