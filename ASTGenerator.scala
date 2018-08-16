@@ -25,7 +25,7 @@ import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
 import org.jetbrains.plugins.scala.lang.psi.types.api.{JavaArrayType, StdType, TypeParameter, TypeParameterType}
 import org.jetbrains.plugins.scala.lang.psi.types.api.designator.{DesignatorOwner, ScDesignatorType, ScProjectionType, ScThisType}
 import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ScMethodType, ScTypePolymorphicType}
-import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScAbstractType, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
+import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScAbstractType, ScCompoundType, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
 import org.jetbrains.plugins.scala.lang.psi.types.result.{TypeResult, Typeable}
 import org.jetbrains.plugins.scala.lang.refactoring.util.ScalaNamesUtil
 import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
@@ -101,8 +101,10 @@ object ASTGenerator extends Collector {
         GenericType(KotlinTypes.ARRAY, Seq(genType(x.argument)))
       case x: ScAbstractType =>
         genType(x.inferValueType)
-      //      case x =>
-      //        SimpleType(x.canonicalText)
+      case t: ScCompoundType =>
+        genType(t.components.find {
+          c => c.canonicalText != "Product" && c.canonicalText != "Serializable"
+        }.get)
     }
 
 
@@ -310,7 +312,6 @@ object ASTGenerator extends Collector {
       ParenthesesExpr(gen[Expr](x.innerElement.get))
 
     case x: ScReferenceExpression =>
-      x.getCanonicalText
       def canonicalName(p: PsiElement): String =
         p match {
           case clazz: ScObject if clazz.isStatic => clazz.qualifiedName

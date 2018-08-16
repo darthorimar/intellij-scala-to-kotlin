@@ -10,6 +10,7 @@ trait ErrorAst extends AST {
 
 case class ErrorCasePattern(text: String) extends CasePattern with ErrorAst {
   override def representation: String = ""
+
   override def label: Option[String] = None
 }
 
@@ -24,7 +25,9 @@ case class MatchCaseClause(pattern: CasePattern, expr: Expr, guard: Option[Expr]
 
 
 sealed trait Constructor extends AST
+
 case class ParamsConstructor(parameters: Seq[ConstructorParam]) extends Constructor
+
 case object EmptyConstructor extends Constructor
 
 case class ConstructorParam(kind: MemberKind, modifier: Attribute, name: String, parameterType: Type) extends AST
@@ -38,6 +41,7 @@ case class File(packageName: String,
 
 sealed trait CasePattern extends AST {
   def representation: String
+
   def label: Option[String]
 }
 
@@ -58,7 +62,9 @@ case class LitPattern(expr: Expr, label: Option[String]) extends CasePattern {
 }
 
 trait ConstructorRef extends AST
+
 case class CaseClassConstructorRef(name: String) extends ConstructorRef
+
 case class UnapplyCallConstuctorRef(objectName: String, unapplyReturnType: Type) extends ConstructorRef
 
 
@@ -81,12 +87,17 @@ case class WildcardPattern(label: Option[String]) extends CasePattern {
 
 
 sealed trait WhenClause extends AST
+
 case class ExprWhenClause(clause: Expr, expr: Expr) extends WhenClause
+
 case class ElseWhenClause(expr: Expr) extends WhenClause
 
 sealed trait ForEnumerator extends AST
+
 case class ForGenerator(pattern: CasePattern, expr: Expr) extends ForEnumerator
+
 case class ForGuard(condition: Expr) extends ForEnumerator
+
 case class ForVal(valDefExpr: Expr) extends ForEnumerator
 
 case class SupersBlock(constructor: Option[SuperConstructor], supers: Seq[Type]) extends AST
@@ -106,3 +117,7 @@ case object ObjectCompanion extends CompanionModule
 case class CallParameterInfo(expectedType: Type, isCallByName: Boolean) extends AST
 
 case class Import(ref: String) extends AST
+
+case class RefWithQualifier(qualifier: Option[String], ref: String) extends AST {
+  def qualified: String = qualifier.map(_ + ".").getOrElse("") + ref
+}
