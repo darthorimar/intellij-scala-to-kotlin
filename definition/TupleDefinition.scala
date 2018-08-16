@@ -1,6 +1,4 @@
-package org.jetbrains.plugins.kotlinConverter.builder.codegen
-
-import org.jetbrains.plugins.kotlinConverter.definition.{Definition, TextDefinition}
+package org.jetbrains.plugins.kotlinConverter.definition
 
 
 class TupleDefinition(arity: Int) extends TextDefinition {

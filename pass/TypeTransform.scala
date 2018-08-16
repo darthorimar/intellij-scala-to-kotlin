@@ -3,8 +3,7 @@ package org.jetbrains.plugins.kotlinConverter.pass
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.types._
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.builder.codegen.TupleDefinition
-import org.jetbrains.plugins.kotlinConverter.definition.Definition
+import org.jetbrains.plugins.kotlinConverter.definition.{Definition, TupleDefinition}
 import org.jetbrains.plugins.kotlinConverter.types.TypeUtils.ScalaTuple
 
 class TypeTransform extends Transform {

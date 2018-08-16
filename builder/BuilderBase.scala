@@ -16,7 +16,7 @@ trait BuilderBase {
     i += indentStep
     nl()
   }
-  private def unIndent(): Unit = {//todo add checking
+  private def unIndent(): Unit = {
     i -= indentStep
     nl()
   }

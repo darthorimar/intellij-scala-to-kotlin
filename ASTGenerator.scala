@@ -4,7 +4,7 @@ import com.intellij.lang.jvm.JvmModifier
 import com.intellij.psi._
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.builder.codegen.TupleDefinition
+import org.jetbrains.plugins.kotlinConverter.definition.TupleDefinition
 import org.jetbrains.plugins.kotlinConverter.scopes.{ASTGeneratorState, ScopedVal}
 import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, LibTypes, ScalaTypes}
 import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
