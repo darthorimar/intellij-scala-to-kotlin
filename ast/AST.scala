@@ -63,7 +63,7 @@ case class LitPattern(expr: Expr, label: Option[String]) extends CasePattern {
 
 trait ConstructorRef extends AST
 
-case class CaseClassConstructorRef(name: String) extends ConstructorRef
+case class CaseClassConstructorRef(name: Type) extends ConstructorRef
 
 case class UnapplyCallConstuctorRef(objectName: String, unapplyReturnType: Type) extends ConstructorRef
 

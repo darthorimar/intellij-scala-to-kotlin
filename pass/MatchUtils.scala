@@ -1,5 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
+import org.jetbrains.plugins.kotlinConverter.Exprs.simpleInfix
 import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.definition.Definition
@@ -69,7 +70,7 @@ object MatchUtils {
           case p@ConstructorPattern(CaseClassConstructorRef(name), _, label, _) =>
             val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
             (ReferencePattern(local, None),
-              Some(Exprs.is(LitExpr(NoType, local), ClassType(name))),
+              Some(Exprs.is(Exprs.simpleRef(local, NoType), name)),
               Some(local -> p))
           case p@ConstructorPattern(_: UnapplyCallConstuctorRef, _, label, _) =>
             val local = label.getOrElse(namerVal.get.newName("l")) //todo use name from pattern
@@ -141,8 +142,8 @@ object MatchUtils {
 
         val condition = constructorRef match {
           case CaseClassConstructorRef(ref) =>
-            if (ref == "Some") Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
-            else Exprs.is(valRef, ClassType(ref))
+            if (ref.asKotlin == "Some") Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
+            else Exprs.is(valRef, ref)
           case UnapplyCallConstuctorRef(_, unapplyReturnType) =>
             val ref = Exprs.simpleRef(refName, unapplyReturnType)
             val notNullExpr = Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", ref, Exprs.nullLit)

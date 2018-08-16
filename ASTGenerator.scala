@@ -164,6 +164,18 @@ object ASTGenerator extends Collector {
     inner(expr)
   }
 
+  def canonicalName(p: PsiElement, clazz: PsiClass): String = p match {
+    case clazz: ScObject if clazz.isStatic => clazz.qualifiedName
+    case c: ScClass => c.qualifiedName
+    case c: PsiClass => c.getQualifiedName
+    case m: PsiMember =>
+      Option(m.getContainingClass)
+        .filter(_ != clazz && m.hasModifier(JvmModifier.STATIC))
+        .map(canonicalName(_, clazz) + ".").getOrElse("") + m.getName
+
+    case p: ScParameter => p.getName
+  }
+
   def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
       //      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
@@ -320,18 +332,6 @@ object ASTGenerator extends Collector {
         case _ => containingClass(p.getParent)
       }
 
-      def canonicalName(p: PsiElement): String =
-        p match {
-          case clazz: ScObject if clazz.isStatic => clazz.qualifiedName
-          case c: ScClass => c.qualifiedName
-          case c: PsiClass => c.getQualifiedName
-          case m: PsiMember =>
-            Option(m.getContainingClass)
-              .filter {_ != containingClass(x).orNull && m.hasModifier(JvmModifier.STATIC)}
-              .map(canonicalName(_)+ ".").getOrElse("")  + m.getName
-
-          case p: ScParameterImpl => p.getName
-        }
 
       val ty = x.multiType
         .headOption
@@ -346,7 +346,7 @@ object ASTGenerator extends Collector {
 
       val refName =
         if (x.smartQualifier.isDefined) x.refName
-        else canonicalName(x.resolve())
+        else canonicalName(x.resolve(), containingClass(x).orNull)
 
       RefExpr(
         ty,
@@ -399,7 +399,7 @@ object ASTGenerator extends Collector {
       val arity = x.patternList.toSeq.flatMap(_.patterns).size
       addDefinition(new TupleDefinition(arity))
       ConstructorPattern(
-        CaseClassConstructorRef(s"Tuple$arity"),
+        CaseClassConstructorRef(ClassType(s"Tuple$arity")),
         x.patternList.toSeq.flatMap(_.patterns.map(gen[CasePattern])),
         None,
         x.getText)
@@ -426,7 +426,8 @@ object ASTGenerator extends Collector {
         case (Some(o), Some(r)) if !isCaseClass =>
           UnapplyCallConstuctorRef(o.name, genType(r.returnType))
         case _ =>
-          CaseClassConstructorRef(x.ref.qualName)
+          val className= canonicalName(x.ref.resolve(), null).stripSuffix(".unapply")
+          CaseClassConstructorRef(ClassType(className))
       }
       ConstructorPattern(constuctorRef, x.args.patterns.map(gen[CasePattern]), None, x.getText)
 

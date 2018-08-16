@@ -247,8 +247,8 @@ trait Transform extends Collector {
     case ConstructorPattern(ref, args, label, repr) =>
       ConstructorPattern(transform[ConstructorRef](ref), args.map(transform[CasePattern]), label, repr)
 
-    case x@CaseClassConstructorRef(name) =>
-      x
+    case CaseClassConstructorRef(ty) =>
+      CaseClassConstructorRef(transform[Type](ty))
 
     case UnapplyCallConstuctorRef(objectName, unapplyReturnType) =>
       UnapplyCallConstuctorRef(objectName, transform[Type](unapplyReturnType))
@@ -264,6 +264,9 @@ trait Transform extends Collector {
 
     case ThisExpr(exprType) =>
       ThisExpr(transform[Type](exprType))
+
+    case CompositePattern(parts, label) =>
+      CompositePattern(parts.map(transform[CasePattern]), label)
 
     case ForExpr(exprType, generators, isYield, body) =>
       ForExpr(transform[Type](exprType), generators.map(transform[ForEnumerator]), isYield, transform[Expr](body))

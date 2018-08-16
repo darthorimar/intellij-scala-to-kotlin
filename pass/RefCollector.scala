@@ -18,10 +18,13 @@ class RefCollector extends Transform {
     }
 
   private def addImport(name: String) = {
-    val importPath = name.stripSuffix("$")
-    if (name.contains(".") && !name.startsWith("scala."))
-      imports = imports + Import(importPath)
-    val className = name.split('.').last
-    className
+    if (name.startsWith("`") && name.endsWith("`")) name
+    else {
+      val importPath = name.stripSuffix("$")
+      if (name.contains(".") && !name.startsWith("scala."))
+        imports = imports + Import(importPath)
+      val className = name.split('.').last
+      className
+    }
   }
 }
