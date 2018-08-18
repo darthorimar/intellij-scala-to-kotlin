@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<idea-plugin>
+    <id>darthorimar.scalaToKotlin</id>
+    <name>Scala to Kotlin conveter</name>
+    <version>0.1</version>
+    <vendor url="https://github.com/darthorimar"/>
+
+    <description><![CDATA[
+      Scala to Kotlin conveter
+    ]]></description>
+
+    <depends>org.intellij.scala</depends>
+    <idea-version since-build="182.0"/>
+
+</idea-plugin>
