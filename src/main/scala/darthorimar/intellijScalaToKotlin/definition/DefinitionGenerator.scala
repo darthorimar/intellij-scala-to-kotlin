@@ -35,7 +35,7 @@ object DefinitionGenerator {
           case d: FileDefinition =>
             val filename = d.filename
             //todo use resource path
-            Source.fromFile(s"/home/ilya/code/intellij-scala/scala/scala-impl/resources/darthorimar.intellijScalaToKotlin/definition/$filename")
+            Source.fromFile(s"//home/ilya/code/untitled/src/main/resources/darthorimar/intellijScalaToKotlin/stdlib/$filename")
               .getLines()
               .mkString("\n")
           case textDef: TextDefinition =>
