@@ -1,0 +1,38 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="IDEA" type="Application" factoryName="Application">
+    <option name="INCLUDE_PROVIDED_SCOPE" value="true" />
+    <option name="MAIN_CLASS_NAME" value="com.intellij.idea.Main" />
+    <module name="ideaRunner" />
+    <option name="PROGRAM_PARAMETERS" value="nosplash" />
+    <option name="VM_PARAMETERS" value="-Xmx800m -XX:ReservedCodeCacheSize=240m -XX:+HeapDumpOnOutOfMemoryError -ea -Didea.is.internal=true -Didea.debug.mode=true -Didea.system.path=$USER_HOME$/.IntellijScalaToKotlinIC/system -Didea.config.path=$USER_HOME$/.IntellijScalaToKotlinIC/config -Dapple.laf.useScreenMenuBar=true -Dplugin.path=$PROJECT_DIR$/target/IntellijScalaToKotlin-0.1.zip -Didea.platform.prefix=Idea" />
+    <RunnerSettings RunnerId="Debug">
+      <option name="DEBUG_PORT" value="" />
+      <option name="TRANSPORT" value="0" />
+      <option name="LOCAL" value="true" />
+    </RunnerSettings>
+    <RunnerSettings RunnerId="JavaRebel">
+      <option name="bootstrapPath" />
+      <option name="jrebelArgs" value="" />
+      <option name="loggingEnabled" value="false" />
+      <option name="useBootstrapDefaults" value="true" />
+    </RunnerSettings>
+    <RunnerSettings RunnerId="JavaRebel Debug">
+      <option name="bootstrapPath" />
+      <option name="debugPort" value="" />
+      <option name="jrebelArgs" value="" />
+      <option name="loggingEnabled" value="false" />
+      <option name="transport" value="0" />
+      <option name="useBootstrapDefaults" value="true" />
+      <option name="DEBUG_PORT" value="" />
+      <option name="TRANSPORT" value="0" />
+      <option name="LOCAL" value="true" />
+    </RunnerSettings>
+    <RunnerSettings RunnerId="Profile " />
+    <RunnerSettings RunnerId="Run" />
+    <ConfigurationWrapper RunnerId="Debug" />
+    <ConfigurationWrapper RunnerId="Run" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
