@@ -1,8 +1,7 @@
-package org.jetbrains.plugins.kotlinConverter
+package darthorimar.intellijScalaToKotlin
 
-import android.provider.ContactsContract.CommonDataKinds.Callable
-import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
+import darthorimar.intellijScalaToKotlin.ast._
+import darthorimar.intellijScalaToKotlin.types.{KotlinTypes, StdTypes}
 
 object Exprs {
   def is(expr: Expr, ty: Type) =

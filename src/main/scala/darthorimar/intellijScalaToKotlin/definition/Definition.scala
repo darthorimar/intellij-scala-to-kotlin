@@ -1,4 +1,4 @@
-package org.jetbrains.plugins.kotlinConverter.definition
+package darthorimar.intellijScalaToKotlin.definition
 
 trait Definition {
   def name: String

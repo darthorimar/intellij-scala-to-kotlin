@@ -1,13 +1,13 @@
-package org.jetbrains.plugins.kotlinConverter.pass
+package darthorimar.intellijScalaToKotlin.pass
 
-import org.jetbrains.plugins.kotlinConverter.Exprs.simpleInfix
-import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils, ast}
-import org.jetbrains.plugins.kotlinConverter.ast.{ReturnExpr, _}
-import org.jetbrains.plugins.kotlinConverter.definition.Definition
-import org.jetbrains.plugins.kotlinConverter.scopes.LocalNamer
-import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
-import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
-import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
+import darthorimar.intellijScalaToKotlin.Exprs.simpleInfix
+import darthorimar.intellijScalaToKotlin.{Exprs, Utils, ast}
+import darthorimar.intellijScalaToKotlin.ast.{ReturnExpr, _}
+import darthorimar.intellijScalaToKotlin.definition.Definition
+import darthorimar.intellijScalaToKotlin.scopes.LocalNamer
+import darthorimar.intellijScalaToKotlin.scopes.ScopedVal.scoped
+import darthorimar.intellijScalaToKotlin.types.{KotlinTypes, StdTypes}
+import darthorimar.intellijScalaToKotlin.scopes.ScopedVal.scoped
 import org.jetbrains.plugins.scala.lang.dependency.DependencyKind.Reference
 
 

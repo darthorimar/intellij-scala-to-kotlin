@@ -1,4 +1,4 @@
-package org.jetbrains.plugins.kotlinConverter
+package darthorimar.intellijScalaToKotlin
 
 import com.intellij.application.options.CodeStyle
 import com.intellij.notification.{NotificationDisplayType, NotificationType}
@@ -6,8 +6,8 @@ import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent, CommonDataKey
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi._
 import com.intellij.psi.codeStyle.{CodeStyleManager, CodeStyleSettingsManager}
-import org.jetbrains.plugins.kotlinConverter.Converter.ConvertResult
-import org.jetbrains.plugins.kotlinConverter.definition.{Definition, DefinitionGenerator}
+import darthorimar.intellijScalaToKotlin.Converter.ConvertResult
+import darthorimar.intellijScalaToKotlin.definition.{Definition, DefinitionGenerator}
 import org.jetbrains.plugins.scala.ScalaLanguage
 import org.jetbrains.plugins.scala.conversion.JavaToScala
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile

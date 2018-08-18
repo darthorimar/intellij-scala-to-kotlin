@@ -1,8 +1,8 @@
-package org.jetbrains.plugins.kotlinConverter.builder
+package darthorimar.intellijScalaToKotlin.builder
 
-import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
-import org.jetbrains.plugins.kotlinConverter.scopes.{BuilderState, ScopedVal}
+import darthorimar.intellijScalaToKotlin.ast._
+import darthorimar.intellijScalaToKotlin.scopes.ScopedVal.scoped
+import darthorimar.intellijScalaToKotlin.scopes.{BuilderState, ScopedVal}
 
 class KotlinBuilder extends BuilderBase {
   val stateVal: ScopedVal[BuilderState] = new ScopedVal[BuilderState](BuilderState())

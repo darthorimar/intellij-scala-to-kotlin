@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter.scopes
+package darthorimar.intellijScalaToKotlin.scopes
 
 import com.intellij.openapi.util.TextRange
-import org.jetbrains.plugins.kotlinConverter.ast._
+import darthorimar.intellijScalaToKotlin.ast._
 
 case class ASTGeneratorState(precalculated: Map[TextRange, AST])

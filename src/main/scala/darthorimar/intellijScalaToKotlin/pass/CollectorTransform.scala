@@ -1,8 +1,8 @@
-package org.jetbrains.plugins.kotlinConverter.pass
+package darthorimar.intellijScalaToKotlin.pass
 
-import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.definition.Definition
-import org.jetbrains.plugins.kotlinConverter.types._
+import darthorimar.intellijScalaToKotlin.ast._
+import darthorimar.intellijScalaToKotlin.definition.Definition
+import darthorimar.intellijScalaToKotlin.types._
 
 class CollectorTransform extends Transform {
 

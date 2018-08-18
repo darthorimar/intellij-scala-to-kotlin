@@ -1,9 +1,9 @@
-package org.jetbrains.plugins.kotlinConverter.pass
+package darthorimar.intellijScalaToKotlin.pass
 
-import org.jetbrains.plugins.kotlinConverter
-import org.jetbrains.plugins.kotlinConverter.Collector
-import org.jetbrains.plugins.kotlinConverter.ast.{PostfixExpr, _}
-import org.jetbrains.plugins.kotlinConverter.scopes.{LocalNamer, Renamer, ScopedVal}
+import darthorimar.intellijScalaToKotlin
+import darthorimar.intellijScalaToKotlin.Collector
+import darthorimar.intellijScalaToKotlin.ast.{PostfixExpr, _}
+import darthorimar.intellijScalaToKotlin.scopes.{LocalNamer, Renamer, ScopedVal}
 
 trait Transform extends Collector {
   protected def action(ast: AST): Option[AST]

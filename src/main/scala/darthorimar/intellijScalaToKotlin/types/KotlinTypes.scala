@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter.types
+package darthorimar.intellijScalaToKotlin.types
 
-import org.jetbrains.plugins.kotlinConverter.ast.{KotlinType, StdType, SimpleType, Type}
+import darthorimar.intellijScalaToKotlin.ast.{KotlinType, StdType, SimpleType, Type}
 
 object KotlinTypes {
   val THROWABLE = KotlinType("Throwable")

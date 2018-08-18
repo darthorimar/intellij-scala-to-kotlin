@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter.scopes
+package darthorimar.intellijScalaToKotlin.scopes
 
-import org.jetbrains.plugins.kotlinConverter.ast.Expr
+import darthorimar.intellijScalaToKotlin.ast.Expr
 
 case class Renamer(renames: Map[String, Expr]) {
   def add(rename: (String, Expr)) =

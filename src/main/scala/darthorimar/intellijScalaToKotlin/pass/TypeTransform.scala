@@ -1,10 +1,10 @@
-package org.jetbrains.plugins.kotlinConverter.pass
+package darthorimar.intellijScalaToKotlin.pass
 
-import org.jetbrains.plugins.kotlinConverter
-import org.jetbrains.plugins.kotlinConverter.types._
-import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.definition.{Definition, TupleDefinition}
-import org.jetbrains.plugins.kotlinConverter.types.TypeUtils.ScalaTuple
+import darthorimar.intellijScalaToKotlin
+import darthorimar.intellijScalaToKotlin.types._
+import darthorimar.intellijScalaToKotlin.ast._
+import darthorimar.intellijScalaToKotlin.definition.{Definition, TupleDefinition}
+import darthorimar.intellijScalaToKotlin.types.TypeUtils.ScalaTuple
 
 class TypeTransform extends Transform {
   override protected def action(ast: AST): Option[AST] = ast match {

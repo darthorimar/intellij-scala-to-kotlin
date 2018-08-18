@@ -1,11 +1,11 @@
-package org.jetbrains.plugins.kotlinConverter
+package darthorimar.intellijScalaToKotlin
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.vfs.VirtualFile
-import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.builder.KotlinBuilder
-import org.jetbrains.plugins.kotlinConverter.definition.Definition
-import org.jetbrains.plugins.kotlinConverter.pass.Transform
+import darthorimar.intellijScalaToKotlin.ast._
+import darthorimar.intellijScalaToKotlin.builder.KotlinBuilder
+import darthorimar.intellijScalaToKotlin.definition.Definition
+import darthorimar.intellijScalaToKotlin.pass.Transform
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.extensions._
 import org.jetbrains.plugins.scala.lang.transformation.Transformer

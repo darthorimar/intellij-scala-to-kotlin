@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter
+package darthorimar.intellijScalaToKotlin
 
-import org.jetbrains.plugins.kotlinConverter.definition.{Definition, FileDefinition}
+import darthorimar.intellijScalaToKotlin.definition.{Definition, FileDefinition}
 
 trait Collector {
   private var definitions: List[Definition] =  Nil

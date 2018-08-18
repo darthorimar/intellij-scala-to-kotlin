@@ -1,12 +1,12 @@
-package org.jetbrains.plugins.kotlinConverter.pass
+package darthorimar.intellijScalaToKotlin.pass
 
-import org.jetbrains.plugins.kotlinConverter
-import org.jetbrains.plugins.kotlinConverter.Exprs.listType
-import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
-import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.pass.Helpers.ApplyCall
-import org.jetbrains.plugins.kotlinConverter.types.TypeUtils.{ListType, WithType}
-import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes, TypeUtils}
+import darthorimar.intellijScalaToKotlin
+import darthorimar.intellijScalaToKotlin.Exprs.listType
+import darthorimar.intellijScalaToKotlin.{Exprs, Utils}
+import darthorimar.intellijScalaToKotlin.ast._
+import darthorimar.intellijScalaToKotlin.pass.Helpers.ApplyCall
+import darthorimar.intellijScalaToKotlin.types.TypeUtils.{ListType, WithType}
+import darthorimar.intellijScalaToKotlin.types.{KotlinTypes, StdTypes, TypeUtils}
 import org.scalafmt.internal.SyntacticGroup.Term
 
 class CollectionTransform extends Transform {
@@ -34,7 +34,7 @@ class CollectionTransform extends Transform {
       Some(CallExpr(
         transform[Type](exprType),
         RefExpr(transform[Type](refTy),
-          Some(kotlinConverter.ast.PostfixExpr(referenceObject.exprType, transform[Expr](referenceObject), "?")),
+          Some(PostfixExpr(referenceObject.exprType, transform[Expr](referenceObject), "?")),
           "let",
           typeParams.map(transform[Type]), true),
         Seq(transform[Expr](p)),

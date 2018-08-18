@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter.definition
+package darthorimar.intellijScalaToKotlin.definition
 
-import org.jetbrains.plugins.kotlinConverter.builder.BuilderBase
+import darthorimar.intellijScalaToKotlin.builder.BuilderBase
 
 trait TextDefinition extends Definition with BuilderBase {
   protected def generate(): Unit

@@ -1,4 +1,4 @@
-package org.jetbrains.plugins.kotlinConverter.scopes
+package darthorimar.intellijScalaToKotlin.scopes
 
 import scala.collection.mutable
 

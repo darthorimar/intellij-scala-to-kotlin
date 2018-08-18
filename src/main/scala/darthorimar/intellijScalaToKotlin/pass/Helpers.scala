@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter.pass
+package darthorimar.intellijScalaToKotlin.pass
 
-import org.jetbrains.plugins.kotlinConverter.ast._
+import darthorimar.intellijScalaToKotlin.ast._
 
 object Helpers {
   object ApplyCall {

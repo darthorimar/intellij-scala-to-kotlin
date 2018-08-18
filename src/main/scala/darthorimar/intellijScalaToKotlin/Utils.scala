@@ -1,8 +1,8 @@
-package org.jetbrains.plugins.kotlinConverter
+package darthorimar.intellijScalaToKotlin
 
 import com.intellij.psi.PsiFile
 import com.intellij.psi.codeStyle.CodeStyleManager
-import org.jetbrains.plugins.kotlinConverter.ast.Type
+import darthorimar.intellijScalaToKotlin.ast.Type
 
 object Utils {
   def escapeName(name: String): String =

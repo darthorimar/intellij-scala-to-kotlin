@@ -1,4 +1,4 @@
-  package org.jetbrains.plugins.kotlinConverter.ast
+  package darthorimar.intellijScalaToKotlin.ast
 
   sealed trait Keyword extends AST {
     def name: String

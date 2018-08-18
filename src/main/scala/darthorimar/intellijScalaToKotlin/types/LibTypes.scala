@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter.types
+package darthorimar.intellijScalaToKotlin.types
 
-import org.jetbrains.plugins.kotlinConverter.ast._
+import darthorimar.intellijScalaToKotlin.ast._
 
 object LibTypes {
   def tupleType(arity: Int) = ClassType(s"Tuple$arity")
