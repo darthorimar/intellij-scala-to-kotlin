@@ -1,4 +1,4 @@
-package darthorimar.intellijScalaToKotlin.pass
+package darthorimar.intellijScalaToKotlin.transform
 
 import darthorimar.intellijScalaToKotlin
 import darthorimar.intellijScalaToKotlin.Collector
@@ -151,8 +151,8 @@ trait Transform extends Collector {
     case MatchExpr(exprType, expr, clauses) =>
       MatchExpr(transform[Type](exprType), transform[Expr](expr), clauses.map(transform[MatchCaseClause]))
 
-    case BlockExpr(exprType, exprs) =>
-      BlockExpr(transform[Type](exprType), exprs.map(transform[Expr]))
+    case BlockExpr(exprs) =>
+      BlockExpr(exprs.map(transform[Expr]))
 
     case PostfixExpr(exprType, obj, op) =>
       PostfixExpr(exprType, transform[Expr](obj), op)

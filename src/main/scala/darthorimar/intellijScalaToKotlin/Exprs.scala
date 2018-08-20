@@ -4,16 +4,16 @@ import darthorimar.intellijScalaToKotlin.ast._
 import darthorimar.intellijScalaToKotlin.types.{KotlinTypes, StdTypes}
 
 object Exprs {
-  def is(expr: Expr, ty: Type) =
+  def isExpr(expr: Expr, ty: Type) =
     simpleInfix(StdTypes.BOOLEAN, "is", expr, TypeExpr(ty))
 
-  def as(expr: Expr, ty: Type) =
+  def asExpr(expr: Expr, ty: Type) =
     simpleInfix(StdTypes.BOOLEAN, "as", expr, TypeExpr(ty))
 
-  def and(left: Expr, right: Expr) =
+  def andExpr(left: Expr, right: Expr) =
     simpleInfix(StdTypes.BOOLEAN, "&&", left, right)
 
-  def or(left: Expr, right: Expr) =
+  def orExpr(left: Expr, right: Expr) =
     simpleInfix(StdTypes.BOOLEAN, "||", left, right)
 
   def letExpr(obj: Expr, lambda: LambdaExpr) =
@@ -43,10 +43,11 @@ object Exprs {
   def listType(ty: Type) =
     GenericType(KotlinTypes.LIST, Seq(ty))
 
-  def simpleCall(name: String, returnType: Type, aruments: Seq[Expr]) =
-    CallExpr(FunctionType(ProductType(aruments.map(_.exprType)), returnType),
+  def simpleCall(name: String, returnType: Type, arguments: Seq[Expr]) =
+    CallExpr(FunctionType(ProductType(arguments.map(_.exprType)), returnType),
       RefExpr(returnType, None, name, Seq.empty, true),
-      aruments, Seq.empty
+      arguments,
+      Seq.empty
     )
 
   def simpleRef(name: String, refType: Type) =

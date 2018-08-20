@@ -67,9 +67,13 @@ case class KotlinTryExpr(exprType: Type,
 
 case class TypeExpr(exprType: Type) extends Expr
 
-case class BlockExpr(exprType: Type, exprs: Seq[Expr]) extends Expr {
+case class BlockExpr(exprs: Seq[Expr]) extends Expr {
   def isSingle: Boolean = exprs.size == 1
   def isEmpty: Boolean = exprs.isEmpty
+
+  override def exprType: Type =
+    if (exprs.isEmpty) NoType
+    else exprs.last.exprType
 }
 
 

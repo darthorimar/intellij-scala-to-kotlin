@@ -1,10 +1,10 @@
-package darthorimar.intellijScalaToKotlin.pass
+package darthorimar.intellijScalaToKotlin.transform
 
 import darthorimar.intellijScalaToKotlin
 import darthorimar.intellijScalaToKotlin.Exprs.listType
 import darthorimar.intellijScalaToKotlin.{Exprs, Utils}
 import darthorimar.intellijScalaToKotlin.ast._
-import darthorimar.intellijScalaToKotlin.pass.Helpers.ApplyCall
+import darthorimar.intellijScalaToKotlin.transform.Helpers.ApplyCall
 import darthorimar.intellijScalaToKotlin.types.TypeUtils.{ListType, WithType}
 import darthorimar.intellijScalaToKotlin.types.{KotlinTypes, StdTypes, TypeUtils}
 import org.scalafmt.internal.SyntacticGroup.Term
@@ -212,10 +212,10 @@ class CollectionTransform extends Transform {
       Some(Exprs.simpleCall("runTry", a.exprType, Seq(transform[Expr](p))))
 
     case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(typeParam), false) =>
-      Some(ParenthesesExpr(Exprs.as(transform[Expr](referenceObject), typeParam)))
+      Some(ParenthesesExpr(Exprs.asExpr(transform[Expr](referenceObject), typeParam)))
 
     case RefExpr(refTy, Some(referenceObject), "isInstanceOf", Seq(typeParam), false) =>
-      Some(ParenthesesExpr(Exprs.is(transform[Expr](referenceObject), typeParam)))
+      Some(ParenthesesExpr(Exprs.isExpr(transform[Expr](referenceObject), typeParam)))
 
     case _ => None
   }

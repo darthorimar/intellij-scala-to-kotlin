@@ -1,17 +1,10 @@
-package darthorimar.intellijScalaToKotlin.pass
+package darthorimar.intellijScalaToKotlin.transform
 
-import com.intellij.formatting.BlockEx
-import com.sun.source.doctree.AttributeTree.ValueKind
-import darthorimar.intellijScalaToKotlin
-import darthorimar.intellijScalaToKotlin.{ExprUtils, Exprs, Utils}
-import darthorimar.intellijScalaToKotlin.types.{KotlinTypes, StdTypes}
+import darthorimar.intellijScalaToKotlin.Exprs
 import darthorimar.intellijScalaToKotlin.ast._
 import darthorimar.intellijScalaToKotlin.scopes.ScopedVal.scoped
-import darthorimar.intellijScalaToKotlin.scopes.{BasicTransformState, LocalNamer, Renamer, ScopedVal}
-import darthorimar.intellijScalaToKotlin.scopes.ScopedVal.scoped
-import org.jetbrains.plugins.scala.conversion.ast.ClassConstruction
-
-import scala.util.Try
+import darthorimar.intellijScalaToKotlin.scopes.{BasicTransformState, LocalNamer, ScopedVal}
+import darthorimar.intellijScalaToKotlin.types.{KotlinTypes, StdTypes}
 
 
 class BasicTransform extends Transform {
@@ -23,8 +16,8 @@ class BasicTransform extends Transform {
   def isDefaultOperator(op: RefExpr): Boolean =
     op match {
       case RefExpr(FunctionType(NumericType(_), NumericType(_)), _, "*" | "/" | "+" | "-" | "%", _, _) => true
-      case RefExpr(FunctionType(NumericType(_), StdTypes.BOOLEAN), _, ">" | "<" | ">=" | "<=" , _, _) => true
-      case RefExpr(FunctionType(_, StdTypes.BOOLEAN), _, "==" | "!=" , _, _) => true
+      case RefExpr(FunctionType(NumericType(_), StdTypes.BOOLEAN), _, ">" | "<" | ">=" | "<=", _, _) => true
+      case RefExpr(FunctionType(_, StdTypes.BOOLEAN), _, "==" | "!=", _, _) => true
       case RefExpr(FunctionType(StdTypes.STRING, StdTypes.STRING), _, "+", _, _) => true
       case _ => false
     }
@@ -52,7 +45,7 @@ class BasicTransform extends Transform {
           case Seq() => Seq.empty
           case _ =>
             val ref = Exprs.simpleRef(namerVal.newName("e"), KotlinTypes.THROWABLE)
-            val matchExpr = ExprUtils.blockOf(MatchUtils.convertMatchToWhen(ref, badClauses, exprType, this))
+            val matchExpr = BlockExpr(MatchUtils.convertMatchToWhen(ref, badClauses, exprType, this))
             Seq(KotlinCatchCase(ref.referenceName, ref.exprType, matchExpr))
         }
         Some(KotlinTryExpr(exprType,
@@ -66,7 +59,7 @@ class BasicTransform extends Transform {
         Some(renamerVal.get.renames(x.referenceName))
 
       //Remove renault brackets for lambda like in seq.map {x => x * 2}
-      case BlockExpr(_, stmts) if stmts.size == 1 && stmts.head.isInstanceOf[LambdaExpr] =>
+      case BlockExpr(stmts) if stmts.size == 1 && stmts.head.isInstanceOf[LambdaExpr] =>
         Some(transform[Expr](stmts.head))
 
       case ParamsConstructor(params) =>
@@ -87,7 +80,7 @@ class BasicTransform extends Transform {
       case ForExpr(exprType, generators, isYield, body) =>
         def wrapToBody(expr: Expr) = expr match {
           case x: BlockExpr => x
-          case _ => BlockExpr(expr.exprType, Seq(expr))
+          case _ => BlockExpr(Seq(expr))
         }
 
         val yieldedBody =
@@ -102,9 +95,10 @@ class BasicTransform extends Transform {
           case (acc, ForGuard(condition)) =>
             IfExpr(NoType, transform[Expr](condition), wrapToBody(acc), None)
           case (acc, ForVal(valDefExpr)) =>
-            BlockExpr(NoType, Seq(
-              transform[Expr](valDefExpr),
-              acc))
+            BlockExpr(
+              Seq(
+                transform[Expr](valDefExpr),
+                acc))
         }
         if (isYield) {
           imports = imports + Import("kotlin.coroutines.experimental.buildSequence")
@@ -128,10 +122,10 @@ class BasicTransform extends Transform {
           val newDef = copy(x).asInstanceOf[DefnDef]
 
           def handleBody(body: Expr) = body match {
-            case b@BlockExpr(exprType, stmts) =>
+            case b@BlockExpr(stmts) =>
               val last = stmts.last
               if (!last.isInstanceOf[ReturnExpr] && x.returnType != StdTypes.UNIT)
-                BlockExpr(exprType, stmts.init :+ ReturnExpr(None, Some(last)))
+                BlockExpr(stmts.init :+ ReturnExpr(None, Some(last)))
               else b
             case b => b
           }
@@ -177,7 +171,7 @@ class BasicTransform extends Transform {
                   DefParameter(parameterType, paramName, false, false)
                 }
               val arguments =
-                parameters.map { case DefParameter(parameterType,paramName , _, _) =>
+                parameters.map { case DefParameter(parameterType, paramName, _, _) =>
                   Exprs.simpleRef(paramName, parameterType)
                 }
               val body = NewExpr(defnType, arguments)
@@ -189,7 +183,7 @@ class BasicTransform extends Transform {
               val body = Exprs.simpleRef("x", defnType)
               DefnDef(Seq.empty, "unapply", Seq.empty, parameters, NullableType(defnType), Some(body))
             }
-            Defn(Seq(CompanionAttribute), ObjDefn, "", Seq.empty, None, None, Some(BlockExpr(NoType, Seq(applyDef, unapplyDef))), None)
+            Defn(Seq(CompanionAttribute), ObjDefn, "", Seq.empty, None, None, Some(BlockExpr(Seq(applyDef, unapplyDef))), None)
           }
 
           val companionObj =
@@ -205,7 +199,7 @@ class BasicTransform extends Transform {
           val exprs = defn.body.toSeq.flatMap(_.exprs) ++ companionObj
           val newBody =
             if (exprs.isEmpty) None
-            else Some(BlockExpr(NoType, exprs))
+            else Some(BlockExpr(exprs))
 
           val defnType =
             if (defn.defnType == TraitDefn) InterfaceDefn
@@ -288,7 +282,7 @@ class BasicTransform extends Transform {
         val valExpr = SimpleValOrVarDef(Seq.empty, true, namerVal.newName("match"), None, Some(newExpr))
         val valRef = RefExpr(newExpr.exprType, None, valExpr.name, Seq.empty, false)
         val whenExpr = MatchUtils.convertMatchToWhen(valRef, clauses, exprType, this)
-        Some(ExprUtils.blockOf(valExpr +: whenExpr))
+        Some(BlockExpr(valExpr +: whenExpr))
 
       case _ => None
     }

@@ -5,7 +5,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import darthorimar.intellijScalaToKotlin.ast._
 import darthorimar.intellijScalaToKotlin.builder.KotlinBuilder
 import darthorimar.intellijScalaToKotlin.definition.Definition
-import darthorimar.intellijScalaToKotlin.pass.Transform
+import darthorimar.intellijScalaToKotlin.transform.Transform
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.extensions._
 import org.jetbrains.plugins.scala.lang.transformation.Transformer

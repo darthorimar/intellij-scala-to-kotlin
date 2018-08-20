@@ -1,4 +1,4 @@
-package darthorimar.intellijScalaToKotlin.pass
+package darthorimar.intellijScalaToKotlin.transform
 
 import darthorimar.intellijScalaToKotlin.ast._
 
