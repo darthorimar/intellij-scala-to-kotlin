@@ -101,7 +101,7 @@ class BasicTransform extends Transform {
                 acc))
         }
         if (isYield) {
-          imports = imports + Import("kotlin.coroutines.experimental.buildSequence")
+          addImport(Import("kotlin.coroutines.experimental.buildSequence"))
           Some(
             Exprs.simpleCall("buildSequence",
               exprType,

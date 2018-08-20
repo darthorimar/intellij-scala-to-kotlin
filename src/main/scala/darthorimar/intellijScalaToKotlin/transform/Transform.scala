@@ -12,7 +12,6 @@ trait Transform extends Collector {
   val namerVal = new ScopedVal[LocalNamer](new LocalNamer)
 
   var context: File = null
-  var imports: Set[Import] = Set.empty
 
   private var parentsStack = List.empty[AST]
 
@@ -103,7 +102,7 @@ trait Transform extends Collector {
     case x@File(pckg, fileImports, defns, neededDefinitions) =>
       context = x
       val newDefns = defns.map(transform[DefExpr])
-      File(pckg, (imports ++ fileImports).map(transform[Import]), newDefns, neededDefinitions ++ collectedDefinitions)
+      File(pckg, (collectImports ++ fileImports).map(transform[Import]), newDefns, neededDefinitions ++ collectedDefinitions)
 
     case InfixExpr(exprType, op, left, right, isLeftAssoc) =>
       InfixExpr(transform[Type](exprType),

@@ -4,6 +4,7 @@ lazy val scalaToKotlin = (project in file("."))
   .settings(Seq(
     name := "scala-to-kotlin",
     version := "0.1",
+    ideaInternalPlugins := Seq("Kotlin"),
     ideaExternalPlugins += IdeaPlugin.Zip("Scala", url("https://plugins.jetbrains.com/files/1347/48884/scala-intellij-bin-2018.2.10.zip?updateId=48884&pluginId=1347"))
   ))
 

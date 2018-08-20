@@ -1,14 +1,22 @@
 package darthorimar.intellijScalaToKotlin.definition
 
-import com.intellij.psi.{PsiDirectory, PsiDocumentManager}
+import com.intellij.platform.ProjectBaseDirectory
+import com.intellij.psi.{PsiDirectory, PsiDocumentManager, PsiFile}
 import darthorimar.intellijScalaToKotlin.Utils
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.serialization.js.KotlinPsiFileMetadata
 import org.jetbrains.plugins.scala.extensions._
 
 import scala.collection.mutable
 import scala.io.Source
+import scala.util.Try
+import collection.JavaConverters._
 
 
 object DefinitionGenerator {
+  final val packageName = "convertedFromScala.lib"
+  final val libFileName = "lib.kt"
+
   private def collectDefinitions(definitions: Seq[Definition]): Seq[Definition] = {
     val visited = mutable.Map.empty[String, Definition]
     var stack: List[Definition] = definitions.toList
@@ -28,35 +36,58 @@ object DefinitionGenerator {
     visited.values.toSeq
   }
 
-  def generate(definitions: Seq[Definition], directory: PsiDirectory): Unit = {
+  private def generateDefinitionsText(definitions: Seq[Definition]): String =
+    definitions
+      .map {
+        case d: FileDefinition =>
+          val filename = d.filename
+          Source.fromInputStream(getClass.getResourceAsStream(s"/darthorimar/intellijScalaToKotlin/stdlib/$filename"))
+            .getLines()
+            .mkString("\n")
+        case textDef: TextDefinition =>
+          textDef.get
+      }
+      .mkString("\n\n")
+
+  private def getOrCreateLibFile(baseDirectory: PsiDirectory) = {
+    val libDirectory =
+      Try {
+        packageName.split('.').foldLeft(baseDirectory)(_.findSubdirectory(_))
+      }.orElse(
+        Try {
+          packageName.split('.').foldLeft(baseDirectory)(_.createSubdirectory(_))
+        }
+      ).getOrElse(baseDirectory)
+    Option(libDirectory.findFile(libFileName))
+      .getOrElse {
+        val file = libDirectory.createFile(libFileName)
+        val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
+        document.insertString(0, s"package $packageName \n\n")
+        PsiDocumentManager.getInstance(file.getProject).commitDocument(document)
+        file
+      }
+  }
+
+  def generate(definitions: Seq[Definition], baseDirectory: PsiDirectory): Unit = {
     if (definitions.nonEmpty) {
-      val definitionsGenerated =
-        collectDefinitions(definitions)
-          .map {
-            case d: FileDefinition =>
-              val filename = d.filename
-              //todo use resource path
-              Source.fromFile(s"//home/ilya/code/untitled/src/main/resources/darthorimar/intellijScalaToKotlin/stdlib/$filename")
-                .getLines()
-                .mkString("\n")
-            case textDef: TextDefinition =>
-              textDef.get
-          }
-      val packageName = "convertedFromScala.lib"
-      val generated = definitionsGenerated.mkString("\n\n")
-      val text =
-        s"""package $packageName
-           |
-           |$generated
-         """.stripMargin
-      createFile("lib.kt", directory, text)
+      val file = getOrCreateLibFile(baseDirectory)
+      val collectedDefinitions = collectDefinitions(definitions)
+      val existingDefinitionNames = getExistingDefinitionNames(file)
+      val definitionsToGenerate = collectedDefinitions.filter { definition =>
+        !existingDefinitionNames.contains(definition.name)
+      }
+
+      val text = generateDefinitionsText(definitionsToGenerate)
+
+      val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
+      document.insertString(document.getTextLength , text)
+      PsiDocumentManager.getInstance(file.getProject).commitDocument(document)
+      Utils.reformatFile(file)
     }
   }
 
-  private def createFile(name: String, directory: PsiDirectory, text: String): Unit = {
-    val file = directory.createFile(name)
-    val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
-    document.insertString(0, text)
-    Utils.reformatFile(file)
+  def getExistingDefinitionNames(file: PsiFile): Seq[String] = {
+    //todo write :)
+    Seq.empty
   }
 }

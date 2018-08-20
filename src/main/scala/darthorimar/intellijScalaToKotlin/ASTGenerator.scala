@@ -199,8 +199,7 @@ object ASTGenerator extends Collector {
       ) {
         File(
           x.getPackageName,
-          Set.empty,
-          //        x.importStatementsInHeader.flatMap(_.importExprs).map(gen[ImportDef]),
+          Seq.empty,
           genDefinitions(x)
             .filter {
               case _: PsiClassWrapper => false

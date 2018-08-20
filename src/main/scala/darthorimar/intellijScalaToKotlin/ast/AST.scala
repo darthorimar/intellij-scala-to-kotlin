@@ -35,7 +35,7 @@ case class ConstructorParam(kind: MemberKind, modifier: Attribute, name: String,
 case class TypeParam(name: String) extends AST
 
 case class File(packageName: String,
-                imports: Set[Import],
+                imports: Seq[Import],
                 definitions: Seq[DefExpr],
                 neededDefinitions: Seq[Definition]) extends AST
 
