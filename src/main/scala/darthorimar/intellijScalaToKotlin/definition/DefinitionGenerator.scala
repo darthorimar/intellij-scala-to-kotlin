@@ -1,16 +1,11 @@
 package darthorimar.intellijScalaToKotlin.definition
 
-import com.intellij.platform.ProjectBaseDirectory
 import com.intellij.psi.{PsiDirectory, PsiDocumentManager, PsiFile}
 import darthorimar.intellijScalaToKotlin.Utils
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.serialization.js.KotlinPsiFileMetadata
-import org.jetbrains.plugins.scala.extensions._
 
 import scala.collection.mutable
 import scala.io.Source
 import scala.util.Try
-import collection.JavaConverters._
 
 
 object DefinitionGenerator {
@@ -37,29 +32,28 @@ object DefinitionGenerator {
   }
 
   private def generateDefinitionsText(definitions: Seq[Definition]): String =
-    definitions
-      .map {
-        case d: FileDefinition =>
-          val filename = d.filename
-          Source.fromInputStream(getClass.getResourceAsStream(s"/darthorimar/intellijScalaToKotlin/stdlib/$filename"))
+    definitions map {
+        case definition: FileDefinition =>
+          val filename = definition.filename
+          Source
+            .fromInputStream(getClass
+              .getResourceAsStream(s"/darthorimar/intellijScalaToKotlin/stdlib/$filename"))
             .getLines()
             .mkString("\n")
-        case textDef: TextDefinition =>
-          textDef.get
-      }
-      .mkString("\n\n")
+        case textDefinition: TextDefinition =>
+          textDefinition.get
+      } mkString "\n\n"
 
   private def getOrCreateLibFile(baseDirectory: PsiDirectory) = {
     val libDirectory =
       Try {
-        packageName.split('.').foldLeft(baseDirectory)(_.findSubdirectory(_))
-      }.orElse(
+        (baseDirectory /: packageName.split('.')) (_.findSubdirectory(_))
+      } orElse
         Try {
-          packageName.split('.').foldLeft(baseDirectory)(_.createSubdirectory(_))
-        }
-      ).getOrElse(baseDirectory)
-    Option(libDirectory.findFile(libFileName))
-      .getOrElse {
+          (baseDirectory /: packageName.split('.')) (_.createSubdirectory(_))
+        } getOrElse baseDirectory
+
+    Option(libDirectory.findFile(libFileName)) getOrElse {
         val file = libDirectory.createFile(libFileName)
         val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
         document.insertString(0, s"package $packageName \n\n")
@@ -73,14 +67,14 @@ object DefinitionGenerator {
       val file = getOrCreateLibFile(baseDirectory)
       val collectedDefinitions = collectDefinitions(definitions)
       val existingDefinitionNames = getExistingDefinitionNames(file)
-      val definitionsToGenerate = collectedDefinitions.filter { definition =>
+      val definitionsToGenerate = collectedDefinitions filter { definition =>
         !existingDefinitionNames.contains(definition.name)
       }
 
       val text = generateDefinitionsText(definitionsToGenerate)
 
       val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
-      document.insertString(document.getTextLength , text)
+      document.insertString(document.getTextLength, text)
       PsiDocumentManager.getInstance(file.getProject).commitDocument(document)
       Utils.reformatFile(file)
     }

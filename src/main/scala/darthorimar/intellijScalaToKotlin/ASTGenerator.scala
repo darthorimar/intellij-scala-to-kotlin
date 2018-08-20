@@ -187,9 +187,9 @@ object ASTGenerator extends Collector {
       .get
 
   def transform[T](psi: PsiElement): T = (psi match {
-    case x: ScalaFile => //todo x --> sth else
+    case psi: ScalaFile => //todo x --> sth else
       val underscores =
-        findUnderscores(x).flatMap(_.overExpr).map { over =>
+        findUnderscores(psi).flatMap(_.overExpr).map { over =>
           val expr = gen[Expr](over)
           val lambdaExpr = LambdaExpr(expr.exprType, Seq.empty, expr, false)
           over.getTextRange -> lambdaExpr
@@ -198,9 +198,9 @@ object ASTGenerator extends Collector {
         stateVal.set(ASTGeneratorState(underscores))
       ) {
         File(
-          x.getPackageName,
+          psi.getPackageName,
           Seq.empty,
-          genDefinitions(x)
+          genDefinitions(psi)
             .filter {
               case _: PsiClassWrapper => false
               case y: ScObject if y.isSyntheticObject => false
