@@ -3,6 +3,7 @@ package darthorimar.intellijScalaToKotlin
 import com.intellij.application.options.CodeStyle
 import com.intellij.notification.{NotificationDisplayType, NotificationType}
 import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent, CommonDataKeys, LangDataKeys}
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi._
 import com.intellij.psi.codeStyle.{CodeStyleManager, CodeStyleSettingsManager}
@@ -50,6 +51,13 @@ class ConvertScalaToKotlinAction extends AnAction {
         case f: ScalaFile if f.getContainingDirectory.isWritable => f
       }.toSeq
 
+  private def getRootProjectDir(file: ScalaFile): PsiDirectory = {
+    val packageParts = file.packageName.split('.')
+    if (file.getContainingDirectory.getVirtualFile.getCanonicalPath.endsWith(packageParts.mkString("/"))) {
+      Function.chain(Seq.fill(file.packageName.split('.').length)((_: PsiDirectory).getParent))(file.getContainingDirectory)
+    } else PsiManager.getInstance(file.getProject).findDirectory(file.getProject.getBaseDir)
+  }
+
   def actionPerformed(e: AnActionEvent) {
     val files = getSelectedFiles(e)
     if (files.nonEmpty) {
@@ -65,8 +73,10 @@ class ConvertScalaToKotlinAction extends AnAction {
           PsiDocumentManager.getInstance(file.getProject).commitDocument(document)
           val kotlinFile = PsiDocumentManager.getInstance(file.getProject).getPsiFile(document)
           Utils.reformatFile(kotlinFile)
+          file.getProject.getBaseDir.getChildren
         }
-        DefinitionGenerator.generate(definitions, files.head.getContainingDirectory)//todo find suitable directory
+
+        DefinitionGenerator.generate(definitions, getRootProjectDir(files.head))
       }, files.head.getProject, "Convert to Kotlin")
     }
   }

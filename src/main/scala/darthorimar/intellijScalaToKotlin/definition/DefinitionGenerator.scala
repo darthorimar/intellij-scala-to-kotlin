@@ -29,20 +29,28 @@ object DefinitionGenerator {
   }
 
   def generate(definitions: Seq[Definition], directory: PsiDirectory): Unit = {
-    val definitionsGenerated =
-      collectDefinitions(definitions)
-        .map {
-          case d: FileDefinition =>
-            val filename = d.filename
-            //todo use resource path
-            Source.fromFile(s"//home/ilya/code/untitled/src/main/resources/darthorimar/intellijScalaToKotlin/stdlib/$filename")
-              .getLines()
-              .mkString("\n")
-          case textDef: TextDefinition =>
-            textDef.get
-        }
-    val text = definitionsGenerated.mkString("\n\n")
-    createFile("lib.kt", directory, text)
+    if (definitions.nonEmpty) {
+      val definitionsGenerated =
+        collectDefinitions(definitions)
+          .map {
+            case d: FileDefinition =>
+              val filename = d.filename
+              //todo use resource path
+              Source.fromFile(s"//home/ilya/code/untitled/src/main/resources/darthorimar/intellijScalaToKotlin/stdlib/$filename")
+                .getLines()
+                .mkString("\n")
+            case textDef: TextDefinition =>
+              textDef.get
+          }
+      val packageName = "convertedFromScala.lib"
+      val generated = definitionsGenerated.mkString("\n\n")
+      val text =
+        s"""package $packageName
+           |
+           |$generated
+         """.stripMargin
+      createFile("lib.kt", directory, text)
+    }
   }
 
   private def createFile(name: String, directory: PsiDirectory, text: String): Unit = {
