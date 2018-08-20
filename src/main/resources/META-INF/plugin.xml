@@ -19,6 +19,7 @@
                 text="Convert Scala to Kotlin" description="Convert Scala to Kotlin">
             <add-to-group group-id="RefactoringMenu" anchor="last"/>
             <add-to-group group-id="EditorTabPopupMenu" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
         </action>
     </actions>
 
