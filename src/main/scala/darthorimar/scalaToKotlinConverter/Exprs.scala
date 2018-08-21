@@ -1,6 +1,5 @@
 package org.jetbrains.plugins.kotlinConverter
 
-import android.provider.ContactsContract.CommonDataKinds.Callable
 import org.jetbrains.plugins.kotlinConverter.ast._
 import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
 

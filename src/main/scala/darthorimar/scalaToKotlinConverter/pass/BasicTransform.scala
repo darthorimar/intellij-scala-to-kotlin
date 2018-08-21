@@ -1,7 +1,6 @@
 package org.jetbrains.plugins.kotlinConverter.pass
 
 import com.intellij.formatting.BlockEx
-import com.sun.source.doctree.AttributeTree.ValueKind
 import org.jetbrains.plugins.kotlinConverter
 import org.jetbrains.plugins.kotlinConverter.{ExprUtils, Exprs, Utils}
 import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
