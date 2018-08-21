@@ -37,7 +37,6 @@ import org.jetbrains.plugins.scala.lang.psi.impl.statements.params.ScParameterIm
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.Try
-
 object ASTGenerator extends Collector {
   val stateVal = new ScopedVal[ASTGeneratorState](ASTGeneratorState(Map.empty))
 
@@ -116,8 +115,8 @@ object ASTGenerator extends Collector {
   def genType(t: TypeResult): Type =
     t.map(genType).getOrElse(NoType)
 
-  def blockOrEmpty(exprs: Seq[Expr]): Option[BlockExpr] =
-    if (exprs.nonEmpty) Some(BlockExpr(exprs.last.exprType, exprs))
+  def blockOrNone(exprs: Seq[Expr]): Option[BlockExpr] =
+    if (exprs.nonEmpty) Some(BlockExpr(exprs))
     else None
 
   def genAttributes(x: ScMember): Seq[Attribute] = {
@@ -174,6 +173,7 @@ object ASTGenerator extends Collector {
         .map(canonicalName(_, clazz) + ".").getOrElse("") + m.getName
 
     case p: ScParameter => p.getName
+    case null => ""
   }
 
   def recover[T](psi: PsiElement): T =
@@ -186,9 +186,9 @@ object ASTGenerator extends Collector {
       .get
 
   def transform[T](psi: PsiElement): T = (psi match {
-    case x: ScalaFile => //todo x --> sth else
+    case psi: ScalaFile => //todo x --> sth else
       val underscores =
-        findUnderscores(x).flatMap(_.overExpr).map { over =>
+        findUnderscores(psi).flatMap(_.overExpr).map { over =>
           val expr = gen[Expr](over)
           val lambdaExpr = LambdaExpr(expr.exprType, Seq.empty, expr, false)
           over.getTextRange -> lambdaExpr
@@ -197,10 +197,9 @@ object ASTGenerator extends Collector {
         stateVal.set(ASTGeneratorState(underscores))
       ) {
         File(
-          x.getPackageName,
-          Set.empty,
-          //        x.importStatementsInHeader.flatMap(_.importExprs).map(gen[ImportDef]),
-          genDefinitions(x)
+          psi.getPackageName,
+          Seq.empty,
+          genDefinitions(psi)
             .filter {
               case _: PsiClassWrapper => false
               case y: ScObject if y.isSyntheticObject => false
@@ -258,7 +257,7 @@ object ASTGenerator extends Collector {
         x.typeParameters.map(gen[TypeParam]),
         construct,
         x.extendsBlock.templateParents.map(gen[SupersBlock]),
-        blockOrEmpty(
+        blockOrNone(
           overrideConstuctParamsDefs ++ x.extendsBlock.members.map(gen[DefExpr])),
         companionDefn)
 
@@ -302,7 +301,7 @@ object ASTGenerator extends Collector {
       ScalaCatch(x.caseClauses.get.caseClauses.map(gen[MatchCaseClause]))
 
     case x: ScBlock =>
-      BlockExpr(genType(x.`type`()), x.statements.map(gen[Expr]))
+      BlockExpr(x.statements.map(gen[Expr]))
 
 
     case psi: ScTuple =>
@@ -376,7 +375,7 @@ object ASTGenerator extends Collector {
       PrefixExpr(genType(psi.`type`()), gen[Expr](psi.expr), "*")
 
     case psi: ScTypedStmt =>
-      Exprs.as(gen[Expr](psi.expr), genType(psi.typeElement))
+      Exprs.asExpr(gen[Expr](psi.expr), genType(psi.typeElement))
 
     case x: ScIfStmt =>
       IfExpr(

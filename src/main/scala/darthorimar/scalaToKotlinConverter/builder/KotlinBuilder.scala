@@ -3,7 +3,6 @@ package darthorimar.scalaToKotlinConverter.builder
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.scopes.{BuilderState, ScopedVal}
-
 class KotlinBuilder extends BuilderBase {
   val stateVal: ScopedVal[BuilderState] = new ScopedVal[BuilderState](BuilderState())
 
@@ -313,14 +312,14 @@ class KotlinBuilder extends BuilderBase {
     }
 
   def genAsBlock(e: Expr): Unit = e match {
-    case BlockExpr(exprType, exprs) =>
+    case BlockExpr(exprs) =>
       str("{")
       indentedIf(!stateVal.inInterpolatedString) {
         repNl(exprs)(gen)
       }
       str("}")
     case _ =>
-      genAsBlock(BlockExpr(NoType, Seq(e)))
+      genAsBlock(BlockExpr(Seq(e)))
   }
 
   def genBlockOrExpr(expr: Expr): Unit = expr match {

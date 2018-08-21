@@ -4,16 +4,16 @@ import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, StdTypes}
 
 object Exprs {
-  def is(expr: Expr, ty: Type) =
+  def isExpr(expr: Expr, ty: Type) =
     simpleInfix(StdTypes.BOOLEAN, "is", expr, TypeExpr(ty))
 
-  def as(expr: Expr, ty: Type) =
+  def asExpr(expr: Expr, ty: Type) =
     simpleInfix(StdTypes.BOOLEAN, "as", expr, TypeExpr(ty))
 
-  def and(left: Expr, right: Expr) =
+  def andExpr(left: Expr, right: Expr) =
     simpleInfix(StdTypes.BOOLEAN, "&&", left, right)
 
-  def or(left: Expr, right: Expr) =
+  def orExpr(left: Expr, right: Expr) =
     simpleInfix(StdTypes.BOOLEAN, "||", left, right)
 
   def letExpr(obj: Expr, lambda: LambdaExpr) =

@@ -1,4 +1,4 @@
-package darthorimar.intellijScalaToKotlin
+package darthorimar.scalaToKotlinConverter
 
 class DebugConveterTest extends ConverterTestBase {
   def testDebug(): Unit =

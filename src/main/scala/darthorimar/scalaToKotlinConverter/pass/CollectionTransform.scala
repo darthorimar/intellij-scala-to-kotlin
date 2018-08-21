@@ -34,7 +34,7 @@ class CollectionTransform extends Transform {
       Some(CallExpr(
         transform[Type](exprType),
         RefExpr(transform[Type](refTy),
-          Some(kotlinConverter.ast.PostfixExpr(referenceObject.exprType, transform[Expr](referenceObject), "?")),
+          Some(PostfixExpr(referenceObject.exprType, transform[Expr](referenceObject), "?")),
           "let",
           typeParams.map(transform[Type]), true),
         Seq(transform[Expr](p)),
@@ -212,10 +212,10 @@ class CollectionTransform extends Transform {
       Some(Exprs.simpleCall("runTry", a.exprType, Seq(transform[Expr](p))))
 
     case RefExpr(refTy, Some(referenceObject), "asInstanceOf", Seq(typeParam), false) =>
-      Some(ParenthesesExpr(Exprs.as(transform[Expr](referenceObject), typeParam)))
+      Some(ParenthesesExpr(Exprs.asExpr(transform[Expr](referenceObject), typeParam)))
 
     case RefExpr(refTy, Some(referenceObject), "isInstanceOf", Seq(typeParam), false) =>
-      Some(ParenthesesExpr(Exprs.is(transform[Expr](referenceObject), typeParam)))
+      Some(ParenthesesExpr(Exprs.isExpr(transform[Expr](referenceObject), typeParam)))
 
     case _ => None
   }

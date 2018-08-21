@@ -17,5 +17,5 @@ repositories {
 }
 
 dependencies {
-    compile("org.scala-lang:scala-library:2.12.6")
+    compileOnly("org.scala-lang:scala-library:2.12.6")
 }

@@ -5,6 +5,7 @@ import darthorimar.scalaToKotlinConverter.Collector
 import darthorimar.scalaToKotlinConverter.ast.{PostfixExpr, _}
 import darthorimar.scalaToKotlinConverter.scopes.{LocalNamer, Renamer, ScopedVal}
 
+
 trait Transform extends Collector {
   protected def action(ast: AST): Option[AST]
 
@@ -12,7 +13,6 @@ trait Transform extends Collector {
   val namerVal = new ScopedVal[LocalNamer](new LocalNamer)
 
   var context: File = null
-  var imports: Set[Import] = Set.empty
 
   private var parentsStack = List.empty[AST]
 
@@ -103,7 +103,7 @@ trait Transform extends Collector {
     case x@File(pckg, fileImports, defns, neededDefinitions) =>
       context = x
       val newDefns = defns.map(transform[DefExpr])
-      File(pckg, (imports ++ fileImports).map(transform[Import]), newDefns, neededDefinitions ++ collectedDefinitions)
+      File(pckg, (collectImports ++ fileImports).map(transform[Import]), newDefns, neededDefinitions ++ collectedDefinitions)
 
     case InfixExpr(exprType, op, left, right, isLeftAssoc) =>
       InfixExpr(transform[Type](exprType),
@@ -151,8 +151,8 @@ trait Transform extends Collector {
     case MatchExpr(exprType, expr, clauses) =>
       MatchExpr(transform[Type](exprType), transform[Expr](expr), clauses.map(transform[MatchCaseClause]))
 
-    case BlockExpr(exprType, exprs) =>
-      BlockExpr(transform[Type](exprType), exprs.map(transform[Expr]))
+    case BlockExpr(exprs) =>
+      BlockExpr(exprs.map(transform[Expr]))
 
     case PostfixExpr(exprType, obj, op) =>
       PostfixExpr(exprType, transform[Expr](obj), op)
@@ -241,8 +241,8 @@ trait Transform extends Collector {
     case LitPattern(lit, label) =>
       LitPattern(lit, label)
 
-//    case TuplePattern(parts, label) =>
-//      TuplePattern(parts.map(transform[CasePattern]), label)
+    //    case TuplePattern(parts, label) =>
+    //      TuplePattern(parts.map(transform[CasePattern]), label)
 
     case ConstructorPattern(ref, args, label, repr) =>
       ConstructorPattern(transform[ConstructorRef](ref), args.map(transform[CasePattern]), label, repr)
@@ -292,7 +292,6 @@ object Transform {
       new TypeTransform, //todo get rid of second call
       new CollectorTransform,
       new RefCollector)
-    passes.foldLeft(fileDef)((a, p) => p.transform[File](a)) //todo rename
+    passes.foldLeft(fileDef)((ast, transform) => transform.transform[File](ast))
   }
 }
-

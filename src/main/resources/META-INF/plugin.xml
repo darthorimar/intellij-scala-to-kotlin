@@ -16,7 +16,7 @@
 
     <actions>
         <action id="Scala.ConvertScalaToKotlin"
-                class="darthorimar.intellijScalaToKotlin.ConvertScalaToKotlinAction"
+                class="darthorimar.scalaToKotlinConverter.ConvertScalaToKotlinAction"
                 text="Convert Scala to Kotlin" description="Convert Scala to Kotlin">
             <add-to-group group-id="RefactoringMenu" anchor="last"/>
             <add-to-group group-id="EditorTabPopupMenu" anchor="last"/>

@@ -30,9 +30,7 @@ class ConvertScalaToKotlinAction extends AnAction {
 
     try {
       val elements = getSelectedFiles(e)
-      val enabled =
-        elements.forall(s => s.getContainingDirectory.isWritable)
-      if (enabled) enable()
+      if (elements.nonEmpty) enable()
       else disable()
     }
     catch {
@@ -42,22 +40,48 @@ class ConvertScalaToKotlinAction extends AnAction {
   }
 
   def getSelectedFiles(e: AnActionEvent): Seq[ScalaFile] =
-    Option(LangDataKeys.PSI_ELEMENT_ARRAY.getData(e.getDataContext)).
+    Option(CommonDataKeys.VIRTUAL_FILE_ARRAY.getData(e.getDataContext))
+      .map(_.toSeq.flatMap { virtualFile =>
+        Option(PsiManager.getInstance(e.getProject).findFile(virtualFile))
+      }).
       orElse {
-        Option(CommonDataKeys.PSI_FILE.getData(e.getDataContext)).map(e => Array(e))
-      }.getOrElse(Array.empty)
+        Option(CommonDataKeys.PSI_FILE.getData(e.getDataContext)).map(Seq(_))
+      }.getOrElse(Seq.empty)
       .collect {
-        case f: ScalaFile if f.getContainingDirectory.isWritable => f
-      }.toSeq
+        case file: ScalaFile if file.getContainingDirectory.isWritable => file
+      }
+
+  private def getRootProjectDir(file: ScalaFile): PsiDirectory = {
+    val packageParts = file.packageName.split('.')
+    if (file.getContainingDirectory.getVirtualFile.getCanonicalPath.endsWith(packageParts.mkString("/"))) {
+      Function.chain(Seq.fill(file.packageName.split('.').length)((_: PsiDirectory).getParent))(file.getContainingDirectory)
+    } else PsiManager.getInstance(file.getProject).findDirectory(file.getProject.getBaseDir)
+  }
+
+  private def createKotlinName(file: ScalaFile): String = {
+    val nameWithoutExtension = file.getName.stripSuffix(".scala")
+    nameWithoutExtension + ".kt"
+  }
+
 
   def actionPerformed(e: AnActionEvent) {
     val files = getSelectedFiles(e)
-    if (files.nonEmpty) {
+    val (filesToConvert, existingFiles) = files.partition { file =>
+      file.getParent.getVirtualFile.findChild(createKotlinName(file)) == null
+    }
+    existingFiles.foreach { file =>
+      NotificationUtil.builder(file.getProject, s"File ${createKotlinName(file)} already exists").
+        setDisplayType(NotificationDisplayType.BALLOON)
+        .setNotificationType(NotificationType.WARNING)
+        .setGroup("convert.scala.to.kotlin")
+        .setTitle("Cannot create file")
+        .show()
+    }
+    if (filesToConvert.nonEmpty) {
       ScalaUtils.runWriteAction(() => {
-        val ConvertResult(converted, definitions) = Converter.convert(files)
+        val ConvertResult(converted, definitions) = Converter.convert(filesToConvert)
         for ((text, file) <- converted) {
-          val nameWithoutExtension = file.getName.stripSuffix(".scala")
-          val newName = nameWithoutExtension + ".kt"
+          val newName = createKotlinName(file)
           file.getVirtualFile.rename(this, newName)
           val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
           document.deleteString(0, document.getTextLength)
@@ -66,7 +90,8 @@ class ConvertScalaToKotlinAction extends AnAction {
           val kotlinFile = PsiDocumentManager.getInstance(file.getProject).getPsiFile(document)
           Utils.reformatFile(kotlinFile)
         }
-        DefinitionGenerator.generate(definitions, files.head.getContainingDirectory)//todo find suitable directory
+
+        DefinitionGenerator.generate(definitions, getRootProjectDir(files.head))
       }, files.head.getProject, "Convert to Kotlin")
     }
   }
