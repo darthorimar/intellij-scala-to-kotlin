@@ -11,6 +11,7 @@
     ]]></description>
 
     <depends>org.intellij.scala</depends>
+    <depends>org.jetbrains.kotlin</depends>
     <idea-version since-build="182.0"/>
 
     <actions>

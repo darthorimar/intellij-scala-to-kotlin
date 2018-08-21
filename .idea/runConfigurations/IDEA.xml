@@ -4,7 +4,7 @@
     <option name="MAIN_CLASS_NAME" value="com.intellij.idea.Main" />
     <module name="ideaRunner" />
     <option name="PROGRAM_PARAMETERS" value="nosplash" />
-    <option name="VM_PARAMETERS" value="-Xmx800m -XX:ReservedCodeCacheSize=240m -XX:+HeapDumpOnOutOfMemoryError -ea -Didea.is.internal=true -Didea.debug.mode=true -Didea.system.path=$USER_HOME$/.IntellijScalaToKotlinIC/system -Didea.config.path=$USER_HOME$/.IntellijScalaToKotlinIC/config -Dapple.laf.useScreenMenuBar=true -Dplugin.path=$PROJECT_DIR$/target/plugin/IntellijScalaToKotlin/lib/scalaToKotlin.jar -Didea.platform.prefix=Idea" />
+    <option name="VM_PARAMETERS" value="-Xmx800m -XX:ReservedCodeCacheSize=240m -XX:+HeapDumpOnOutOfMemoryError -ea -Didea.is.internal=true -Didea.debug.mode=true -Didea.system.path=$USER_HOME$/.IntellijScalaToKotlinIC/system -Didea.config.path=$USER_HOME$/.IntellijScalaToKotlinIC/config -Dapple.laf.useScreenMenuBar=true -Dplugin.path=$PROJECT_DIR$/target/plugin/IntellijScalaToKotlin -Didea.platform.prefix=Idea" />
     <RunnerSettings RunnerId="Debug">
       <option name="DEBUG_PORT" value="" />
       <option name="TRANSPORT" value="0" />

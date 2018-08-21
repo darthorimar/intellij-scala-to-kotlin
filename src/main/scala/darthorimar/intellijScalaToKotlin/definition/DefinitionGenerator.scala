@@ -2,6 +2,7 @@ package darthorimar.intellijScalaToKotlin.definition
 
 import com.intellij.psi.{PsiDirectory, PsiDocumentManager, PsiFile}
 import darthorimar.intellijScalaToKotlin.Utils
+import org.jetbrains.kotlin.psi.KtFile
 
 import scala.collection.mutable
 import scala.io.Source
@@ -81,7 +82,7 @@ object DefinitionGenerator {
   }
 
   def getExistingDefinitionNames(file: PsiFile): Seq[String] = {
-    //todo write :)
+
     Seq.empty
   }
 }
