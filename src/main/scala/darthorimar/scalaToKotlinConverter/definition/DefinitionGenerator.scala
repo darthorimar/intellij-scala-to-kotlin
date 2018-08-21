@@ -1,7 +1,7 @@
-package org.jetbrains.plugins.kotlinConverter.definition
+package darthorimar.scalaToKotlinConverter.definition
 
 import com.intellij.psi.{PsiDirectory, PsiDocumentManager}
-import org.jetbrains.plugins.kotlinConverter.Utils
+import darthorimar.scalaToKotlinConverter.Utils
 import org.jetbrains.plugins.scala.extensions._
 
 import scala.collection.mutable
@@ -35,7 +35,7 @@ object DefinitionGenerator {
           case d: FileDefinition =>
             val filename = d.filename
             //todo use resource path
-            Source.fromFile(s"/home/ilya/code/intellij-scala/scala/scala-impl/resources/org/jetbrains/plugins/kotlinConverter/definition/$filename")
+            Source.fromFile(s"/home/ilya/code/intellij-scala/scala/scala-impl/resources/darthorimar.scalaToKotlinConverter/definition/$filename")
               .getLines()
               .mkString("\n")
           case textDef: TextDefinition =>

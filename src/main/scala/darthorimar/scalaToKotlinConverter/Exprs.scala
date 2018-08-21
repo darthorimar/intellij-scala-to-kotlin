@@ -1,7 +1,7 @@
-package org.jetbrains.plugins.kotlinConverter
+package darthorimar.scalaToKotlinConverter
 
-import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
+import darthorimar.scalaToKotlinConverter.ast._
+import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, StdTypes}
 
 object Exprs {
   def is(expr: Expr, ty: Type) =

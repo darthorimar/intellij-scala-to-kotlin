@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter.pass
+package darthorimar.scalaToKotlinConverter.pass
 
-import org.jetbrains.plugins.kotlinConverter.ast._
+import darthorimar.scalaToKotlinConverter.ast._
 
 class RefCollector extends Transform {
   override protected def action(ast: AST): Option[AST] =

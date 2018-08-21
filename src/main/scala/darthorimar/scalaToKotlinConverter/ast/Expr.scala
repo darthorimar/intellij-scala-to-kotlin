@@ -1,7 +1,7 @@
-package org.jetbrains.plugins.kotlinConverter.ast
+package darthorimar.scalaToKotlinConverter.ast
 
-import org.jetbrains.plugins.kotlinConverter.ast
-import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
+import darthorimar.scalaToKotlinConverter.ast
+import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, StdTypes}
 
 sealed trait Expr extends AST {
   def exprType: Type

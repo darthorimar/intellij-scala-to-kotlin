@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter.scopes
+package darthorimar.scalaToKotlinConverter.scopes
 
-import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.SettedScopedVal
+import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.SettedScopedVal
 
 class ScopedVal[T](initial: T) {
   private var stack: List[T] = initial :: Nil

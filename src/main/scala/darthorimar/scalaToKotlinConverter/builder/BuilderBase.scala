@@ -1,4 +1,4 @@
-package org.jetbrains.plugins.kotlinConverter.builder
+package darthorimar.scalaToKotlinConverter.builder
 
 trait BuilderBase {
   private val builder = new StringBuffer()

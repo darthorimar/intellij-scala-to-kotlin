@@ -1,13 +1,13 @@
-package org.jetbrains.plugins.kotlinConverter.pass
+package darthorimar.scalaToKotlinConverter.pass
 
 import com.intellij.formatting.BlockEx
-import org.jetbrains.plugins.kotlinConverter
-import org.jetbrains.plugins.kotlinConverter.{ExprUtils, Exprs, Utils}
-import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
-import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
-import org.jetbrains.plugins.kotlinConverter.scopes.{BasicTransformState, LocalNamer, Renamer, ScopedVal}
-import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
+import darthorimar.scalaToKotlinConverter
+import darthorimar.scalaToKotlinConverter.{ExprUtils, Exprs, Utils}
+import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, StdTypes}
+import darthorimar.scalaToKotlinConverter.ast._
+import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
+import darthorimar.scalaToKotlinConverter.scopes.{BasicTransformState, LocalNamer, Renamer, ScopedVal}
+import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import org.jetbrains.plugins.scala.conversion.ast.ClassConstruction
 
 import scala.util.Try
@@ -17,7 +17,7 @@ class BasicTransform extends Transform {
 
   val stateVal: ScopedVal[BasicTransformState] = new ScopedVal[BasicTransformState](BasicTransformState(false))
 
-  import org.jetbrains.plugins.kotlinConverter.types.TypeUtils._
+  import darthorimar.scalaToKotlinConverter.types.TypeUtils._
 
   def isDefaultOperator(op: RefExpr): Boolean =
     op match {

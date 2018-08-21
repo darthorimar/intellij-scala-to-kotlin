@@ -1,5 +1,5 @@
-package org.jetbrains.plugins.kotlinConverter.scopes
+package darthorimar.scalaToKotlinConverter.scopes
 
-import org.jetbrains.plugins.kotlinConverter.ast.Defn
+import darthorimar.scalaToKotlinConverter.ast.Defn
 
 case class BasicTransformState(inCompanionObject: Boolean)

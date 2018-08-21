@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter.types
+package darthorimar.scalaToKotlinConverter.types
 
-import org.jetbrains.plugins.kotlinConverter.ast._
+import darthorimar.scalaToKotlinConverter.ast._
 
 object ScalaTypes {
   val OPTION = ScalaType("scala.Option")

@@ -1,4 +1,4 @@
-package org.jetbrains.plugins.kotlinConverter
+package darthorimar.scalaToKotlinConverter
 
 import com.intellij.psi.PsiElement
 import org.jetbrains.plugins.scala.extensions.{FirstChild, ImplicitConversion}

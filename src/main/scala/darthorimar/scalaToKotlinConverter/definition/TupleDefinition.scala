@@ -1,4 +1,4 @@
-package org.jetbrains.plugins.kotlinConverter.definition
+package darthorimar.scalaToKotlinConverter.definition
 
 
 class TupleDefinition(arity: Int) extends TextDefinition {

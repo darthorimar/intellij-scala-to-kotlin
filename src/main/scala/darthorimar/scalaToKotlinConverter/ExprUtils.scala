@@ -1,7 +1,7 @@
-package org.jetbrains.plugins.kotlinConverter
+package darthorimar.scalaToKotlinConverter
 
-import org.jetbrains.plugins.kotlinConverter.ast.{BlockExpr, Expr}
-import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes}
+import darthorimar.scalaToKotlinConverter.ast.{BlockExpr, Expr}
+import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, StdTypes}
 
 object ExprUtils {
   def blockOf(exprs: Seq[Expr]): BlockExpr = {

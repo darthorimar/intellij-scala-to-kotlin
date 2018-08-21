@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter.ast
+package darthorimar.scalaToKotlinConverter.ast
 
-import org.jetbrains.plugins.kotlinConverter.definition.Definition
+import darthorimar.scalaToKotlinConverter.definition.Definition
 
 trait AST
 

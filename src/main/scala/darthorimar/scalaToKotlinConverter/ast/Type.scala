@@ -1,4 +1,4 @@
-package org.jetbrains.plugins.kotlinConverter.ast
+package darthorimar.scalaToKotlinConverter.ast
 
 sealed trait Type extends AST {
   def asKotlin: String

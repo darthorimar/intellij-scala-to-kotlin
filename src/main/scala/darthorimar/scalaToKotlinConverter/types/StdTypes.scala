@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.kotlinConverter.types
+package darthorimar.scalaToKotlinConverter.types
 
-import org.jetbrains.plugins.kotlinConverter.ast.StdType
+import darthorimar.scalaToKotlinConverter.ast.StdType
 
 object StdTypes {
   val UNIT = StdType("Unit")

@@ -1,12 +1,12 @@
-package org.jetbrains.plugins.kotlinConverter.pass
+package darthorimar.scalaToKotlinConverter.pass
 
-import org.jetbrains.plugins.kotlinConverter
-import org.jetbrains.plugins.kotlinConverter.Exprs.listType
-import org.jetbrains.plugins.kotlinConverter.{Exprs, Utils}
-import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.pass.Helpers.ApplyCall
-import org.jetbrains.plugins.kotlinConverter.types.TypeUtils.{ListType, WithType}
-import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, StdTypes, TypeUtils}
+import darthorimar.scalaToKotlinConverter
+import darthorimar.scalaToKotlinConverter.Exprs.listType
+import darthorimar.scalaToKotlinConverter.{Exprs, Utils}
+import darthorimar.scalaToKotlinConverter.ast._
+import darthorimar.scalaToKotlinConverter.pass.Helpers.ApplyCall
+import darthorimar.scalaToKotlinConverter.types.TypeUtils.{ListType, WithType}
+import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, StdTypes, TypeUtils}
 import org.scalafmt.internal.SyntacticGroup.Term
 
 class CollectionTransform extends Transform {

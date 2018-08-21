@@ -1,12 +1,12 @@
-package org.jetbrains.plugins.kotlinConverter
+package darthorimar.scalaToKotlinConverter
 
 import com.intellij.lang.jvm.JvmModifier
 import com.intellij.psi._
-import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.ast._
-import org.jetbrains.plugins.kotlinConverter.definition.TupleDefinition
-import org.jetbrains.plugins.kotlinConverter.scopes.{ASTGeneratorState, ScopedVal}
-import org.jetbrains.plugins.kotlinConverter.types.{KotlinTypes, LibTypes, ScalaTypes}
+import darthorimar.scalaToKotlinConverter.ast._
+import darthorimar.scalaToKotlinConverter.ast._
+import darthorimar.scalaToKotlinConverter.definition.TupleDefinition
+import darthorimar.scalaToKotlinConverter.scopes.{ASTGeneratorState, ScopedVal}
+import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, LibTypes, ScalaTypes}
 import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
 import org.jetbrains.plugins.scala.lang.psi.ScalaPsiUtil
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
@@ -30,7 +30,7 @@ import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScAbstract
 import org.jetbrains.plugins.scala.lang.psi.types.result.{TypeResult, Typeable}
 import org.jetbrains.plugins.scala.lang.refactoring.util.ScalaNamesUtil
 import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
-import org.jetbrains.plugins.kotlinConverter.scopes.ScopedVal.scoped
+import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScTemplateDefinition.Kind.ScObject
 import org.jetbrains.plugins.scala.lang.psi.impl.statements.params.ScParameterImpl
 
