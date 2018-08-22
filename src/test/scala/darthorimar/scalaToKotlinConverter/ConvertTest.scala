@@ -292,7 +292,7 @@ class ConvertTest extends ConverterTestBase {
     doTest(
       """def a(x: => Int) = x
         |def q = a(1)""".stripMargin,
-      """fun a(x: (Unit) -> Int): Int =x()
+      """fun a(x: () -> Int): Int =x()
         |fun q(): Int =a { 1 }""".stripMargin)
 
   def testForYeild(): Unit =
@@ -316,7 +316,9 @@ class ConvertTest extends ConverterTestBase {
       """def foo = (1,2,3)
         |def bar = (1,2)
       """.stripMargin,
-      """fun foo(): Tuple3<Int, Int, Int> =Tuple3<Int, Int, Int>(1, 2, 3)
+      """import convertedFromScala.lib.*
+        |
+        |fun foo(): Tuple3<Int, Int, Int> =Tuple3<Int, Int, Int>(1, 2, 3)
         |fun bar(): Pair<Int, Int> =Pair<Int, Int>(1, 2)
       """.stripMargin)
 

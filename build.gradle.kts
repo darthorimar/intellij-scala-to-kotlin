@@ -18,4 +18,6 @@ repositories {
 
 dependencies {
     compileOnly("org.scala-lang:scala-library:2.12.6")
+    testCompile("org.scala-lang:scala-library:2.12.6")
+    testCompile("junit:junit:4.12")
 }

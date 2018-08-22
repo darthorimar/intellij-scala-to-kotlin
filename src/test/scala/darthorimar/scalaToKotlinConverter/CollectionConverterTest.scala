@@ -98,7 +98,9 @@ class CollectionConverterTest extends ConverterTestBase {
       """ def foo(a: (Int, String)) =  a
         | def bar(a: (Int, String, Char)) =  a
       """.stripMargin,
-      """ fun foo(a: Pair<Int, String>): Pair<Int, String> =a
+      """import convertedFromScala.lib.*
+        |
+        |fun foo(a: Pair<Int, String>): Pair<Int, String> =a
         | fun bar(a: Tuple3<Int, String, Char>): Tuple3<Int, String, Char> =a
       """.stripMargin)
 
@@ -107,8 +109,9 @@ class CollectionConverterTest extends ConverterTestBase {
       """ import scala.util.Try
         |val a: Try[Int] = Try(1)
       """.stripMargin,
-      """  val a: Try<Int> = runTry { 1 }
-      """.stripMargin)
+      """import convertedFromScala.lib.*
+         |val a: Try<Int> = runTry { 1 }
+         |""".stripMargin)
 
 
 
