@@ -2,8 +2,9 @@ package darthorimar.scalaToKotlinConverter.definition
 
 import com.intellij.psi.{PsiDirectory, PsiDocumentManager, PsiFile}
 import darthorimar.scalaToKotlinConverter.Utils
-import org.jetbrains.plugins.scala.extensions._
+import org.jetbrains.kotlin.psi.{KtFile, KtFunction, KtNamedFunction}
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.io.Source
 import scala.util.Try
@@ -81,8 +82,15 @@ object DefinitionGenerator {
     }
   }
 
-  def getExistingDefinitionNames(file: PsiFile): Seq[String] = {
-    //todo write :)
-    Seq.empty
+  def getExistingDefinitionNames(file: PsiFile): Seq[String] = file match {
+    case ktFile: KtFile =>
+      ktFile.getDeclarations.asScala map {
+        case funct: KtNamedFunction if funct.getStub.isExtension =>
+          val typeName = funct.getReceiverTypeReference.getText.takeWhile(_.isLetter).toLowerCase
+          val funName = funct.getName.toLowerCase.capitalize
+          s"$typeName$funName"
+        case decl => decl.getName
+      }
+    case _ => Seq.empty
   }
 }
