@@ -239,7 +239,7 @@ trait Transform extends Collector {
       TypeParam(name)
 
     case LitPattern(lit, label) =>
-      LitPattern(lit, label)
+      LitPattern(transform[Expr](lit), label)
 
     //    case TuplePattern(parts, label) =>
     //      TuplePattern(parts.map(transform[CasePattern]), label)

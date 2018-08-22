@@ -9,15 +9,19 @@ import org.junit.Assert._
 
 abstract class ConverterTestBase extends ScalaLightPlatformCodeInsightTestCaseAdapter {
 
-  private def formatKotlinCode(unformatedCode: String): String = {
+  private def formatKotlinCode(unformatedCode: String, filterImports: Boolean): String = {
     val ktPsiFactory = new KtPsiFactory(LightPlatformTestCase.getProject)
     val ktFile = ktPsiFactory.createFile(unformatedCode)
     Utils.reformatFile(ktFile)
-    ktFile.getText.trim.split('\n').filterNot(_.isEmpty).mkString("\n")
+    val formated = ktFile.getText.trim.split('\n').filterNot(_.isEmpty).mkString("\n")
+    if (filterImports)
+      formated.split('\n').filterNot(_.startsWith("import")).mkString("\n")
+    else formated
   }
 
   def doTest(scala: String,
              kotlin: String,
+             filterImports: Boolean = false,
              doPrint: Boolean = false): Unit = {
     configureFromFileTextAdapter("dummy.scala", scala)
     val psiFile = getFileAdapter
@@ -27,16 +31,19 @@ abstract class ConverterTestBase extends ScalaLightPlatformCodeInsightTestCaseAd
       println(generatedKotlinCode)
     }
     else {
-      val formatedExpected = formatKotlinCode(kotlin)
-      val formatedActual = formatKotlinCode(generatedKotlinCode)
+      val formatedExpected = formatKotlinCode(kotlin, filterImports = false)
+      val formatedActual = formatKotlinCode(generatedKotlinCode, filterImports)
       assertEquals(formatedExpected, formatedActual)
     }
   }
 
-
   def doExprTest(scala: String,
                  kotlin: String,
-                 doPrint: Boolean = false): Unit =
-    doTest(s"def a = {$scala \n 42}", s"fun a(): Int {$kotlin \n return 42}", doPrint)
+                 doPrint: Boolean = false): Unit = {
+    doTest(s"def a = {$scala \n 42}",
+      s"fun a(): Int {$kotlin \n return 42}",
+      filterImports = true,
+      doPrint = doPrint)
+  }
 
 }

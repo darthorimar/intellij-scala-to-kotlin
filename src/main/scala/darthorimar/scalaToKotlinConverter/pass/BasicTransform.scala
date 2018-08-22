@@ -27,7 +27,7 @@ class BasicTransform extends Transform {
 
       //scala try --> kotlin try
       case ScalaTryExpr(exprType, tryBlock, catchBlock, finallyBlock) =>
-        val cases = MatchUtils.expandCompositePattern(catchBlock.toSeq.flatMap(_.cases))
+        val cases = MatchUtils.expandCompositePatternAndApplyTransform(catchBlock.toSeq.flatMap(_.cases), this)
         val (goodClauses, badClauses) = cases.span {
           case MatchCaseClause(_: TypedPattern, _, None) => true
           case MatchCaseClause(_: ReferencePattern, _, None) => true

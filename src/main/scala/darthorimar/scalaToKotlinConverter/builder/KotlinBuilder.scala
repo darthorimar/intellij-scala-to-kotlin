@@ -3,6 +3,7 @@ package darthorimar.scalaToKotlinConverter.builder
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.scopes.{BuilderState, ScopedVal}
+
 class KotlinBuilder extends BuilderBase {
   val stateVal: ScopedVal[BuilderState] = new ScopedVal[BuilderState](BuilderState())
 
@@ -311,13 +312,20 @@ class KotlinBuilder extends BuilderBase {
 
     }
 
-  def genAsBlock(e: Expr): Unit = e match {
-    case BlockExpr(exprs) =>
+  def genBlock(block: BlockExpr): Unit = block.exprs match {
+    case Seq(b: BlockExpr) =>
+      genBlock(b)
+    case exprs =>
       str("{")
       indentedIf(!stateVal.inInterpolatedString) {
         repNl(exprs)(gen)
       }
       str("}")
+  }
+
+  def genAsBlock(e: Expr): Unit = e match {
+    case b: BlockExpr =>
+      genBlock(b)
     case _ =>
       genAsBlock(BlockExpr(Seq(e)))
   }
@@ -327,13 +335,12 @@ class KotlinBuilder extends BuilderBase {
     case e => gen(e)
   }
 
-  def genRunBlock(blockExpr: BlockExpr): Unit = {
-    if (!stateVal.inInterpolatedString) str("run ")
-    str("{")
-    indentedIf(!stateVal.inInterpolatedString) {
-      repNl(blockExpr.exprs)(gen)
-    }
-    str("}")
+  def genRunBlock(block: BlockExpr): Unit = block.exprs match {
+    case Seq(b: BlockExpr) =>
+      gen(b)
+    case _ =>
+      if (!stateVal.inInterpolatedString) str("run ")
+      genBlock(block)
   }
 
   def genKeyword(k: Keyword): Unit =

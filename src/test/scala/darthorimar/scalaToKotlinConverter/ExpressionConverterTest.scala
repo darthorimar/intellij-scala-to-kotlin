@@ -70,31 +70,4 @@ class ExpressionConverterTest extends ConverterTestBase {
       """ s"${1} + $None" """.stripMargin,
       """ "${1} + $null"""".stripMargin)
 
-  def testSomeInWhen(): Unit =
-    doExprTest(
-      """Some(1) match {
-        |   case Some(x) => x + 1
-        |   case _ => 0
-        |}""".stripMargin,
-      """run {
-        |   val match = 1
-        |  data class `Some(x)_data`(public val x: Int)
-        |  val `Some(x)` by lazy {
-        |    if (match != null) {
-        |       val (x) = match
-        |      if (x is Int) return@lazy `Some(x)_data`(x)
-        |    }
-        |    return@lazy null
-        |  }
-        |  when {
-        |    `Some(x)` != null -> {
-        |       val (x) = `Some(x)`
-        |      x + 1
-        |    }
-        |    else -> {
-        |      0
-        |    }
-        |  }
-        |}""".stripMargin)
-
 }

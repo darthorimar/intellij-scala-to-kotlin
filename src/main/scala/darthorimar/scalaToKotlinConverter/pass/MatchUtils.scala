@@ -12,14 +12,20 @@ import org.jetbrains.plugins.scala.lang.dependency.DependencyKind.Reference
 
 
 object MatchUtils {
-  def expandCompositePattern(clauses: Seq[MatchCaseClause]): Seq[MatchCaseClause] =
-    clauses.flatMap {
+
+  def expandCompositePatternAndApplyTransform(clauses: Seq[MatchCaseClause], transformInst: Transform): Seq[MatchCaseClause] = {
+    import transformInst._
+
+    clauses flatMap {
       case MatchCaseClause(CompositePattern(parts, _), expr, guard) =>
         parts.map { p =>
           MatchCaseClause(p, expr, guard)
         }
       case x => Seq(x)
+    } map { case MatchCaseClause(pattern, expr, guard) =>
+      MatchCaseClause(transform[CasePattern](pattern), expr, guard.map(transform[Expr]))
     }
+  }
 
   def convertMatchToWhen(valRef: RefExpr,
                          clauses: Seq[MatchCaseClause],
@@ -27,7 +33,7 @@ object MatchUtils {
                          transformInst: Transform): Seq[Expr] = {
     import transformInst._
 
-    val expandedClauses = MatchUtils.expandCompositePattern(clauses)
+    val expandedClauses = expandCompositePatternAndApplyTransform(clauses, transformInst)
 
     def collectVals(constructorPatternMatch: ConstructorPattern): Seq[ConstructorParam] = {
       constructorPatternMatch.args.flatMap {
@@ -126,7 +132,7 @@ object MatchUtils {
       val innerBlock =
         if (collectedConstructors.nonEmpty) {
           val exprs = handleConstructors(collectedConstructors, defaultCase)
-          BlockExpr(exprs)
+          Exprs.blockOrSingleExpr(exprs)
         } else defaultCase
 
       val trueBlock = {
@@ -152,24 +158,31 @@ object MatchUtils {
                       returnFalseExpr))
                 case _ => block.copy(exprs = block.exprs :+ returnFalseExpr)
               }
-              SimpleValOrVarDef(Seq.empty, true, namerVal.newName("f"), None, Some(finalExpr))
+              SimpleValOrVarDef(Seq.empty, isVal = true, namerVal.newName("f"), None, Some(finalExpr))
             }
           }
 
-        val condition =
+        lazy val condition =
+          valDefs flatMap { parts =>
+            if (parts.nonEmpty)
+              Some(
+                ParenthesesExpr(
+                  parts map { part =>
+                    Exprs.simpleRef(part.name, NoType)
+                  } reduce Exprs.orExpr)
+              )
+            else None
+          } reduce Exprs.andExpr
+
+        val ifExpr =
           if (valDefs.nonEmpty)
             IfExpr(NoType,
-              ParenthesesExpr(
-                valDefs.map { parts =>
-                  parts.map { part =>
-                    Exprs.simpleRef(part.name, NoType)
-                  }.reduce(Exprs.orExpr)
-                }.reduce(Exprs.andExpr)),
+              condition,
               innerBlock,
               None)
           else innerBlock
 
-        BlockExpr(valDefs.flatten :+ condition)
+        BlockExpr(valDefs.flatten :+ ifExpr)
       }
 
 
@@ -182,9 +195,12 @@ object MatchUtils {
     }
 
     def genTypeCheckCondition(refName: String, constructorRef: ConstructorRef) = constructorRef match {
-      case CaseClassConstructorRef(ref) =>
-        if (ref.asKotlin == "Some") Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
-        else Exprs.isExpr(Exprs.simpleRef(refName, NoType), ref)
+      case CaseClassConstructorRef(ScalaType("scala.Some")) =>
+        Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
+
+      case CaseClassConstructorRef(constrType) =>
+        Exprs.isExpr(Exprs.simpleRef(refName, NoType), constrType)
+
       case UnapplyCallConstuctorRef(_, unapplyReturnType) =>
         val ref = Exprs.simpleRef(refName, unapplyReturnType)
         val notNullExpr = Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", ref, Exprs.nullLit)
@@ -291,7 +307,7 @@ object MatchUtils {
             case expr =>
               BlockExpr(Seq(valDef, expr))
           }
-          ExprWhenClause(notEqulasExpr, body)
+          ExprWhenClause(notEqulasExpr, transform[Expr](body))
       }
         .span(_.isInstanceOf[ExprWhenClause]) match { //take all before first `else` including it
         case (h, t) => h ++ t.headOption.toSeq
