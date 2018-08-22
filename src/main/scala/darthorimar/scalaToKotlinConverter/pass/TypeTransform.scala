@@ -45,11 +45,10 @@ class TypeTransform extends Transform {
       Some(GenericType(KotlinTypes.LIST, Seq(StdTypes.NOTHING)))
 
     case ScalaTypes.SEQ |
-         ScalaTypes.SEQ2 |
          ScalaTypes.LIST |
-         ScalaTypes.LIST2 |
-         ScalaTypes.LIST3 |
-         ScalaTypes.LIST4 =>
+         ScalaTypes.COLLECTION_IMMUTABLE_LIST |
+         ScalaTypes.COLLECTION_LIST |
+         ScalaTypes.COLLECTION_SEQ =>
       Some(KotlinTypes.LIST)
 
     case SimpleType(name) if name.startsWith("_root_.") =>

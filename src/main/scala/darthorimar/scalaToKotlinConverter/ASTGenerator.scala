@@ -3,40 +3,32 @@ package darthorimar.scalaToKotlinConverter
 import com.intellij.lang.jvm.JvmModifier
 import com.intellij.psi._
 import darthorimar.scalaToKotlinConverter.ast._
-import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.TupleDefinition
+import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.scopes.{ASTGeneratorState, ScopedVal}
 import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, LibTypes, ScalaTypes}
-import org.jetbrains.plugins.scala.lang.parser.ScalaElementTypes
 import org.jetbrains.plugins.scala.lang.psi.ScalaPsiUtil
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.lang.psi.api.base._
 import org.jetbrains.plugins.scala.lang.psi.api.base.patterns._
-import org.jetbrains.plugins.scala.lang.psi.api.base.types.{ScSimpleTypeElement, ScTypeArgs, ScTypeElement}
+import org.jetbrains.plugins.scala.lang.psi.api.base.types.{ScTypeArgs, ScTypeElement}
 import org.jetbrains.plugins.scala.lang.psi.api.expr._
-import org.jetbrains.plugins.scala.lang.psi.api.statements.params.{ScClassParameter, ScParameter, ScTypeParam}
 import org.jetbrains.plugins.scala.lang.psi.api.statements._
-import org.jetbrains.plugins.scala.lang.psi.api.toplevel.imports.{ScImportExpr, ScImportStmt}
+import org.jetbrains.plugins.scala.lang.psi.api.statements.params.{ScClassParameter, ScParameter, ScTypeParam}
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.templates.{ScClassParents, ScTemplateParents}
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef._
-import org.jetbrains.plugins.scala.lang.psi.impl.expr.{ScBlockExprImpl, ScNewTemplateDefinitionImpl, ScReferenceExpressionImpl}
-import org.jetbrains.plugins.scala.lang.psi.impl.statements.FakePsiStatement
-import org.jetbrains.plugins.scala.lang.psi.impl.toplevel.typedef.{ScClassImpl, TypeDefinitionMembers}
+import org.jetbrains.plugins.scala.lang.psi.impl.expr.ScNewTemplateDefinitionImpl
+import org.jetbrains.plugins.scala.lang.psi.impl.toplevel.typedef.ScClassImpl
 import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
-import org.jetbrains.plugins.scala.lang.psi.types.api.{JavaArrayType, StdType, TypeParameter, TypeParameterType}
-import org.jetbrains.plugins.scala.lang.psi.types.api.designator.{DesignatorOwner, ScDesignatorType, ScProjectionType, ScThisType}
+import org.jetbrains.plugins.scala.lang.psi.types.api.designator.{DesignatorOwner, ScProjectionType, ScThisType}
+import org.jetbrains.plugins.scala.lang.psi.types.api.{JavaArrayType, StdType, TypeParameterType}
 import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ScMethodType, ScTypePolymorphicType}
-import org.jetbrains.plugins.scala.lang.psi.types.{PhysicalSignature, ScAbstractType, ScCompoundType, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
-import org.jetbrains.plugins.scala.lang.psi.types.result.{TypeResult, Typeable}
-import org.jetbrains.plugins.scala.lang.refactoring.util.ScalaNamesUtil
-import org.scalafmt.internal.SyntacticGroup.Type.SimpleTyp
-import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
-import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScTemplateDefinition.Kind.ScObject
-import org.jetbrains.plugins.scala.lang.psi.impl.statements.params.ScParameterImpl
+import org.jetbrains.plugins.scala.lang.psi.types.result.TypeResult
+import org.jetbrains.plugins.scala.lang.psi.types.{ScAbstractType, ScCompoundType, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
 
 import scala.annotation.tailrec
-import scala.collection.immutable
 import scala.util.Try
+
 object ASTGenerator extends Collector {
   val stateVal = new ScopedVal[ASTGeneratorState](ASTGeneratorState(Map.empty))
 
@@ -163,18 +155,18 @@ object ASTGenerator extends Collector {
     inner(expr)
   }
 
-  def canonicalName(p: PsiElement, clazz: PsiClass): String = p match {
-    case clazz: ScObject if clazz.isStatic => clazz.qualifiedName
-    case c: ScClass => c.qualifiedName
-    case c: PsiClass => c.getQualifiedName
-    case m: PsiMember =>
-      Option(m.getContainingClass)
-        .filter(_ != clazz && m.hasModifier(JvmModifier.STATIC))
-        .map(canonicalName(_, clazz) + ".").getOrElse("") + m.getName
+  def canonicalName(p: PsiElement, clazz: PsiClass): String =
+    Option(p) map {
+      case clazz: ScObject if clazz.isStatic => clazz.qualifiedName
+      case c: ScClass => c.qualifiedName
+      case c: PsiClass => c.getQualifiedName
+      case m: PsiMember =>
+        Option(m.getContainingClass)
+          .filter(_ != clazz && m.hasModifier(JvmModifier.STATIC))
+          .map(canonicalName(_, clazz) + ".").getOrElse("") + m.getName
 
-    case p: ScParameter => p.getName
-    case null => ""
-  }
+      case p: ScParameter => p.getName
+    } getOrElse ""
 
   def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
@@ -190,7 +182,7 @@ object ASTGenerator extends Collector {
       val underscores =
         findUnderscores(psi).flatMap(_.overExpr).map { over =>
           val expr = gen[Expr](over)
-          val lambdaExpr = LambdaExpr(expr.exprType, Seq.empty, expr, false)
+          val lambdaExpr = LambdaExpr(expr.exprType, Seq.empty, expr, needBraces = false)
           over.getTextRange -> lambdaExpr
         }.toMap
       scoped(
@@ -232,7 +224,7 @@ object ASTGenerator extends Collector {
                 Seq.empty,
                 Seq.empty,
                 genType(p.`type`()),
-                Some(RefExpr(genType(p.`type`()), None, p.name, Seq.empty, false)))
+                Some(RefExpr(genType(p.`type`()), None, p.name, Seq.empty, isFunctionRef = false)))
             }
           case _ => Seq.empty
         }
@@ -260,9 +252,6 @@ object ASTGenerator extends Collector {
         blockOrNone(
           overrideConstuctParamsDefs ++ x.extendsBlock.members.map(gen[DefExpr])),
         companionDefn)
-
-    case x: PsiClassWrapper => //todo get rid of
-      gen[DefExpr](x.definition)
 
     case x: ScTemplateParents =>
       val constructor = x match {
@@ -294,8 +283,10 @@ object ASTGenerator extends Collector {
     case x: ScBlockExpr if x.isAnonymousFunction =>
       LambdaExpr(genType(x.`type`()),
         Seq.empty,
-        MatchExpr(genType(x.`type`()), UnderscoreExpr(NoType), x.caseClauses.get.caseClauses.map(gen[MatchCaseClause])),
-        false)
+        MatchExpr(genType(x.`type`()),
+          UnderscoreExpr(NoType),
+          x.caseClauses.get.caseClauses.map(gen[MatchCaseClause])),
+        needBraces = false)
 
     case x: ScBlockExpr if x.isInCatchBlock =>
       ScalaCatch(x.caseClauses.get.caseClauses.map(gen[MatchCaseClause]))
@@ -337,11 +328,10 @@ object ASTGenerator extends Collector {
         .flatMap(_.toOption)
         .map(genType)
         .getOrElse(genType(x.`type`()))
-      val isFunc =
-        x.getReference.asInstanceOf[ScReferenceExpressionImpl]
-          .shapeResolve //todo use bind
-          .map(_.element)
-          .exists { p => p.isInstanceOf[ScFunction] || p.isInstanceOf[PsiMethod] }
+      val isFunc = {
+        val sourceElement = x.getReference.resolve()
+        sourceElement.isInstanceOf[ScFunction] || sourceElement.isInstanceOf[PsiMethod]
+      }
 
       val refName =
         if (x.smartQualifier.isDefined) x.refName
@@ -387,7 +377,7 @@ object ASTGenerator extends Collector {
     case x: ScMatchStmt =>
       MatchExpr(genType(x.`type`()), gen[Expr](x.expr.get), x.caseClauses.map(gen[MatchCaseClause]))
     case x: ScFunctionExpr =>
-      LambdaExpr(genType(x.`type`()), x.parameters.map(gen[DefParameter]), gen[Expr](x.result.get), false)
+      LambdaExpr(genType(x.`type`()), x.parameters.map(gen[DefParameter]), gen[Expr](x.result.get), needBraces = false)
 
     case x: ScCaseClause =>
       MatchCaseClause(gen[CasePattern](x.pattern.get),
@@ -425,7 +415,7 @@ object ASTGenerator extends Collector {
         case (Some(o), Some(r)) if !isCaseClass =>
           UnapplyCallConstuctorRef(o.name, genType(r.returnType))
         case _ =>
-          val className= canonicalName(x.ref.resolve(), null).stripSuffix(".unapply")
+          val className = canonicalName(x.ref.resolve(), null).stripSuffix(".unapply")
           CaseClassConstructorRef(ClassType(className))
       }
       ConstructorPattern(constuctorRef, x.args.patterns.map(gen[CasePattern]), None, x.getText)
@@ -449,7 +439,7 @@ object ASTGenerator extends Collector {
     case x: ScPatternDefinition if x.isSimple =>
       SimpleValOrVarDef(
         genAttributes(x),
-        true,
+        isVal = true,
         x.pList.patterns.head.getText,
         Some(genType(x.pList.patterns.head.`type`())),
         x.expr.map(gen[Expr])
@@ -457,14 +447,14 @@ object ASTGenerator extends Collector {
     case x: ScPatternDefinition =>
       ValOrVarDef(
         genAttributes(x),
-        true,
+        isVal = true,
         x.pList.patterns.map(gen[CasePattern]),
         x.expr.map(gen[Expr]))
 
     case x: ScVariableDefinition if x.isSimple =>
       SimpleValOrVarDef(
         genAttributes(x),
-        false,
+        isVal = false,
         x.pList.patterns.head.getText,
         Some(genType(x.pList.patterns.head.`type`())),
         x.expr.map(gen[Expr])
@@ -538,7 +528,7 @@ object ASTGenerator extends Collector {
       ForGuard(gen[Expr](x.expr.get))
 
     case x: ScEnumerator =>
-      ForVal(ast.SimpleValOrVarDef(Seq.empty, true, x.pattern.getText, None, Some(gen[Expr](x.rvalue))))
+      ForVal(ast.SimpleValOrVarDef(Seq.empty, isVal = true, x.pattern.getText, None, Some(gen[Expr](x.rvalue))))
 
     case x: ScTypeParam =>
       TypeParam(x.name)
