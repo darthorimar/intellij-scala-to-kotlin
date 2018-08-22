@@ -1,8 +1,21 @@
 package darthorimar.scalaToKotlinConverter
 
 class DefinitionConverterTest extends ConverterTestBase {
-  
-  /// TODO: add case class tests 
+
+
+  def testCaseClassDef(): Unit =
+    doTest(
+      """case class A(i: Int, b: String)
+      """.stripMargin,
+      """|data class A(val i: Int, val b: String) {
+         |  companion object {
+         |        fun apply(i: Int, b: String): A = A(i, b)
+         |        fun unapply(x: A): A? = x
+         |    }
+         |}
+      """.stripMargin)
+
+
   def testTraitDef(): Unit =
     doTest(
       """
