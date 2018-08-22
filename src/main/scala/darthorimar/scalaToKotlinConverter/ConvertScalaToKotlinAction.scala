@@ -1,15 +1,12 @@
 package darthorimar.scalaToKotlinConverter
 
-import com.intellij.application.options.CodeStyle
 import com.intellij.notification.{NotificationDisplayType, NotificationType}
-import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent, CommonDataKeys, LangDataKeys}
-import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent, CommonDataKeys}
+import com.intellij.openapi.editor.Document
+import com.intellij.openapi.project.Project
 import com.intellij.psi._
-import com.intellij.psi.codeStyle.{CodeStyleManager, CodeStyleSettingsManager}
 import darthorimar.scalaToKotlinConverter.Converter.ConvertResult
-import darthorimar.scalaToKotlinConverter.definition.{Definition, DefinitionGenerator}
-import org.jetbrains.plugins.scala.ScalaLanguage
-import org.jetbrains.plugins.scala.conversion.JavaToScala
+import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.util.{NotificationUtil, ScalaUtils}
 
@@ -51,12 +48,18 @@ class ConvertScalaToKotlinAction extends AnAction {
         case file: ScalaFile if file.getContainingDirectory.isWritable => file
       }
 
-  private def getRootProjectDir(file: ScalaFile): PsiDirectory = {
-    val packageParts = file.packageName.split('.')
-    if (file.getContainingDirectory.getVirtualFile.getCanonicalPath.endsWith(packageParts.mkString("/"))) {
-      Function.chain(Seq.fill(file.packageName.split('.').length)((_: PsiDirectory).getParent))(file.getContainingDirectory)
-    } else PsiManager.getInstance(file.getProject).findDirectory(file.getProject.getBaseDir)
-  }
+  private def getRootProjectDir(file: ScalaFile): PsiDirectory =
+    if (file.packageName.nonEmpty) {
+      val packageParts = file.packageName.split('.')
+      val fileDirectory = file.getContainingDirectory
+      val packagePath = packageParts.mkString("/")
+      if (fileDirectory.getVirtualFile.getCanonicalPath.endsWith(packagePath)) {
+        val goUp = (_: PsiDirectory).getParent
+        val levelsUp = packageParts.length
+        val getDirectory = Function.chain(Seq.fill(levelsUp)(goUp))
+        getDirectory(fileDirectory)
+      } else fileDirectory
+    } else file.getContainingDirectory
 
   private def createKotlinName(file: ScalaFile): String = {
     val nameWithoutExtension = file.getName.stripSuffix(".scala")
@@ -65,12 +68,13 @@ class ConvertScalaToKotlinAction extends AnAction {
 
 
   def actionPerformed(e: AnActionEvent) {
+    val project = e.getProject
     val files = getSelectedFiles(e)
     val (filesToConvert, existingFiles) = files.partition { file =>
       file.getParent.getVirtualFile.findChild(createKotlinName(file)) == null
     }
     existingFiles.foreach { file =>
-      NotificationUtil.builder(file.getProject, s"File ${createKotlinName(file)} already exists").
+      NotificationUtil.builder(project, s"File ${createKotlinName(file)} already exists").
         setDisplayType(NotificationDisplayType.BALLOON)
         .setNotificationType(NotificationType.WARNING)
         .setGroup("convert.scala.to.kotlin")
@@ -83,17 +87,21 @@ class ConvertScalaToKotlinAction extends AnAction {
         for ((text, file) <- converted) {
           val newName = createKotlinName(file)
           file.getVirtualFile.rename(this, newName)
-          val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
-          document.deleteString(0, document.getTextLength)
-          document.insertString(0, text)
-          PsiDocumentManager.getInstance(file.getProject).commitDocument(document)
-          val kotlinFile = PsiDocumentManager.getInstance(file.getProject).getPsiFile(document)
+          val document = PsiDocumentManager.getInstance(project).getDocument(file)
+          replaceFileText(document, project, text)
+          val kotlinFile = PsiDocumentManager.getInstance(project).getPsiFile(document)
           Utils.reformatFile(kotlinFile)
         }
 
         DefinitionGenerator.generate(definitions, getRootProjectDir(files.head))
       }, files.head.getProject, "Convert to Kotlin")
     }
+  }
+
+  def replaceFileText(document: Document, project: Project, newText: String): Unit = {
+    document.deleteString(0, document.getTextLength)
+    document.insertString(0, newText)
+    PsiDocumentManager.getInstance(project).commitDocument(document)
   }
 
 }
