@@ -1,8 +1,18 @@
-package darthorimar.scalaToKotlinConverter.builder
+package darthorimar.scalaToKotlinConverter.step
 
+import darthorimar.scalaToKotlinConverter.BuilderBase
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.scopes.{BuilderState, ScopedVal}
+class KotlinBuilderStep extends ConverterStep[AST, String] {
+
+  override def apply(from: AST, state: ConverterStepState): (String, ConverterStepState) = {
+    val builder = new KotlinBuilder
+    builder.gen(from)
+    (builder.text, state) //not modifying state
+  }
+
+}
 
 class KotlinBuilder extends BuilderBase {
   val stateVal: ScopedVal[BuilderState] = new ScopedVal[BuilderState](BuilderState())
@@ -345,3 +355,4 @@ class KotlinBuilder extends BuilderBase {
     str(t.asKotlin)
   }
 }
+

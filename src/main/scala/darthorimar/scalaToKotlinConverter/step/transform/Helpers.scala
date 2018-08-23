@@ -1,4 +1,4 @@
-package darthorimar.scalaToKotlinConverter.transform
+package darthorimar.scalaToKotlinConverter.step.transform
 
 import darthorimar.scalaToKotlinConverter.ast._
 

@@ -1,8 +1,8 @@
-package darthorimar.scalaToKotlinConverter.transform
+package darthorimar.scalaToKotlinConverter.step.transform
 
 import darthorimar.scalaToKotlinConverter.ast._
 
-class RefCollector extends Transform {
+class RefCollectorTransform extends Transform {
   override protected def action(ast: AST): Option[AST] =
     ast match {
       case ClassType(name) =>
@@ -22,7 +22,7 @@ class RefCollector extends Transform {
     else {
       val importPath = name.stripSuffix("$")
       if (name.contains(".") && !name.startsWith("scala."))
-        addImport(Import(importPath))
+        stateStepVal.addImport(Import(importPath))
       val className = name.split('.').last
       className
     }

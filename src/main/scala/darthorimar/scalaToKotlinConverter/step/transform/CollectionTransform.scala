@@ -1,10 +1,10 @@
-package darthorimar.scalaToKotlinConverter.transform
+package darthorimar.scalaToKotlinConverter.step.transform
 
 import darthorimar.scalaToKotlinConverter
 import darthorimar.scalaToKotlinConverter.Exprs.listType
 import darthorimar.scalaToKotlinConverter.{Exprs, Utils}
 import darthorimar.scalaToKotlinConverter.ast._
-import darthorimar.scalaToKotlinConverter.transform.Helpers.ApplyCall
+import darthorimar.scalaToKotlinConverter.step.transform.Helpers.ApplyCall
 import darthorimar.scalaToKotlinConverter.types.TypeUtils.{ListType, WithType}
 import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, StdTypes, TypeUtils}
 import org.scalafmt.internal.SyntacticGroup.Term

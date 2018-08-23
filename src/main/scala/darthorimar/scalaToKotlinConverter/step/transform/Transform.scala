@@ -1,16 +1,18 @@
-package darthorimar.scalaToKotlinConverter.transform
+package darthorimar.scalaToKotlinConverter.step.transform
 
 import darthorimar.scalaToKotlinConverter
-import darthorimar.scalaToKotlinConverter.Collector
 import darthorimar.scalaToKotlinConverter.ast.{PostfixExpr, _}
-import darthorimar.scalaToKotlinConverter.scopes.{LocalNamer, Renamer, ScopedVal}
+import darthorimar.scalaToKotlinConverter.scopes._
+import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
+import darthorimar.scalaToKotlinConverter.step.{ConverterStep, ConverterStepState}
 
 
-trait Transform extends Collector {
+trait Transform extends ConverterStep[AST, AST] {
   protected def action(ast: AST): Option[AST]
 
   val renamerVal = new ScopedVal[Renamer](Renamer(Map.empty))
   val namerVal = new ScopedVal[LocalNamer](new LocalNamer)
+  val stateStepVal = new ScopedVal[ConverterStepState](new ConverterStepState)
 
   var context: File = null
 
@@ -28,6 +30,14 @@ trait Transform extends Collector {
     parentsStack = parentsStack.tail
     res
   }
+
+  override def apply(from: AST, state: ConverterStepState): (AST, ConverterStepState) =
+    scoped(
+      stateStepVal.set(state)
+    ) {
+      val result = transform[AST](from)
+      (result, stateStepVal)
+    }
 
   protected def copy(ast: AST): AST = ast match {
     case x: ErrorAst =>
@@ -276,21 +286,5 @@ trait Transform extends Collector {
     case EmptyDefExpr => EmptyDefExpr
 
     case x: Keyword => x
-  }
-}
-
-object Transform {
-  def apply(fileDef: AST, collector: Collector): (AST, Collector) = {
-    val passes = Seq(
-      new TypeTransform,
-      new BasicTransform,
-      new CollectionTransform,
-      new TypeTransform,
-      new CollectorTransform,
-      new RefCollector)
-    passes.foldLeft((fileDef: AST, collector)) {
-      case ((ast, clctr), transform) =>
-        (transform.transform[File](ast), transform.concatCollector(clctr))
-    }
   }
 }

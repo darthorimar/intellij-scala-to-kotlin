@@ -1,4 +1,4 @@
-package darthorimar.scalaToKotlinConverter.transform
+package darthorimar.scalaToKotlinConverter.step.transform
 
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.Definition
@@ -9,7 +9,7 @@ class CollectorTransform extends Transform {
   override protected def action(ast: AST): Option[AST] = ast match {
     case CallExpr(_, RefExpr(_, Some(expr), name, _, _), _, _)
       if calls.isDefinedAt((expr.exprType, name)) =>
-      addDefinition(calls((expr.exprType, name)))
+      stateStepVal.addDefinition(calls((expr.exprType, name)))
       None
     case _ => None
   }

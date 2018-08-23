@@ -1,4 +1,4 @@
-package darthorimar.scalaToKotlinConverter
+package darthorimar.scalaToKotlinConverter.step
 
 import com.intellij.lang.jvm.JvmModifier
 import com.intellij.psi._
@@ -7,7 +7,7 @@ import darthorimar.scalaToKotlinConverter.definition.TupleDefinition
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.scopes.{ASTGeneratorState, ScopedVal}
 import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, LibTypes, ScalaTypes}
-import org.jetbrains.plugins.scala.lang.psi.ScalaPsiUtil
+import darthorimar.scalaToKotlinConverter.{Exprs, ast}
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.lang.psi.api.base._
 import org.jetbrains.plugins.scala.lang.psi.api.base.patterns._
@@ -25,13 +25,22 @@ import org.jetbrains.plugins.scala.lang.psi.types.api.{JavaArrayType, StdType, T
 import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ScMethodType, ScTypePolymorphicType}
 import org.jetbrains.plugins.scala.lang.psi.types.result.TypeResult
 import org.jetbrains.plugins.scala.lang.psi.types.{ScAbstractType, ScCompoundType, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
+import org.jetbrains.plugins.scala.lang.psi.{ScalaPsiElement, ScalaPsiUtil}
 
 import scala.annotation.tailrec
 import scala.util.Try
 
-class ASTGenerator extends Collector {
+class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
   val stateVal = new ScopedVal[ASTGeneratorState](ASTGeneratorState(Map.empty))
+  val stepStateVal = new ScopedVal[ConverterStepState](new ConverterStepState)
 
+  override def apply(from: ScalaPsiElement, state: ConverterStepState): (AST, ConverterStepState) =
+    scoped(
+      stepStateVal.set(state)
+    ) {
+      val ast = gen[AST](from)
+      (ast, stepStateVal)
+    }
 
   private def genDefinitions(file: ScalaFile): Seq[PsiElement] =
     file.getChildren.filter {
@@ -50,7 +59,7 @@ class ASTGenerator extends Collector {
   }
 
 
-  def genTypeArgs(typeArgs: Option[ScTypeArgs]): Seq[Type] = {
+  private def genTypeArgs(typeArgs: Option[ScTypeArgs]): Seq[Type] = {
     typeArgs
       .map(_.typeArgs)
       .toSeq
@@ -58,7 +67,7 @@ class ASTGenerator extends Collector {
       .map(z => genType(z.`type`()))
   }
 
-  def genType(ty: ScType): Type =
+  private def genType(ty: ScType): Type =
     ty match {
       case x: StdType =>
         ast.StdType(x.name)
@@ -101,18 +110,18 @@ class ASTGenerator extends Collector {
     }
 
 
-  def genType(t: Option[ScTypeElement]): Type =
+  private def genType(t: Option[ScTypeElement]): Type =
     t.flatMap(_.`type`().toOption).map(genType)
       .getOrElse(NoType)
 
-  def genType(t: TypeResult): Type =
+  private def genType(t: TypeResult): Type =
     t.map(genType).getOrElse(NoType)
 
-  def blockOrNone(exprs: Seq[Expr]): Option[BlockExpr] =
+  private def blockOrNone(exprs: Seq[Expr]): Option[BlockExpr] =
     if (exprs.nonEmpty) Some(BlockExpr(exprs))
     else None
 
-  def genAttributes(x: ScMember): Seq[Attribute] = {
+  private def genAttributes(x: ScMember): Seq[Attribute] = {
     def attr(p: Boolean, a: Attribute) =
       if (p) Some(a) else None
 
@@ -134,13 +143,13 @@ class ASTGenerator extends Collector {
     memberAttrs ++ extraAttrs
   }
 
-  def gen[T](psi: PsiElement): T =
+  private def gen[T](psi: PsiElement): T =
     stateVal.precalculated.get(psi.getTextRange)
       .map(_.asInstanceOf[T])
       .getOrElse(recover[T](psi))
 
 
-  def findUnderscores(expr: PsiElement): Seq[ScUnderscoreSection] = {
+  private def findUnderscores(expr: PsiElement): Seq[ScUnderscoreSection] = {
     if (expr.getText.indexOf('_') == -1) Seq.empty
     else inner(expr)
 
@@ -156,7 +165,7 @@ class ASTGenerator extends Collector {
     inner(expr)
   }
 
-  def canonicalName(p: PsiElement, clazz: PsiClass): String =
+  private def canonicalName(p: PsiElement, clazz: PsiClass): String =
     Option(p) map {
       case clazz: ScObject if clazz.isStatic => clazz.qualifiedName
       case c: ScClass => c.qualifiedName
@@ -169,7 +178,7 @@ class ASTGenerator extends Collector {
       case p: ScParameter => p.getName
     } getOrElse ""
 
-  def recover[T](psi: PsiElement): T =
+  private def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
       //      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
       //      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
@@ -178,7 +187,7 @@ class ASTGenerator extends Collector {
       //      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
       .get
 
-  def transform[T](psi: PsiElement): T = (psi match {
+  private def transform[T](psi: PsiElement): T = (psi match {
     case psi: ScalaFile => //todo x --> sth else
       val underscores =
         findUnderscores(psi).flatMap(_.overExpr).map { over =>
@@ -301,7 +310,7 @@ class ASTGenerator extends Collector {
       if (arity == 2) {
         NewExpr(GenericType(KotlinTypes.PAIR, exprs.map(_.exprType)), exprs)
       } else {
-        addDefinition(new TupleDefinition(arity))
+        stepStateVal.addDefinition(new TupleDefinition(arity))
         NewExpr(GenericType(LibTypes.tupleType(arity), exprs.map(_.exprType)), exprs)
       }
 
@@ -386,7 +395,7 @@ class ASTGenerator extends Collector {
 
     case x: ScTuplePattern =>
       val arity = x.patternList.toSeq.flatMap(_.patterns).size
-      addDefinition(new TupleDefinition(arity))
+      stepStateVal.addDefinition(new TupleDefinition(arity))
       ConstructorPattern(
         CaseClassConstructorRef(ClassType(s"Tuple$arity")),
         x.patternList.toSeq.flatMap(_.patterns.map(gen[CasePattern])),

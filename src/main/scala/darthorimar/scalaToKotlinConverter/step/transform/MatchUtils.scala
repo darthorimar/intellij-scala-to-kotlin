@@ -1,4 +1,4 @@
-package darthorimar.scalaToKotlinConverter.transform
+package darthorimar.scalaToKotlinConverter.step.transform
 
 import darthorimar.scalaToKotlinConverter.Exprs.simpleInfix
 import darthorimar.scalaToKotlinConverter.{Exprs, Utils, ast}
@@ -316,7 +316,7 @@ object MatchUtils {
       case _: ElseWhenClause => true
       case _ => false
     }) {
-      addDefinition(Definition.matchError)
+      stateStepVal.addDefinition(Definition.matchError)
       val exception = NewExpr(ClassType("MatchError"), Seq(valRef))
       Seq(ElseWhenClause(ThrowExpr(exception)))
     }

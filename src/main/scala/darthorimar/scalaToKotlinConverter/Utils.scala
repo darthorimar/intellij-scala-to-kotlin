@@ -1,6 +1,6 @@
 package darthorimar.scalaToKotlinConverter
 
-import com.intellij.psi.{PsiDirectory, PsiFile}
+import com.intellij.psi.{PsiDirectory, PsiElement, PsiFile}
 import com.intellij.psi.codeStyle.CodeStyleManager
 import darthorimar.scalaToKotlinConverter.ast.{Import, Type}
 import org.jetbrains.kotlin.name.FqName
@@ -19,23 +19,30 @@ object Utils {
     }
   }
 
-  def getSrcDir(psi: ScalaPsiElement): PsiDirectory =
-    psi match {
-      case file: ScalaFile =>
-        if (file.packageName.nonEmpty) {
-          val packageParts = file.packageName.split('.')
-          val fileDirectory = file.getContainingDirectory
-          val packagePath = packageParts.mkString("/")
-          if (fileDirectory.getVirtualFile.getCanonicalPath.endsWith(packagePath)) {
-            val goUp = (_: PsiDirectory).getParent
-            val levelsUp = packageParts.length
-            val getDirectory = Function.chain(Seq.fill(levelsUp)(goUp))
-            getDirectory(fileDirectory)
-          } else fileDirectory
-        } else file.getContainingDirectory
-      case _ =>
-        getSrcDir(psi.getContainingFile.asInstanceOf[ScalaFile])
+  def getSrcDir(psi: PsiElement): PsiDirectory = {
+    def byPackageName(packageName: String): PsiDirectory = {
+      if (packageName.nonEmpty) {
+        val packageParts = packageName.split('.')
+        val fileDirectory = psi.getContainingFile.getContainingDirectory
+        val packagePath = packageParts.mkString("/")
+        if (fileDirectory.getVirtualFile.getCanonicalPath.endsWith(packagePath)) {
+          val goUp = (_: PsiDirectory).getParent
+          val levelsUp = packageParts.length
+          val getDirectory = Function.chain(Seq.fill(levelsUp)(goUp))
+          getDirectory(fileDirectory)
+        } else fileDirectory
+      } else psi.getContainingFile.getContainingDirectory
     }
+
+    psi match {
+      case scalaFile: ScalaFile =>
+        byPackageName(scalaFile.packageName)
+      case ktFile: KtFile =>
+        byPackageName(ktFile.getPackageFqName.asString)
+      case _ =>
+        getSrcDir(psi.getContainingFile)
+    }
+  }
 
 
   def escapeName(name: String): String =

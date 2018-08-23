@@ -1,4 +1,4 @@
-package darthorimar.scalaToKotlinConverter.transform
+package darthorimar.scalaToKotlinConverter.step.transform
 
 import darthorimar.scalaToKotlinConverter.Exprs
 import darthorimar.scalaToKotlinConverter.ast._
@@ -99,7 +99,7 @@ class BasicTransform extends Transform {
                 acc))
         }
         if (isYield) {
-          addImport(Import("kotlin.coroutines.experimental.buildSequence"))
+          stateStepVal.addImport(Import("kotlin.coroutines.experimental.buildSequence"))
           Some(
             Exprs.simpleCall("buildSequence",
               exprType,

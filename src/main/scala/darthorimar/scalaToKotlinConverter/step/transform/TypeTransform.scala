@@ -1,4 +1,4 @@
-package darthorimar.scalaToKotlinConverter.transform
+package darthorimar.scalaToKotlinConverter.step.transform
 
 import darthorimar.scalaToKotlinConverter
 import darthorimar.scalaToKotlinConverter.types._
@@ -21,15 +21,15 @@ class TypeTransform extends Transform {
       Some(KotlinTypes.PAIR)
 
     case ScalaTuple(arity) =>
-      addDefinition(Definition.tuple(arity))
+      stateStepVal.addDefinition(Definition.tuple(arity))
       Some(LibTypes.tupleType(arity))
 
     case ScalaType("scala.util.Try") =>
-      addDefinition(Definition.tryDefinition)
+      stateStepVal.addDefinition(Definition.tryDefinition)
       Some(ClassType("Try"))
 
     case ScalaType("scala.PartialFunction") =>
-      addDefinition(Definition.partialFunction)
+      stateStepVal.addDefinition(Definition.partialFunction)
       Some(ClassType("PartialFunction"))
 
     case ClassType(name) if name.stripPrefix("_root_.").startsWith("scala.") =>

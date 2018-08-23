@@ -1,6 +1,6 @@
 package darthorimar.scalaToKotlinConverter.definition
 
-import darthorimar.scalaToKotlinConverter.builder.BuilderBase
+import darthorimar.scalaToKotlinConverter.BuilderBase
 
 trait TextDefinition extends Definition with BuilderBase {
   protected def generate(): Unit

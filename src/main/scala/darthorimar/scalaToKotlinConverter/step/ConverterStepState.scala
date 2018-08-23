@@ -1,10 +1,10 @@
-package darthorimar.scalaToKotlinConverter
+package darthorimar.scalaToKotlinConverter.step
 
 import darthorimar.scalaToKotlinConverter.ast.Import
 import darthorimar.scalaToKotlinConverter.definition.{Definition, DefinitionGenerator}
 
 
-class Collector {
+class ConverterStepState {
   private var definitions: Set[Definition] = Set.empty
   private var imports: Set[Import] = Set.empty
 
@@ -21,15 +21,4 @@ class Collector {
 
   def collectImports: Seq[Import] =
     imports.toSeq
-
-  def concatCollector(secondCollector: Collector): Collector = {
-    val resultedCollector = new Collector
-    (collectImports ++ secondCollector.collectImports) foreach {
-      resultedCollector.addImport
-    }
-    (collectedDefinitions ++ secondCollector.collectedDefinitions) foreach {
-      resultedCollector.addDefinition
-    }
-    resultedCollector
-  }
 }
