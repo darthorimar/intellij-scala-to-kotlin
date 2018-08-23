@@ -30,7 +30,7 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
       case scalaFile: ScalaFile =>
         val data =
           inWriteAction {
-            (startOffsets zip endOffsets).map {
+            (startOffsets zip endOffsets) map {
               case (from, to) =>
                 val range = TextRange.apply(from, to)
                 val psiInRange =
