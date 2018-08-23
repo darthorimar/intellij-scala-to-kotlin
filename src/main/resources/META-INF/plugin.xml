@@ -24,5 +24,10 @@
         </action>
     </actions>
 
+    <extensions defaultExtensionNs="com.intellij">
+        <copyPastePostProcessor
+                implementation="darthorimar.scalaToKotlinConverter.ConvertOnCopyPastPostProcessor"/>
+    </extensions>
+
 
 </idea-plugin>

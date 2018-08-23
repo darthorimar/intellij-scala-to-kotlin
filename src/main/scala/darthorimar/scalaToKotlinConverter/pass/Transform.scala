@@ -100,10 +100,9 @@ trait Transform extends Collector {
     case Import(ref) =>
       Import(ref)
 
-    case x@File(pckg, fileImports, defns, neededDefinitions) =>
+    case x@File(pckg, definitions) =>
       context = x
-      val newDefns = defns.map(transform[DefExpr])
-      File(pckg, (collectImports ++ fileImports).map(transform[Import]), newDefns, neededDefinitions ++ collectedDefinitions)
+      File(pckg,  definitions.map(transform[DefExpr]))
 
     case InfixExpr(exprType, op, left, right, isLeftAssoc) =>
       InfixExpr(transform[Type](exprType),
@@ -271,9 +270,6 @@ trait Transform extends Collector {
     case ForExpr(exprType, generators, isYield, body) =>
       ForExpr(transform[Type](exprType), generators.map(transform[ForEnumerator]), isYield, transform[Expr](body))
 
-    case ForGenerator(pattern, expr) =>
-      ForGenerator(transform[CasePattern](pattern), transform[Expr](expr))
-
     case BracketsExpr(exprType, expr, inBrackets) =>
       BracketsExpr(transform[Type](exprType), transform[Expr](expr), transform[Expr](inBrackets))
 
@@ -284,14 +280,17 @@ trait Transform extends Collector {
 }
 
 object Transform {
-  def applyPasses(fileDef: File): File = {
+  def apply(fileDef: AST, collector: Collector): (AST, Collector) = {
     val passes = Seq(
       new TypeTransform,
       new BasicTransform,
       new CollectionTransform,
-      new TypeTransform, //todo get rid of second call
+      new TypeTransform,
       new CollectorTransform,
       new RefCollector)
-    passes.foldLeft(fileDef)((ast, transform) => transform.transform[File](ast))
+    passes.foldLeft((fileDef: AST, collector)) {
+      case ((ast, clctr), transform) =>
+        (transform.transform[File](ast), transform.concatCollector(clctr))
+    }
   }
 }

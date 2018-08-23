@@ -85,7 +85,7 @@ object DefinitionGenerator {
   def getExistingDefinitionNames(file: PsiFile): Seq[String] = file match {
     case ktFile: KtFile =>
       ktFile.getDeclarations.asScala map {
-        case funct: KtNamedFunction if funct.getStub.isExtension =>
+        case funct: KtNamedFunction if Option(funct.getStub).exists(_.isExtension) =>
           val typeName = funct.getReceiverTypeReference.getText.takeWhile(_.isLetter).toLowerCase
           val funName = funct.getName.toLowerCase.capitalize
           s"$typeName$funName"

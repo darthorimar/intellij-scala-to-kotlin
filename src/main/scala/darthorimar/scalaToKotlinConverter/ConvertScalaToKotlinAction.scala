@@ -7,6 +7,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi._
 import darthorimar.scalaToKotlinConverter.Converter.ConvertResult
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.util.{NotificationUtil, ScalaUtils}
 
@@ -48,19 +49,6 @@ class ConvertScalaToKotlinAction extends AnAction {
         case file: ScalaFile if file.getContainingDirectory.isWritable => file
       }
 
-  private def getRootProjectDir(file: ScalaFile): PsiDirectory =
-    if (file.packageName.nonEmpty) {
-      val packageParts = file.packageName.split('.')
-      val fileDirectory = file.getContainingDirectory
-      val packagePath = packageParts.mkString("/")
-      if (fileDirectory.getVirtualFile.getCanonicalPath.endsWith(packagePath)) {
-        val goUp = (_: PsiDirectory).getParent
-        val levelsUp = packageParts.length
-        val getDirectory = Function.chain(Seq.fill(levelsUp)(goUp))
-        getDirectory(fileDirectory)
-      } else fileDirectory
-    } else file.getContainingDirectory
-
   private def createKotlinName(file: ScalaFile): String = {
     val nameWithoutExtension = file.getName.stripSuffix(".scala")
     nameWithoutExtension + ".kt"
@@ -83,17 +71,20 @@ class ConvertScalaToKotlinAction extends AnAction {
     }
     if (filesToConvert.nonEmpty) {
       ScalaUtils.runWriteAction(() => {
-        val ConvertResult(converted, definitions) = Converter.convert(filesToConvert)
-        for ((text, file) <- converted) {
+        val ConvertResult(converted) = Converter.convert(filesToConvert)
+        for ((text, file: ScalaFile, collected) <- converted) {
           val newName = createKotlinName(file)
           file.getVirtualFile.rename(this, newName)
           val document = PsiDocumentManager.getInstance(project).getDocument(file)
           replaceFileText(document, project, text)
-          val kotlinFile = PsiDocumentManager.getInstance(project).getPsiFile(document)
+          val kotlinFile = PsiDocumentManager.getInstance(project).getPsiFile(document).asInstanceOf[KtFile]
           Utils.reformatFile(kotlinFile)
+          val imports = collected.collectImports
+          Utils.addImportsToKtFile(kotlinFile, imports)
         }
-
-        DefinitionGenerator.generate(definitions, getRootProjectDir(files.head))
+        val definitions = converted.flatMap(_._3.collectedDefinitions)
+        DefinitionGenerator
+          .generate(definitions, Utils.getSrcDir(files.head))
       }, files.head.getProject, "Convert to Kotlin")
     }
   }

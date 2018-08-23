@@ -29,8 +29,9 @@ import org.jetbrains.plugins.scala.lang.psi.types.{ScAbstractType, ScCompoundTyp
 import scala.annotation.tailrec
 import scala.util.Try
 
-object ASTGenerator extends Collector {
+class ASTGenerator extends Collector {
   val stateVal = new ScopedVal[ASTGeneratorState](ASTGeneratorState(Map.empty))
+
 
   private def genDefinitions(file: ScalaFile): Seq[PsiElement] =
     file.getChildren.filter {
@@ -190,7 +191,6 @@ object ASTGenerator extends Collector {
       ) {
         File(
           psi.getPackageName,
-          Seq.empty,
           genDefinitions(psi)
             .filter {
               case _: PsiClassWrapper => false
@@ -201,8 +201,8 @@ object ASTGenerator extends Collector {
             .filter {
               case Defn(_, ObjDefn, _, _, _, _, _, Some(_)) => false
               case _ => true
-            },
-          collectedDefinitions)
+            }
+        )
       }
 
     case x: ScTypeDefinition =>

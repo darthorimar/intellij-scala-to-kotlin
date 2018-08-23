@@ -4,7 +4,7 @@ import darthorimar.scalaToKotlinConverter.ast.Import
 import darthorimar.scalaToKotlinConverter.definition.{Definition, DefinitionGenerator}
 
 
-trait Collector {
+class Collector {
   private var definitions: Set[Definition] = Set.empty
   private var imports: Set[Import] = Set.empty
 
@@ -21,4 +21,15 @@ trait Collector {
 
   def collectImports: Seq[Import] =
     imports.toSeq
+
+  def concatCollector(secondCollector: Collector): Collector = {
+    val resultedCollector = new Collector
+    (collectImports ++ secondCollector.collectImports) foreach {
+      resultedCollector.addImport
+    }
+    (collectedDefinitions ++ secondCollector.collectedDefinitions) foreach {
+      resultedCollector.addDefinition
+    }
+    resultedCollector
+  }
 }

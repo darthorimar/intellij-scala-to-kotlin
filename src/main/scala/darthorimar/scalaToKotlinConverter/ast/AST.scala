@@ -34,10 +34,7 @@ case class ConstructorParam(kind: MemberKind, modifier: Attribute, name: String,
 
 case class TypeParam(name: String) extends AST
 
-case class File(packageName: String,
-                imports: Seq[Import],
-                definitions: Seq[DefExpr],
-                neededDefinitions: Seq[Definition]) extends AST
+case class File(packageName: String, definitions: Seq[DefExpr]) extends AST
 
 sealed trait CasePattern extends AST {
   def representation: String
@@ -48,10 +45,6 @@ sealed trait CasePattern extends AST {
 case class CompositePattern(parts: Seq[CasePattern], label: Option[String]) extends CasePattern {
   override def representation: String = parts.mkString(" | ")
 }
-
-//case class TuplePattern(parts: Seq[CasePattern]) extends CasePattern {
-//  override def name: String = parts.mkString("(", ", ", ")")
-//}
 
 
 case class LitPattern(expr: Expr, label: Option[String]) extends CasePattern {

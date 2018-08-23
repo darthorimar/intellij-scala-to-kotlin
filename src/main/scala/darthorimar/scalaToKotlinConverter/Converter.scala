@@ -1,44 +1,39 @@
 package darthorimar.scalaToKotlinConverter
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiElement
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.builder.KotlinBuilder
-import darthorimar.scalaToKotlinConverter.definition.Definition
 import darthorimar.scalaToKotlinConverter.pass.Transform
-import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
-import org.jetbrains.plugins.scala.extensions._
+import org.jetbrains.plugins.scala.lang.psi.ScalaPsiElement
 import org.jetbrains.plugins.scala.lang.transformation.Transformer
-import org.jetbrains.plugins.scala.lang.transformation.annotations.{AddTypeToValueDefinition, AddTypeToVariableDefinition}
 import org.jetbrains.plugins.scala.lang.transformation.calls._
 
 object Converter {
-  val transformers: Set[Transformer] = Set(
+  private val transformers: Set[Transformer] = Set(
     new ExpandApplyCall(),
-    //    new ExpandUpdateCall(),
     new ImplicitTransform()
   )
 
 
+  case class ConvertResult(files: Seq[(String, ScalaPsiElement, Collector)])
 
-  case class ConvertResult(files: Seq[(String, ScalaFile)], definitions: Seq[Definition])
-
-  def convert(files: Seq[ScalaFile], doPrint: Boolean = false): ConvertResult = {
-    val convertedFiles = files.map { file =>
+  def convert(psis: Seq[ScalaPsiElement], doPrint: Boolean = false): ConvertResult = {
+    val convertedFiles = psis.map { psi =>
       ApplicationManager.getApplication.runWriteAction(new Runnable {
         override def run(): Unit =
-          Transformer.transform(file, None, transformers)
+          Transformer.transform(psi, None, transformers)
       })
       val builder: KotlinBuilder = new KotlinBuilder
-      val ast: File = ASTGenerator.gen[File](file)
-      if (doPrint)
-        println(Utils.prettyPrint(ast))
-      val newAst: File = Transform.applyPasses(ast)
+      val astGenerator = new ASTGenerator
+      val ast = astGenerator.gen[AST](psi)
+
+      if (doPrint) println(Utils.prettyPrint(ast))
+
+      val (newAst, collector) = Transform(ast, astGenerator)
       builder.gen(newAst)
-      (builder.text, file, newAst.neededDefinitions)
+      (builder.text, psi, collector)
     }
-    ConvertResult(
-      convertedFiles.map { case (t, f, _) => (t, f) },
-      convertedFiles.flatMap(_._3).distinctBy(_.name))
+    ConvertResult(convertedFiles)
   }
 }

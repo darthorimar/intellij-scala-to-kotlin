@@ -25,7 +25,7 @@ abstract class ConverterTestBase extends ScalaLightPlatformCodeInsightTestCaseAd
              doPrint: Boolean = false): Unit = {
     configureFromFileTextAdapter("dummy.scala", scala)
     val psiFile = getFileAdapter
-    val ConvertResult(files, _) = Converter.convert(Seq(psiFile.asInstanceOf[ScalaFile]), doPrint)
+    val ConvertResult(files) = Converter.convert(Seq(psiFile.asInstanceOf[ScalaFile]), doPrint)
     val generatedKotlinCode = files.head._1
     if (doPrint) {
       println(generatedKotlinCode)

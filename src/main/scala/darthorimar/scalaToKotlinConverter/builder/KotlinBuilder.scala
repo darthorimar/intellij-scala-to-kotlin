@@ -12,19 +12,13 @@ class KotlinBuilder extends BuilderBase {
       case e: ErrorAst =>
         str(s"/* ERROR converting `${e.text}`*/")
 
-      case File(pckg, imports, defns, _) =>
+      case File(pckg, defns) =>
         if (pckg.trim.nonEmpty) {
           str("package ")
           str(pckg)
           nl()
         }
-        if (imports.nonEmpty) {
-          nl()
-          nl()
-          repNl(imports.toSeq.sortBy(_.ref))(gen)
-          nl()
-          nl()
-        }
+
         repNl(defns)(gen)
 
       case Defn(attrs, t, name, typeParams, consruct, supersBlock, block, companionDefn) =>
