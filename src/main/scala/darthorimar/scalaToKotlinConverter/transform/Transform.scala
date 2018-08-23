@@ -1,4 +1,4 @@
-package darthorimar.scalaToKotlinConverter.pass
+package darthorimar.scalaToKotlinConverter.transform
 
 import darthorimar.scalaToKotlinConverter
 import darthorimar.scalaToKotlinConverter.Collector

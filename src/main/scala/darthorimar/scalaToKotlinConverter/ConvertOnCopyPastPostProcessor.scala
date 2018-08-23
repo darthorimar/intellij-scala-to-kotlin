@@ -14,7 +14,6 @@ import com.intellij.openapi.util.Ref
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.builder.KotlinBuilder
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
-import darthorimar.scalaToKotlinConverter.pass.Transform
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.plugins.hocon.CommonUtil.TextRange
 import org.jetbrains.plugins.scala.extensions._

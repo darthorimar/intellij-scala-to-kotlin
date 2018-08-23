@@ -4,7 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.psi.PsiElement
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.builder.KotlinBuilder
-import darthorimar.scalaToKotlinConverter.pass.Transform
+import darthorimar.scalaToKotlinConverter.transform.Transform
 import org.jetbrains.plugins.scala.lang.psi.ScalaPsiElement
 import org.jetbrains.plugins.scala.lang.transformation.Transformer
 import org.jetbrains.plugins.scala.lang.transformation.calls._
