@@ -1,25 +1,25 @@
-package darthorimar.scalaToKotlinConverter
+package darthorimar.scalaToKotlinConverter.ideaInteraction
 
 import java.awt.datatransfer.{DataFlavor, Transferable}
+import java.util.Collections
 import java.{lang, util}
 
 import com.intellij.codeInsight.editorActions.{CopyPastePostProcessor, TextBlockTransferableData}
 import com.intellij.openapi.editor.{Editor, RangeMarker}
-import com.intellij.psi.{PsiDocumentManager, PsiElement, PsiFile, PsiManager}
-import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
-import java.util.Collections
-
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Ref
+import com.intellij.psi.{PsiDocumentManager, PsiFile}
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
 import darthorimar.scalaToKotlinConverter.step.ConverterStepState
+import darthorimar.scalaToKotlinConverter.{Converter, Utils}
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.plugins.hocon.CommonUtil.TextRange
 import org.jetbrains.plugins.scala.extensions._
 import org.jetbrains.plugins.scala.lang.psi.ScalaPsiElement
+import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotlinTransferableData] {
   override def collectTransferableData(file: PsiFile,

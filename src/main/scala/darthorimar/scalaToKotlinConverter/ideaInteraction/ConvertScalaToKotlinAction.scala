@@ -1,4 +1,4 @@
-package darthorimar.scalaToKotlinConverter
+package darthorimar.scalaToKotlinConverter.ideaInteraction
 
 import com.intellij.notification.{NotificationDisplayType, NotificationType}
 import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent, CommonDataKeys}
@@ -7,6 +7,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi._
 import darthorimar.scalaToKotlinConverter.Converter.ConvertResult
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
+import darthorimar.scalaToKotlinConverter.{Converter, Utils}
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.util.{NotificationUtil, ScalaUtils}
