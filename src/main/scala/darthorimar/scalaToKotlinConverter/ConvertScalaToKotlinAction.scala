@@ -73,16 +73,16 @@ class ConvertScalaToKotlinAction extends AnAction {
     if (filesToConvert.nonEmpty) {
       ScalaUtils.runWriteAction(() => {
         val ConvertResult(converted) = Converter.convert(filesToConvert)
-        for ((text, file: ScalaFile, collected) <- converted) {
+        for ((text, file: ScalaFile, state) <- converted) {
           val newName = createKotlinName(file)
           file.getVirtualFile.rename(this, newName)
           val document = PsiDocumentManager.getInstance(project).getDocument(file)
           replaceFileText(document, project, text)
           val kotlinFile = PsiDocumentManager.getInstance(project).getPsiFile(document).asInstanceOf[KtFile]
-          Utils.reformatFile(kotlinFile)
-          val imports = collected.collectImports
-          Utils.addImportsToKtFile(kotlinFile, imports)
-          new ApplyInspectionsStep().apply(kotlinFile, new ConverterStepState)
+//          Utils.reformatFile(kotlinFile)
+//          val imports = state.collectImports
+//          Utils.addImportsToKtFile(kotlinFile, imports)
+          new ApplyInspectionsStep().apply(kotlinFile, state)
         }
         val definitions = converted.flatMap(_._3.collectedDefinitions)
         DefinitionGenerator

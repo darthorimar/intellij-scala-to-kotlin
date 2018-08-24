@@ -13,7 +13,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Ref
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
-import darthorimar.scalaToKotlinConverter.step.ConverterStepState
+import darthorimar.scalaToKotlinConverter.step.{ApplyInspectionsStep, ConverterStepState}
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.plugins.hocon.CommonUtil.TextRange
 import org.jetbrains.plugins.scala.extensions._
@@ -74,6 +74,7 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
               document.replaceString(bounds.getStartOffset, bounds.getEndOffset, text)
               PsiDocumentManager.getInstance(project).commitDocument(document)
               Utils.addImportsToKtFile(ktFile, newState.collectImports)
+              new ApplyInspectionsStep().apply(ktFile, oldState)
             }
           }
         }
