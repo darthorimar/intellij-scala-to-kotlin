@@ -16,7 +16,8 @@ class BasicTransform extends Transform {
       case RefExpr(FunctionType(NumericType(_), NumericType(_)), _, "*" | "/" | "+" | "-" | "%", _, _) => true
       case RefExpr(FunctionType(NumericType(_), StdTypes.BOOLEAN), _, ">" | "<" | ">=" | "<=", _, _) => true
       case RefExpr(FunctionType(_, StdTypes.BOOLEAN), _, "==" | "!=", _, _) => true
-      case RefExpr(FunctionType(StdTypes.STRING, StdTypes.STRING), _, "+", _, _) => true
+      case RefExpr(_, _, "+", _, _) => true
+      case RefExpr(_, _, "!", _, _) => true
       case _ => false
     }
 
