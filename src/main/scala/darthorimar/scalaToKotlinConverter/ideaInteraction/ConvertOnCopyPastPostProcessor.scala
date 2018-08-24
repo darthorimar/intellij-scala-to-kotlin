@@ -63,21 +63,23 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
                                        values: util.List[ScalaToKotlinTransferableData]): Unit =
     PsiDocumentManager.getInstance(project).getPsiFile(bounds.getDocument) match {
       case ktFile: KtFile =>
-        inWriteAction {
-          values.asScala foreach { transData =>
-            transData.data foreach { data =>
-              val ast = data.ast
-              val oldState = data.state
-              val document = editor.getDocument
-              val (text, newState) = Converter.astToKotlinText(ast, oldState)
-              DefinitionGenerator.generate(newState.collectedDefinitions, Utils.getSrcDir(ktFile))
-              document.replaceString(bounds.getStartOffset, bounds.getEndOffset, text)
-              PsiDocumentManager.getInstance(project).commitDocument(document)
-              Utils.addImportsToKtFile(ktFile, newState.collectImports)
+        if (new ConvertScalaToKotlinDialog(project).showAndGet()) {
+          inWriteAction {
+            values.asScala foreach { transData =>
+              transData.data foreach { data =>
+                val ast = data.ast
+                val oldState = data.state
+                val document = editor.getDocument
+                val (text, newState) = Converter.astToKotlinText(ast, oldState)
+                DefinitionGenerator.generate(newState.collectedDefinitions, Utils.getSrcDir(ktFile))
+                document.replaceString(bounds.getStartOffset, bounds.getEndOffset, text)
+                PsiDocumentManager.getInstance(project).commitDocument(document)
+                Utils.addImportsToKtFile(ktFile, newState.collectImports)
+
+              }
             }
           }
         }
-
       case _ =>
     }
 }
