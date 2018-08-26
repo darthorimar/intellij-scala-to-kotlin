@@ -9,10 +9,10 @@ import com.intellij.openapi.editor.{Editor, RangeMarker}
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.{PsiDocumentManager, PsiFile}
+import darthorimar.scalaToKotlinConverter.{Converter, Utils}
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
 import darthorimar.scalaToKotlinConverter.step.ConverterStepState
-import darthorimar.scalaToKotlinConverter.{Converter, Utils}
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.plugins.hocon.CommonUtil.TextRange
 import org.jetbrains.plugins.scala.extensions._
@@ -30,7 +30,7 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
       case scalaFile: ScalaFile =>
         val data =
           inWriteAction {
-            (startOffsets zip endOffsets).map {
+            (startOffsets zip endOffsets) map {
               case (from, to) =>
                 val range = TextRange.apply(from, to)
                 val psiInRange =

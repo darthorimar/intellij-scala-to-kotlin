@@ -7,7 +7,7 @@ plugins {
 
 
 intellij {
-    version = "IC-2018.2"
+//    version = "IC-2018.2"
     pluginName = "IntellijScalaToKotlin"
     setPlugins("Kotlin", "org.intellij.scala:2018.2.10")
 }
