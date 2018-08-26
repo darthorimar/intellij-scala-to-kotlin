@@ -1,6 +1,29 @@
 package darthorimar.scalaToKotlinConverter
 
 class ExpressionConverterTest extends ConverterTestBase {
+
+  def testBoolExpression(): Unit =
+    doExprTest(
+      """!(!true || false) && false""".stripMargin,
+      """!(!true || false) && false""".stripMargin)
+
+  def testPrefixExpr(): Unit =
+    doExprTest(
+      """!true""".stripMargin,
+      """!true""".stripMargin)
+
+  def testIntExpr(): Unit =
+    doExprTest(
+      """(1) + (4 / 2 - 3)""".stripMargin,
+      """(1) + (4 / 2 - 3)""".stripMargin)
+
+  def testStringConcat(): Unit =
+    doExprTest(
+      """ "1" + "2" """.stripMargin,
+      """ "1" + "2" """.stripMargin)
+
+
+
   def testForComprehension(): Unit =
     doExprTest(
       """for {

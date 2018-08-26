@@ -4,6 +4,7 @@ import darthorimar.scalaToKotlinConverter.Exprs
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.scopes.{BasicTransformState, LocalNamer, ScopedVal}
+import darthorimar.scalaToKotlinConverter.step.transform.Helpers.ApplyCall.{InfixCall, PrefixCall}
 import darthorimar.scalaToKotlinConverter.types.TypeUtils.NumericType
 import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, StdTypes}
 
@@ -11,20 +12,29 @@ class BasicTransform extends Transform {
 
   val stateVal: ScopedVal[BasicTransformState] = new ScopedVal[BasicTransformState](BasicTransformState(false))
 
-  def isDefaultOperator(op: RefExpr): Boolean =
-    op match {
-      case RefExpr(FunctionType(NumericType(_), NumericType(_)), _, "*" | "/" | "+" | "-" | "%", _, _) => true
-      case RefExpr(FunctionType(NumericType(_), StdTypes.BOOLEAN), _, ">" | "<" | ">=" | "<=", _, _) => true
-      case RefExpr(FunctionType(_, StdTypes.BOOLEAN), _, "==" | "!=", _, _) => true
-      case RefExpr(_, _, "+", _, _) => true
-      case RefExpr(_, _, "!", _, _) => true
+  private def isDefaultInfix(name: String, leftType: Type, rightType: Type, returnType: Type): Boolean =
+    (name, leftType, rightType, returnType) match {
+      case ("||" | "&&", StdTypes.BOOLEAN, StdTypes.BOOLEAN, StdTypes.BOOLEAN) => true
+      case ("||" | "&&", StdTypes.BOOLEAN, StdTypes.BOOLEAN, StdTypes.BOOLEAN) => true
+      case ("*" | "/" | "+" | "-" | "%", NumericType(_), NumericType(_), NumericType(_)) => true
+      case ("==" | "!=" , _, _, StdTypes.BOOLEAN) => true
+      case ("+" | "++", StdTypes.STRING, _, StdTypes.STRING) => true
+      case _ => false
+    }
+
+  private def isDefaultPrefix(name: String, argType: Type, returnType: Type): Boolean =
+    (name, argType, returnType) match {
+      case ("!", StdTypes.BOOLEAN, StdTypes.BOOLEAN) => true
       case _ => false
     }
 
   override protected def action(ast: AST): Option[AST] = {
     ast match {
-      case CallExpr(exprType, ref@RefExpr(_, Some(left), refName, _, _), Seq(right), _) if isDefaultOperator(ref) =>
-        Some(Exprs.simpleInfix(exprType, refName, transform[Expr](left), transform[Expr](right)))
+      case InfixCall(name, left, right, returnType) if isDefaultInfix(name, left.exprType, right.exprType, returnType) =>
+        Some(Exprs.simpleInfix(returnType, name, transform[Expr](left), transform[Expr](right)))
+
+      case PrefixCall(name, arg, returnType) if isDefaultPrefix(name, arg.exprType, returnType) =>
+        Some(PrefixExpr(returnType, transform[Expr](arg), name))
 
       //scala try --> kotlin try
       case ScalaTryExpr(exprType, tryBlock, catchBlock, finallyBlock) =>

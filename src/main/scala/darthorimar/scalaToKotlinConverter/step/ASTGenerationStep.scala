@@ -353,17 +353,22 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
         Seq.empty,
         isFunc)
 
-    case x: MethodInvocation =>
+    case psi: MethodInvocation =>
       val paramsInfo =
-        x.matchedParameters.map {
+        psi.matchedParameters.map {
           case (_, p) => CallParameterInfo(genType(p.expectedType), p.isByName)
         }
 
+      val args = psi match {
+        case _: ScInfixExpr =>
+          Seq(psi.argsElement)
+        case _ => psi.argumentExpressions
+      }
 
       CallExpr(
-        genType(x.`type`()),
-        gen[Expr](x.getInvokedExpr),
-        x.argumentExpressions.map(gen[Expr]),
+        genType(psi.`type`()),
+        gen[Expr](psi.getInvokedExpr),
+        args.map(gen[Expr]),
         paramsInfo)
 
     case x: ScGenericCall =>
