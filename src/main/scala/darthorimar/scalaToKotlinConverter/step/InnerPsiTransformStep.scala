@@ -11,8 +11,7 @@ class InnerPsiTransformStep extends ConverterStep[ScalaPsiElement, ScalaPsiEleme
     new ImplicitTransform()
   )
   override def apply(from: ScalaPsiElement, state: ConverterStepState): (ScalaPsiElement, ConverterStepState) = {
-    val copy = from.copy().asInstanceOf[ScalaPsiElement]
-    Transformer.transform(copy, None, transformers)
-    (copy, state)
+    Transformer.transform(from, None, transformers)
+    (from, state)
   }
 }

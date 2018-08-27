@@ -180,11 +180,11 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
 
   private def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
-      //      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
-      //      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
-      //      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
-      //      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
-      //      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
+      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
       .get
 
   private def transform[T](psi: PsiElement): T = (psi match {
