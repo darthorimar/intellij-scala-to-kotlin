@@ -9,7 +9,7 @@ class ConverterStepState {
   private var imports: Set[Import] = Set.empty
 
   def addDefinition(definition: Definition): Unit = {
-    imports += Import(DefinitionGenerator.packageName + ".*")
+    imports += Import(DefinitionGenerator.packageName, importAll = true)
     definitions = definitions + definition
   }
 

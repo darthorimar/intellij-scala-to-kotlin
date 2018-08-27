@@ -22,7 +22,7 @@ class RefCollectorTransform extends Transform {
     else {
       val importPath = name.stripSuffix("$")
       if (name.contains(".") && !name.startsWith("scala."))
-        stateStepVal.addImport(Import(importPath))
+        stateStepVal.addImport(Import(importPath, importAll = false))
       val className = name.split('.').last
       className
     }

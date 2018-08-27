@@ -160,9 +160,12 @@ class KotlinBuilder extends BuilderBase {
           genAsBlock(f)
         }
 
-      case Import(reference) =>
+      case Import(reference, importAll) =>
         str("import ")
         str(reference)
+        if (importAll) {
+          str(".*")
+        }
 
       case InfixExpr(exprType, op, left, right, isLeftAssoc) =>
         gen(left)

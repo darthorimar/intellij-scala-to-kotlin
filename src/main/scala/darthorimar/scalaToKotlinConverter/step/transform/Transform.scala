@@ -107,8 +107,8 @@ trait Transform extends ConverterStep[AST, AST] {
         transform[Type](retType),
         body.map(transform[Expr]))
 
-    case Import(ref) =>
-      Import(ref)
+    case imp: Import =>
+      imp
 
     case x@File(pckg, definitions) =>
       context = x
