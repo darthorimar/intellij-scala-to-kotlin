@@ -17,15 +17,18 @@ class ApplyInspectionsStep extends ConverterStep[KtElement, KtElement] {
     val diagnostics = ServiceManager.getService(project, classOf[KotlinCacheService])
       .getResolutionFacade(util.Collections.singletonList(from))
       .analyzeWithAllCompilerChecks(util.Collections.singletonList(from)).getBindingContext.getDiagnostics
+    var fixes: List[() => Unit] = List.empty
+    do {
+      fixes = from depthFirst() flatMap {
+        case element: KtElement =>
+          Inspection.inspections.flatMap(_.createAction(element, project, file, diagnostics))
+        case _ => List.empty
+      } toList
 
-    val fixes = from depthFirst() collect {
-      case element: KtElement =>
-       Inspection.inspections.flatMap(_.createAction(element, project, file, diagnostics))
-    } toList
-
-    fixes.flatten foreach { f =>
-      f()
-    }
+      fixes foreach { f =>
+        inWriteAction(f())
+      }
+    } while (fixes.nonEmpty)
 
     (from, state)
   }
