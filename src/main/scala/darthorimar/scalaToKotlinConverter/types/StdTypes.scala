@@ -8,4 +8,6 @@ object StdTypes {
   val NOTHING = StdType("Nothing")
   val STRING = StdType("String")
   val INT = StdType("Int")
+  val DOUBLE = StdType("Double")
+  val FLOAT = StdType("Float")
 }

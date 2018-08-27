@@ -20,7 +20,7 @@ object TypeUtils {
 
   object NumericType {
     def unapply(t: Type): Option[Type] = t match {
-      case StdTypes.INT => Some(t)
+      case StdTypes.INT | StdTypes.FLOAT | StdTypes.DOUBLE => Some(t)
       case _ => None
     }
   }

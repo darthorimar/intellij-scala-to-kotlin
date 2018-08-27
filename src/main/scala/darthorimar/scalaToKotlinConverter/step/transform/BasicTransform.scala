@@ -15,7 +15,6 @@ class BasicTransform extends Transform {
   private def isDefaultInfix(name: String, leftType: Type, rightType: Type, returnType: Type): Boolean =
     (name, leftType, rightType, returnType) match {
       case ("||" | "&&", StdTypes.BOOLEAN, StdTypes.BOOLEAN, StdTypes.BOOLEAN) => true
-      case ("||" | "&&", StdTypes.BOOLEAN, StdTypes.BOOLEAN, StdTypes.BOOLEAN) => true
       case ("*" | "/" | "+" | "-" | "%", NumericType(_), NumericType(_), NumericType(_)) => true
       case ("==" | "!=" , _, _, StdTypes.BOOLEAN) => true
       case ("+" | "++", StdTypes.STRING, _, StdTypes.STRING) => true

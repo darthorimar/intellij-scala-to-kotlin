@@ -22,6 +22,16 @@ class ExpressionConverterTest extends ConverterTestBase {
       """ "1" + "2" """.stripMargin,
       """ "1" + "2" """.stripMargin)
 
+  def testDoubles(): Unit =
+    doExprTest(
+      """ val a = 1.0 + 2 """.stripMargin,
+      """ val a: Double = 1.0 + 2""".stripMargin)
+
+  def testFloats(): Unit =
+    doExprTest(
+      """ val a = 1.0f + 2 """.stripMargin,
+      """ val a: Float = 1.0f + 2""".stripMargin)
+
 
 
   def testForComprehension(): Unit =
