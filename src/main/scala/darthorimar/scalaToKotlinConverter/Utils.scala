@@ -12,7 +12,7 @@ import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 object Utils {
   def addImportsToKtFile(ktFile: KtFile, imports: Seq[Import]): Unit = {
     val ktPsiFactory = new KtPsiFactory(ktFile.getProject)
-    imports foreach { case Import(ref, importAll) =>
+    imports sortBy (_.ref) foreach { case Import(ref, importAll) =>
       val ktImport = ktPsiFactory
         .createImportDirective(new ImportPath(new FqName(ref), importAll))
       ktFile.addBefore(ktImport, ktFile.getImportList)
