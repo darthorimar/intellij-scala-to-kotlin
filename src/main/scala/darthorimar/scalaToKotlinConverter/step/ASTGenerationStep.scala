@@ -319,7 +319,7 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
     case x: ScLiteral =>
       LitExpr(genType(x.`type`()), x.getText)
     case x: ScUnderscoreSection =>
-      UnderscoreExpr(NoType)
+      UnderscoreExpr(genType(x.`type`()))
     case x: ScParenthesisedExpr =>
       ParenthesesExpr(gen[Expr](x.innerElement.get))
 

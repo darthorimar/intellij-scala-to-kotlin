@@ -46,8 +46,6 @@ class RealConverterTest extends ConverterTestBase {
         |
       """.stripMargin,
       """package darthorimar.scalaToKotlinConverter.scopes
-        |import darthorimar.scalaToKotlinConverter.scopes.ScopedVal
-        |import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.SettedScopedVal
         |open class ScopedVal<T>(private val initial: T) {
         |    private var stack: List<T> = listOf(initial) + emptyList()
         |    fun set(value: T): SettedScopedVal<T> = SettedScopedVal<T>(value, this)

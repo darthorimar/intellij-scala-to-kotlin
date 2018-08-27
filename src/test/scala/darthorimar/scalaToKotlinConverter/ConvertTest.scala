@@ -116,8 +116,7 @@ class ConvertTest extends ConverterTestBase {
         |  i <- Seq(1,2)
         |} yield i
         |""".stripMargin,
-      """import kotlin.coroutines.experimental.buildSequence
-        |
+      """
         |val a: List<Int> = buildSequence {
         |  for (i: Int in listOf(1, 2)) {
         |      yield(i)
@@ -131,8 +130,7 @@ class ConvertTest extends ConverterTestBase {
       """def foo = (1,2,3)
         |def bar = (1,2)
       """.stripMargin,
-      """import convertedFromScala.lib.*
-        |
+      """
         |fun foo(): Tuple3<Int, Int, Int> =Tuple3<Int, Int, Int>(1, 2, 3)
         |fun bar(): Pair<Int, Int> =Pair<Int, Int>(1, 2)
       """.stripMargin)

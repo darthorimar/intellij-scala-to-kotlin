@@ -14,10 +14,11 @@ class BasicTransform extends Transform {
 
   private def isDefaultInfix(name: String, leftType: Type, rightType: Type, returnType: Type): Boolean =
     (name, leftType, rightType, returnType) match {
-      case ("||" | "&&", StdTypes.BOOLEAN, StdTypes.BOOLEAN, StdTypes.BOOLEAN) => true
-      case ("*" | "/" | "+" | "-" | "%", NumericType(_), NumericType(_), NumericType(_)) => true
-      case ("==" | "!=" , _, _, StdTypes.BOOLEAN) => true
-      case ("+" | "++", StdTypes.STRING, _, StdTypes.STRING) => true
+      case ("||" | "&&", StdTypes.BOOLEAN, StdTypes.BOOLEAN, _) => true
+      case ("*" | "/" | "+" | "-" | "%", NumericType(_), NumericType(_), _) => true
+      case (">" | ">=" | "<" | "<=", NumericType(_), NumericType(_), _) => true
+      case ("==" | "!=", _, _, _) => true
+      case ("+" | "++", StdTypes.STRING, _, _) => true
       case _ => false
     }
 
@@ -268,7 +269,8 @@ class BasicTransform extends Transform {
               case (y, _) => transform[Expr](y)
             }.zip(paramsInfo).map {
               case (e, CallParameterInfo(_, true)) =>
-                LambdaExpr(e.exprType, Seq.empty, e, false)
+                val exp =transform[Expr](e)
+                LambdaExpr(exp.exprType, Seq.empty, exp, needBraces = false)
               case (e, _) => e
             },
             Seq.empty))
