@@ -8,6 +8,7 @@ import com.intellij.psi._
 import darthorimar.scalaToKotlinConverter.Converter.ConvertResult
 import darthorimar.scalaToKotlinConverter.{Converter, Utils}
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
+import darthorimar.scalaToKotlinConverter.step.ApplyInspectionsStep
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.util.{NotificationUtil, ScalaUtils}
@@ -82,6 +83,7 @@ class ConvertScalaToKotlinAction extends AnAction {
           Utils.reformatFile(kotlinFile)
           val imports = state.collectImports
           Utils.addImportsToKtFile(kotlinFile, imports)
+          new ApplyInspectionsStep().apply(kotlinFile, state)
         }
         val definitions = converted.flatMap(_._3.collectedDefinitions)
         DefinitionGenerator

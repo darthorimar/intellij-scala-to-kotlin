@@ -8,10 +8,12 @@ import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.idea.inspections.AbstractKotlinInspection
 import org.jetbrains.kotlin.idea.intentions.SelfTargetingIntention
 import org.jetbrains.kotlin.idea.quickfix.QuickFixActionBase
-import org.jetbrains.kotlin.psi.KtBlockExpression
+import org.jetbrains.kotlin.psi.{KtBlockExpression, KtElement}
 
 import scala.collection.mutable
 import darthorimar.scalaToKotlinConverter.inspection.DefaultInspection._
+import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics
+import collection.JavaConverters._
 
 class DefaultInspection(inspection: AbstractKotlinInspection) extends Inspection {
   private def applySmartFix[D <: CommonProblemDescriptor](fix: QuickFix[D], descriptor: D, project: Project): Unit = {
@@ -44,18 +46,22 @@ class DefaultInspection(inspection: AbstractKotlinInspection) extends Inspection
     fix.applyFix(project, descriptor)
   }
 
-  override def apply(element: PsiElement): Unit = {
-    val file = element.getContainingFile
-    val project = element.getProject
-
+  override def createAction(element: KtElement,
+                            project: Project,
+                            file: PsiFile,
+                            diagnostics: Diagnostics): Option[() => Unit] = {
     val holder = new ProblemsHolder(InspectionManager.getInstance(project), file, false)
     val visitor = inspection.buildVisitor(holder, false)
     element.accept(visitor)
-    holder.getResults.forEach { descriptor =>
-      descriptor.getFixes collect {
+    val actions = holder.getResults.asScala flatMap { descriptor =>
+      descriptor.getFixes collectFirst {
         case f: LocalQuickFix => f
-      } foreach (applySmartFix(_, descriptor, project))
+      } map {
+        fix => () => applySmartFix(fix, descriptor, project)
+      }
     }
+    if (actions.isEmpty) None
+    else Some(actions.reduce((acc, f) => () => { acc(); f() }))
   }
 }
 

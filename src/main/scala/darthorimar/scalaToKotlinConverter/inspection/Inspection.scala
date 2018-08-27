@@ -1,7 +1,25 @@
 package darthorimar.scalaToKotlinConverter.inspection
 
-import com.intellij.psi.PsiElement
+import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiFile
+import org.jetbrains.kotlin.diagnostics.{Diagnostic, Errors}
+import org.jetbrains.kotlin.idea.inspections.{ExplicitThisInspection, KotlinDoubleNegationInspection}
+import org.jetbrains.kotlin.idea.quickfix.AddExclExclCallFix
+import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics
 
 trait Inspection {
-  def apply(element: PsiElement): Unit
+  def createAction(element: KtElement, project: Project, file: PsiFile, diagnostics: Diagnostics): Option[() => Unit]
+}
+
+object Inspection {
+  val inspections = Seq(
+    new DiagnosticBasedInspection(Seq(Errors.TYPE_MISMATCH), {
+      (element: KtElement, diagnostic: Diagnostic, project: Project, file: PsiFile) =>
+        val fix = new AddExclExclCallFix(element)
+        fix.invoke(project, null, file)
+    }),
+    new DefaultInspection(new ExplicitThisInspection),
+    new DefaultInspection(new KotlinDoubleNegationInspection)
+  )
 }
