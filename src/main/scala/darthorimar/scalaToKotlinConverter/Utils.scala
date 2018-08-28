@@ -1,9 +1,15 @@
 package darthorimar.scalaToKotlinConverter
 
+import java.util
+
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.ServiceManager
 import com.intellij.psi.{PsiDirectory, PsiElement, PsiFile}
 import com.intellij.psi.codeStyle.CodeStyleManager
 import darthorimar.scalaToKotlinConverter.ast.{Import, Type}
+import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
+import org.jetbrains.kotlin.idea.j2k.J2kPostProcessor
+import org.jetbrains.kotlin.idea.util.ImportInsertHelper
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.{KtFile, KtImportDirective, KtImportList, KtPsiFactory}
 import org.jetbrains.kotlin.resolve.ImportPath
@@ -13,13 +19,13 @@ import org.jetbrains.plugins.scala.extensions.inWriteAction
 
 object Utils {
   def addImportsToKtFile(ktFile: KtFile, imports: Seq[Import]): Unit = {
+    val project = ktFile.getProject
     ApplicationManager.getApplication.invokeAndWait { () =>
       inWriteAction {
         val ktPsiFactory = new KtPsiFactory(ktFile.getProject)
         imports sortBy (_.ref) foreach { case Import(ref, importAll) =>
-          val ktImport = ktPsiFactory
-            .createImportDirective(new ImportPath(new FqName(ref), importAll))
-          ktFile.addBefore(ktImport, ktFile.getImportList)
+          val fqName = new FqName(ref)
+          new J2kPostProcessor(false).insertImport(ktFile, fqName)//todo fix
         }
       }
     }
