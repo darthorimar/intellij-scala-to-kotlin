@@ -1,18 +1,47 @@
 package darthorimar.scalaToKotlinConverter.step
 
+import com.intellij.ide.scratch.{ScratchFileService, ScratchRootType}
+import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.project.Project
+import com.intellij.psi.{PsiDocumentManager, PsiManager}
+import darthorimar.scalaToKotlinConverter.Utils
 import darthorimar.scalaToKotlinConverter.ast.Import
 import darthorimar.scalaToKotlinConverter.definition.{Definition, DefinitionGenerator}
 import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
-import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.idea.KotlinFileType
+import org.jetbrains.kotlin.psi.{KtElement, KtFile}
+import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
+import org.jetbrains.plugins.scala.extensions._
 
 trait KtElementGenerator {
   def insertCode(text: KotlinCode): KtElement
 }
 
-class ConverterStepState {
+class FileElementGenerator(file: ScalaFile) extends KtElementGenerator {
+  override def insertCode(text: KotlinCode): KtElement = inWriteAction {
+    val project = file.getProject
+    val document = PsiDocumentManager.getInstance(project).getDocument(file)
+    PsiDocumentManager.getInstance(project).doPostponedOperationsAndUnblockDocument(document)
+    document.replaceString(0, document.getTextLength, text)
+    PsiDocumentManager.getInstance(project).commitDocument(document)
+    FileDocumentManager.getInstance().saveDocument(document)
+
+    val virtualFile = file.getVirtualFile
+    if (ScratchRootType.getInstance().containsFile(virtualFile)) {
+      val mapping = ScratchFileService.getInstance().getScratchesMapping
+      mapping.setMapping(virtualFile, KotlinFileType.INSTANCE.getLanguage)
+    }
+    else {
+      val fileName = Utils.createKotlinName(file)
+      virtualFile.rename(this, fileName)
+    }
+    PsiManager.getInstance(project).findFile(virtualFile).asInstanceOf[KtFile]
+  }
+}
+
+class ConverterStepState(var elementGenerator: Option[KtElementGenerator] = None) {
   private var definitions: Set[Definition] = Set.empty
   private var imports: Set[Import] = Set.empty
-  var elementGenerator: Option[KtElementGenerator] = None
 
   def addDefinition(definition: Definition): Unit = {
     imports += Import(DefinitionGenerator.packageName, importAll = true)

@@ -43,7 +43,7 @@ class ApplyInspectionsStep extends ConverterStep[KtElement, KtElement] {
           )
         }
 
-    } while (succedFixes.nonEmpty)
+    } while (false)
 
     (from, state)
   }

@@ -5,7 +5,7 @@ import java.util
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.util.TextRange
-import com.intellij.psi.{PsiDirectory, PsiElement, PsiFile}
+import com.intellij.psi.{PsiDirectory, PsiDocumentManager, PsiElement, PsiFile}
 import com.intellij.psi.codeStyle.CodeStyleManager
 import darthorimar.scalaToKotlinConverter.ast.{Import, Type}
 import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
@@ -19,9 +19,11 @@ import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.extensions.inWriteAction
 
 object Utils {
-  def addImportsToKtFile(ktFile: KtFile, imports: Seq[Import]): Unit = {
-
+  def createKotlinName(file: ScalaFile): String = {
+    val nameWithoutExtension = file.getName.stripSuffix(".scala")
+    nameWithoutExtension + ".kt"
   }
+
 
   def getSrcDir(psi: PsiElement): PsiDirectory = {
     def byPackageName(packageName: String): PsiDirectory = {
@@ -92,7 +94,7 @@ object Utils {
     }
   }
 
-  def reformatKtElement(ktElement: KtElement): KtElement = {
+  def reformatKtElement(ktElement: KtElement): KtElement = inWriteAction {
     val manager = CodeStyleManager.getInstance(ktElement.getProject)
     manager.reformatRange(ktElement,
       ktElement.getTextRange.getStartOffset,

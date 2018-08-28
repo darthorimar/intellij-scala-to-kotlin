@@ -7,13 +7,13 @@ class ConvertTest extends ConverterTestBase {
   def testFuncCall(): Unit = {
     doExprTest(
       """ "ny".substring(1,2)""",
-      """  "ny".substring(1,2)""")
+      """ "ny".substring(1,2)""")
   }
 
   def testVararg(): Unit =
     doTest(
       """def foo(xs: String*) = xs""".stripMargin,
-      """fun foo(vararg xs: String): List<String> =xs""".stripMargin)
+      """fun foo(vararg xs: String): List<String> =xs.toList""".stripMargin)
 
   def testUncarry(): Unit = {
     doTest(
