@@ -21,5 +21,7 @@ class CollectorTransform extends Transform {
       Definition.listCollect
     case (GenericType(KotlinTypes.ARRAY, _), "collect") =>
       Definition.arrayCollect
+    case (StdTypes.STRING, "stripSuffix") =>
+      Definition.stringStripSuffix
   }
 }

@@ -12,6 +12,7 @@ object Definition {
   val listCollect = FileDefinition("listCollect", Seq(matchError))
   val arrayCollect = FileDefinition("arrayCollect", Seq(matchError))
   val partialFunction = FileDefinition("PartialFunction", Seq(matchError))
+  val stringStripSuffix = FileDefinition("stringStripSuffix", Seq(matchError))
 
   def tuple(arity: Int) = new TupleDefinition(arity)
 }
