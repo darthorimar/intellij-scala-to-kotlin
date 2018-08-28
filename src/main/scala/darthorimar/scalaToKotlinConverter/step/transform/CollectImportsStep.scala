@@ -2,7 +2,7 @@ package darthorimar.scalaToKotlinConverter.step.transform
 
 import darthorimar.scalaToKotlinConverter.ast._
 
-class RefCollectorTransform extends Transform {
+class CollectImportsStep extends Transform {
   override protected def action(ast: AST): Option[AST] =
     ast match {
       case ClassType(name) =>

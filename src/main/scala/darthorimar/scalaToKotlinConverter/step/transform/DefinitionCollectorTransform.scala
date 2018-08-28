@@ -4,7 +4,7 @@ import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.Definition
 import darthorimar.scalaToKotlinConverter.types._
 
-class CollectorTransform extends Transform {
+class DefinitionCollectorTransform extends Transform {
 
   override protected def action(ast: AST): Option[AST] = ast match {
     case CallExpr(_, RefExpr(_, Some(expr), name, _, _), _, _)

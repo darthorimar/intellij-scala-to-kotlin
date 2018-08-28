@@ -4,7 +4,12 @@ import darthorimar.scalaToKotlinConverter.BuilderBase
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.scopes.{BuilderState, ScopedVal}
-class KotlinBuilderStep extends ConverterStep[AST, String] {
+import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
+
+object PrintKotlinCodeStep {
+  type KotlinCode = String
+}
+class PrintKotlinCodeStep extends ConverterStep[AST, KotlinCode] {
 
   override def apply(from: AST, state: ConverterStepState): (String, ConverterStepState) = {
     val builder = new KotlinBuilder

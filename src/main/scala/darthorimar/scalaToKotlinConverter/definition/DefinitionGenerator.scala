@@ -45,7 +45,7 @@ object DefinitionGenerator {
         textDefinition.get
     } mkString "\n\n"
 
-  private def getOrCreateLibFile(baseDirectory: PsiDirectory) = {
+  private def getOrCreateLibFile(baseDirectory: PsiDirectory): KtFile = {
     val libDirectory =
       Try {
         (baseDirectory /: packageName.split('.')) (_.findSubdirectory(_))
@@ -61,7 +61,7 @@ object DefinitionGenerator {
         document.insertString(0, s"package $packageName \n\n")
         PsiDocumentManager.getInstance(file.getProject).commitDocument(document)
         file
-      }
+      }.asInstanceOf[KtFile]
   }
 
   def generate(definitions: Seq[Definition], baseDirectory: PsiDirectory): Unit = {
@@ -78,7 +78,7 @@ object DefinitionGenerator {
       val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
       document.insertString(document.getTextLength, text)
       PsiDocumentManager.getInstance(file.getProject).commitDocument(document)
-      Utils.reformatFile(file)
+      Utils.reformatKtElement(file)
     }
   }
 

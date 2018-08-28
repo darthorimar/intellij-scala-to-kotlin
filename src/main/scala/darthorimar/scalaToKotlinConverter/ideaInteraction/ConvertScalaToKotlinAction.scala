@@ -8,10 +8,10 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ex.MessagesEx
 import com.intellij.psi._
-import darthorimar.scalaToKotlinConverter.Converter.ConvertResult
 import darthorimar.scalaToKotlinConverter.{Converter, Utils}
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
-import darthorimar.scalaToKotlinConverter.step.ApplyInspectionsStep
+import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
+import darthorimar.scalaToKotlinConverter.step.{ApplyInspectionsStep, ConverterStepState, KtElementGenerator}
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
@@ -75,20 +75,17 @@ class ConvertScalaToKotlinAction extends AnAction {
         .setTitle("Cannot create file")
         .show()
     }
+
     if (filesToConvert.nonEmpty) {
       project.executeRunCommand("Convert Scala to Kotlin") {
-        val ConvertResult(converted) = Converter.convert(filesToConvert)
-        for ((text, file: ScalaFile, state) <- converted) {
-          val kotlinFile = replaceFileText(file, project, text)
-          Utils.reformatFile(kotlinFile)
-          val imports = state.collectImports
-          Utils.addImportsToKtFile(kotlinFile, imports)
-          PsiDocumentManager.getInstance(project).commitAllDocuments()
-          new ApplyInspectionsStep().apply(kotlinFile, state)
+        filesToConvert foreach { file =>
+          val ktElementGenerator: KtElementGenerator =
+            (code: KotlinCode) => replaceFileText(file, project, code)
+          val state = new ConverterStepState
+          state.elementGenerator = Some(ktElementGenerator)
+          Converter.scalaPsiToKotlinPsi(file, state)
         }
-        val definitions = converted.flatMap(_._3.collectedDefinitions)
-        DefinitionGenerator
-          .generate(definitions, Utils.getSrcDir(files.head))
+        PsiDocumentManager.getInstance(project).commitAllDocuments()
       }
     }
   }
