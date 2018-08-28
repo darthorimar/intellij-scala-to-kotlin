@@ -14,7 +14,6 @@ class DiagnosticBasedInspection(diagnosticFactories: Seq[DiagnosticFactory[_]],
                             file: PsiFile,
                             diagnostics: Diagnostics): Option[Fix] =
     diagnostics.forElement(element).asScala collectFirst {
-      case x => x
       case diagnostic: Diagnostic if diagnosticFactories contains diagnostic.getFactory => diagnostic
     } map { diagnostic =>
       val fixAction = () => fix(element, diagnostic, project, file)
