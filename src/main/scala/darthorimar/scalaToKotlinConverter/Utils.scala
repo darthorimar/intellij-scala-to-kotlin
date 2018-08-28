@@ -1,5 +1,6 @@
 package darthorimar.scalaToKotlinConverter
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.psi.{PsiDirectory, PsiElement, PsiFile}
 import com.intellij.psi.codeStyle.CodeStyleManager
 import darthorimar.scalaToKotlinConverter.ast.{Import, Type}
@@ -8,14 +9,19 @@ import org.jetbrains.kotlin.psi.{KtFile, KtImportDirective, KtImportList, KtPsiF
 import org.jetbrains.kotlin.resolve.ImportPath
 import org.jetbrains.plugins.scala.lang.psi.ScalaPsiElement
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
+import org.jetbrains.plugins.scala.extensions.inWriteAction
 
 object Utils {
   def addImportsToKtFile(ktFile: KtFile, imports: Seq[Import]): Unit = {
-    val ktPsiFactory = new KtPsiFactory(ktFile.getProject)
-    imports sortBy (_.ref) foreach { case Import(ref, importAll) =>
-      val ktImport = ktPsiFactory
-        .createImportDirective(new ImportPath(new FqName(ref), importAll))
-      ktFile.addBefore(ktImport, ktFile.getImportList)
+    ApplicationManager.getApplication.invokeAndWait { () =>
+      inWriteAction {
+        val ktPsiFactory = new KtPsiFactory(ktFile.getProject)
+        imports sortBy (_.ref) foreach { case Import(ref, importAll) =>
+          val ktImport = ktPsiFactory
+            .createImportDirective(new ImportPath(new FqName(ref), importAll))
+          ktFile.addBefore(ktImport, ktFile.getImportList)
+        }
+      }
     }
   }
 

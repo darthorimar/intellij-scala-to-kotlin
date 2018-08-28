@@ -49,7 +49,7 @@ class DefaultInspection(inspection: AbstractKotlinInspection) extends Inspection
   override def createAction(element: KtElement,
                             project: Project,
                             file: PsiFile,
-                            diagnostics: Diagnostics): Option[() => Unit] = {
+                            diagnostics: Diagnostics): Option[Fix] = {
     val holder = new ProblemsHolder(InspectionManager.getInstance(project), file, false)
     val visitor = inspection.buildVisitor(holder, false)
     element.accept(visitor)
@@ -61,7 +61,10 @@ class DefaultInspection(inspection: AbstractKotlinInspection) extends Inspection
       }
     }
     if (actions.isEmpty) None
-    else Some(actions.reduce((acc, f) => () => { acc(); f() }))
+    else {
+      val fixAction = actions.reduce((acc, f) => () => { acc(); f() })
+      Some(Fix(fixAction, null))
+    }
   }
 }
 

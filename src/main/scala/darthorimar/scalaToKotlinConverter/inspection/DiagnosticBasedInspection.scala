@@ -12,10 +12,12 @@ class DiagnosticBasedInspection(diagnosticFactories: Seq[DiagnosticFactory[_]],
   override def createAction(element: KtElement,
                             project: Project,
                             file: PsiFile,
-                            diagnostics: Diagnostics): Option[() => Unit] =
+                            diagnostics: Diagnostics): Option[Fix] =
     diagnostics.forElement(element).asScala collectFirst {
-      case diagnostic: Diagnostic if diagnosticFactories contains diagnostic.getFactory => diagnostic
+      case x => x
+///      case diagnostic: Diagnostic if diagnosticFactories contains diagnostic.getFactory => diagnostic
     } map { diagnostic =>
-      () => fix(element, diagnostic, project, file)
+      val fixAction = () => fix(element, diagnostic, project, file)
+      Fix(fixAction, diagnostic)
     }
 }

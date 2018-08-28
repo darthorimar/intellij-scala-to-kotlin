@@ -1,14 +1,18 @@
 package darthorimar.scalaToKotlinConverter.ideaInteraction
 
+import com.intellij.ide.scratch.{ScratchFileService, ScratchRootType}
 import com.intellij.notification.{NotificationDisplayType, NotificationType}
 import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent, CommonDataKeys}
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.ex.MessagesEx
 import com.intellij.psi._
 import darthorimar.scalaToKotlinConverter.Converter.ConvertResult
 import darthorimar.scalaToKotlinConverter.{Converter, Utils}
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
 import darthorimar.scalaToKotlinConverter.step.ApplyInspectionsStep
+import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.util.{NotificationUtil, ScalaUtils}
@@ -72,30 +76,40 @@ class ConvertScalaToKotlinAction extends AnAction {
         .show()
     }
     if (filesToConvert.nonEmpty) {
-      ScalaUtils.runWriteAction(() => {
+      project.executeRunCommand("Convert Scala to Kotlin") {
         val ConvertResult(converted) = Converter.convert(filesToConvert)
         for ((text, file: ScalaFile, state) <- converted) {
-          val newName = createKotlinName(file)
-          file.getVirtualFile.rename(this, newName)
-          val document = PsiDocumentManager.getInstance(project).getDocument(file)
-          replaceFileText(document, project, text)
-          val kotlinFile = PsiDocumentManager.getInstance(project).getPsiFile(document).asInstanceOf[KtFile]
+          val kotlinFile = replaceFileText(file, project, text)
           Utils.reformatFile(kotlinFile)
           val imports = state.collectImports
           Utils.addImportsToKtFile(kotlinFile, imports)
+          PsiDocumentManager.getInstance(project).commitAllDocuments()
           new ApplyInspectionsStep().apply(kotlinFile, state)
         }
         val definitions = converted.flatMap(_._3.collectedDefinitions)
         DefinitionGenerator
           .generate(definitions, Utils.getSrcDir(files.head))
-      }, files.head.getProject, "Convert to Kotlin")
+      }
     }
   }
 
-  def replaceFileText(document: Document, project: Project, newText: String): Unit = {
-    document.deleteString(0, document.getTextLength)
-    document.insertString(0, newText)
+  def replaceFileText(file: ScalaFile, project: Project, newText: String): KtFile = {
+    val document = PsiDocumentManager.getInstance(project).getDocument(file)
+    PsiDocumentManager.getInstance(project).doPostponedOperationsAndUnblockDocument(document)
+    document.replaceString(0, document.getTextLength, newText)
     PsiDocumentManager.getInstance(project).commitDocument(document)
+    FileDocumentManager.getInstance().saveDocument(document)
+
+    val virtualFile = file.getVirtualFile
+    if (ScratchRootType.getInstance().containsFile(virtualFile)) {
+      val mapping = ScratchFileService.getInstance().getScratchesMapping
+      mapping.setMapping(virtualFile, KotlinFileType.INSTANCE.getLanguage)
+    }
+    else {
+      val fileName = createKotlinName(file)
+      virtualFile.rename(this, fileName)
+    }
+    PsiManager.getInstance(project).findFile(virtualFile).asInstanceOf[KtFile]
   }
 
 }

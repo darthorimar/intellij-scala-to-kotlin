@@ -9,7 +9,11 @@ import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics
 
 trait Inspection {
-  def createAction(element: KtElement, project: Project, file: PsiFile, diagnostics: Diagnostics): Option[() => Unit]
+  def createAction(element: KtElement, project: Project, file: PsiFile, diagnostics: Diagnostics): Option[Fix]
+}
+
+case class Fix(fix: () => Unit, diagnostic: Diagnostic) {
+  def apply(): Unit = fix()
 }
 
 object Inspection {
@@ -18,8 +22,9 @@ object Inspection {
       (element: KtElement, diagnostic: Diagnostic, project: Project, file: PsiFile) =>
         val fix = new AddExclExclCallFix(element)
         fix.invoke(project, null, file)
-    }),
-    new DefaultInspection(new ExplicitThisInspection),
-    new DefaultInspection(new KotlinDoubleNegationInspection)
+    })
+//    ,
+//    new DefaultInspection(new ExplicitThisInspection),
+//    new DefaultInspection(new KotlinDoubleNegationInspection)
   )
 }
