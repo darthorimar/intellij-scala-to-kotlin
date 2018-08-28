@@ -32,7 +32,10 @@ class ApplyInspectionsStep extends ConverterStep[KtElement, KtElement] {
       } toList
 
       fixes foreach { f =>
-        inWriteAction(f())
+        inWriteAction(
+          try f()
+          catch { case _: Throwable =>}
+        )
       }
     } while (fixes.nonEmpty)
 
