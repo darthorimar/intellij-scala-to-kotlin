@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.idea.inspections.{ExplicitThisInspection, KotlinDoub
 import org.jetbrains.kotlin.idea.quickfix.AddExclExclCallFix
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics
+import collection.JavaConverters._
 
 trait Inspection {
   def createAction(element: KtElement, project: Project, file: PsiFile, diagnostics: Diagnostics): Option[Fix]
@@ -18,7 +19,7 @@ case class Fix(fix: () => Unit, diagnostic: Diagnostic) {
 
 object Inspection {
   val inspections = Seq(
-    new DiagnosticBasedInspection(Seq(Errors.TYPE_MISMATCH), {
+    new DiagnosticBasedInspection(Errors.TYPE_MISMATCH_ERRORS.asScala.toSeq, {
       (element: KtElement, diagnostic: Diagnostic, project: Project, file: PsiFile) =>
         val fix = new AddExclExclCallFix(element)
         fix.invoke(project, null, file)
