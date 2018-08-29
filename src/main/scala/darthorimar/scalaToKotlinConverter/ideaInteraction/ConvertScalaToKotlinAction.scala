@@ -44,17 +44,15 @@ class ConvertScalaToKotlinAction extends AnAction {
   }
 
   def getSelectedFiles(e: AnActionEvent): Seq[ScalaFile] =
-    Option(CommonDataKeys.VIRTUAL_FILE_ARRAY.getData(e.getDataContext))
-      .map(_.toSeq.flatMap { virtualFile =>
+    Option(CommonDataKeys.VIRTUAL_FILE_ARRAY.getData(e.getDataContext)) map {
+      _.toList flatMap { virtualFile =>
         Option(PsiManager.getInstance(e.getProject).findFile(virtualFile))
-      }).
-      orElse {
-        Option(CommonDataKeys.PSI_FILE.getData(e.getDataContext)).map(Seq(_))
-      }.getOrElse(Seq.empty)
-      .collect {
-        case file: ScalaFile if file.getContainingDirectory.isWritable => file
       }
-
+    } orElse {
+      Option(CommonDataKeys.PSI_FILE.getData(e.getDataContext)).map(Seq(_))
+    } getOrElse Seq.empty collect {
+      case file: ScalaFile if file.getContainingDirectory.isWritable => file
+    }
 
 
   def actionPerformed(e: AnActionEvent) {
@@ -63,7 +61,7 @@ class ConvertScalaToKotlinAction extends AnAction {
     val (filesToConvert, existingFiles) = files.partition { file =>
       file.getParent.getVirtualFile.findChild(Utils.createKotlinName(file)) == null
     }
-    existingFiles.foreach { file =>
+    existingFiles foreach { file =>
       NotificationUtil.builder(project, s"File ${Utils.createKotlinName(file)} already exists").
         setDisplayType(NotificationDisplayType.BALLOON)
         .setNotificationType(NotificationType.WARNING)
