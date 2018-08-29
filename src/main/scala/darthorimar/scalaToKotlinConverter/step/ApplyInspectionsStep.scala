@@ -11,13 +11,14 @@ import org.jetbrains.kotlin.psi._
 import org.jetbrains.plugins.scala.extensions._
 
 import collection.JavaConverters._
+import scala.util.Try
 
 class ApplyInspectionsStep extends ConverterStep[KtElement, KtElement] {
   override def apply(from: KtElement, state: ConverterStepState): (KtElement, ConverterStepState) = {
     val project = from.getProject
     val file = from.getContainingFile.asInstanceOf[KtFile]
 
-    var succedFixes = List.empty[Fix]
+    var succedFixes: Int = 0
     do {
       val diagnostics = inReadAction {
         ServiceManager.getService(project, classOf[KotlinCacheService])
@@ -32,18 +33,13 @@ class ApplyInspectionsStep extends ConverterStep[KtElement, KtElement] {
 
       succedFixes =
         fixes flatMap { f =>
-          inWriteAction(
-            try {
+          inWriteAction {
+            Try {
               f()
-              Some(f)
-            }
-            catch {
-              case _: Throwable => None
-            }
-          )
-        }
-
-    } while (false)
+            } toOption
+          }
+        } length
+    } while (succedFixes != 0)
 
     (from, state)
   }

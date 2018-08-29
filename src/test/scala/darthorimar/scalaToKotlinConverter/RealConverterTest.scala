@@ -73,3 +73,4 @@ class RealConverterTest extends ConverterTestBase {
         |    }
         |}""".stripMargin)
 }
+

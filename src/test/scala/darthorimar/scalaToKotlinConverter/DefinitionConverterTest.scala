@@ -2,6 +2,7 @@ package darthorimar.scalaToKotlinConverter
 
 class DefinitionConverterTest extends ConverterTestBase {
 
+  case class A(i: Int, b: String)
 
   def testCaseClassDef(): Unit =
     doTest(
@@ -66,7 +67,5 @@ class DefinitionConverterTest extends ConverterTestBase {
         |open class B()
         |abstract class C()
       """.stripMargin)
-
-  class A(a: Int)
 
 }

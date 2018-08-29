@@ -4,9 +4,11 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 import org.jetbrains.kotlin.diagnostics.{Diagnostic, Errors}
 import org.jetbrains.kotlin.idea.inspections.{ExplicitThisInspection, KotlinDoubleNegationInspection}
+import org.jetbrains.kotlin.idea.intentions.{MoveLambdaInsideParenthesesIntention, RemoveUnnecessaryParenthesesIntention, SelfTargetingOffsetIndependentIntention, UsePropertyAccessSyntaxIntention}
 import org.jetbrains.kotlin.idea.quickfix.AddExclExclCallFix
-import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.{KtCallExpression, KtElement, KtLambdaArgument, KtParenthesizedExpression}
 import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics
+
 import collection.JavaConverters._
 
 trait Inspection {
@@ -22,10 +24,11 @@ object Inspection {
     new DiagnosticBasedInspection(Errors.TYPE_MISMATCH_ERRORS.asScala.toSeq, {
       (element: KtElement, diagnostic: Diagnostic, project: Project, file: PsiFile) =>
         val fix = new AddExclExclCallFix(element)
-        fix.invoke(project, null, file)
-    })
-//    ,
-//    new DefaultInspection(new ExplicitThisInspection),
-//    new DefaultInspection(new KotlinDoubleNegationInspection)
+        if (fix.isAvailable(project, null, file)) Some(() => fix.invoke(project, null, file))
+        else None
+    }),
+    new IntentionBaseInspection(new RemoveUnnecessaryParenthesesIntention, classOf[KtParenthesizedExpression]),
+    new IntentionBaseInspection(new UsePropertyAccessSyntaxIntention, classOf[KtCallExpression]),
+    new IntentionBaseInspection(new MoveLambdaInsideParenthesesIntention, classOf[KtLambdaArgument])
   )
 }
