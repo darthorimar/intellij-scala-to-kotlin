@@ -63,7 +63,7 @@ class DefaultInspection(inspection: AbstractKotlinInspection) extends Inspection
     if (actions.isEmpty) None
     else {
       val fixAction = actions.reduce((acc, f) => () => { acc(); f() })
-      Some(Fix(fixAction, null))
+      Some(Fix(fixAction))
     }
   }
 }

@@ -16,6 +16,6 @@ class DiagnosticBasedInspection(diagnosticFactories: Seq[DiagnosticFactory[_]],
     diagnostics.forElement(element).asScala collectFirst {
       case diagnostic: Diagnostic if diagnosticFactories contains diagnostic.getFactory => diagnostic
     } flatMap { diagnostic =>
-      fix(element, diagnostic, project, file) map (Fix(_, diagnostic))
+      fix(element, diagnostic, project, file) map Fix
     }
 }

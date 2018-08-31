@@ -27,7 +27,7 @@ class IntentionBaseInspection[Elem <: KtElement](intension: SelfTargetingIntenti
         intension.applyTo(element.asInstanceOf[Elem], null)
 
     if (element.getClass == elementType && stillAvailable())
-      Some(Fix(action, null))
+      Some(Fix(action))
     else None
   }
 }

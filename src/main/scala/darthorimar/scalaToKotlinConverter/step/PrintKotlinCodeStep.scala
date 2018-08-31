@@ -96,9 +96,9 @@ class KotlinBuilder extends BuilderBase {
         rep(attributes, " ")(gen)
         str(" ")
         str(x.keyword)
-        str(" (")
+//        str(" (")
         rep(patterns, ", ")(gen)
-        str(")")
+//        str(")")
         opt(expr) { e =>
           str(" = ")
           gen(e)
