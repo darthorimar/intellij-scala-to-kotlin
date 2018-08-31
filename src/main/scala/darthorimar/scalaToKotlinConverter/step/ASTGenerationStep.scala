@@ -96,7 +96,7 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
       case x: ScExistentialType =>
         genType(x.quantified)
       case x: TypeParameterType =>
-        TypeParamType(TypeParam(x.typeParameter.name))
+        TypeParamType(gen[TypeParam](x.typeParameter.psiTypeParameter))
       case x: ScExistentialArgument =>
         SimpleType("*")
       case x: JavaArrayType =>
@@ -545,7 +545,18 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
       ForVal(ast.SimpleValOrVarDef(Seq.empty, isVal = true, x.pattern.getText, None, Some(gen[Expr](x.rvalue))))
 
     case x: ScTypeParam =>
-      TypeParam(x.name)
+      import org.jetbrains.plugins.scala.lang.psi.types.api._
+
+      val variance = x.variance match {
+        case Invariant => InvariantTypeParam
+        case Covariant => CovariantTypeParam
+        case Contravariant => ContravariantTypeParam
+      }
+      TypeParam(
+        x.name,
+        variance,
+        x.upperBound.toOption.map(genType).filter(_ != ast.StdType("Any")),
+        x.lowerBound.toOption.map(genType).filter(_ != ast.StdType("Nothing")))
 
     case x: ScPostfixExpr =>
       PostfixExpr(genType(x.`type`()), gen[Expr](x.operand), x.operation.refName)

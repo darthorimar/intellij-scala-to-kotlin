@@ -112,7 +112,7 @@ trait Transform extends ConverterStep[AST, AST] {
 
     case x@File(pckg, definitions) =>
       context = x
-      File(pckg,  definitions.map(transform[DefExpr]))
+      File(pckg, definitions.map(transform[DefExpr]))
 
     case InfixExpr(exprType, op, left, right, isLeftAssoc) =>
       InfixExpr(transform[Type](exprType),
@@ -244,8 +244,8 @@ trait Transform extends ConverterStep[AST, AST] {
     case MatchCaseClause(pattern, expr, guard) =>
       MatchCaseClause(transform[CasePattern](pattern), transform[Expr](expr), guard.map(transform[Expr]))
 
-    case TypeParam(name) =>
-      TypeParam(name)
+    case TypeParam(name, variance, upperBound, lowerBound) =>
+      TypeParam(name, variance, upperBound.map(transform[Type]), lowerBound.map(transform[Type]))
 
     case LitPattern(lit, label) =>
       LitPattern(transform[Expr](lit), label)

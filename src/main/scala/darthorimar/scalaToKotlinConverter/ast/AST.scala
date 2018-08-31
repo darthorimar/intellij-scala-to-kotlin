@@ -32,8 +32,6 @@ case object EmptyConstructor extends Constructor
 
 case class ConstructorParam(kind: MemberKind, modifier: Attribute, name: String, parameterType: Type) extends AST
 
-case class TypeParam(name: String) extends AST
-
 case class File(packageName: String, definitions: Seq[DefExpr]) extends AST
 
 sealed trait CasePattern extends AST {

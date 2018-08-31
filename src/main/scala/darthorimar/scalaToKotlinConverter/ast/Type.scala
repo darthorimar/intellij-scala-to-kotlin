@@ -69,3 +69,23 @@ case object NoType extends Type {
 case class ErrorType(text: String) extends Type with ErrorAst {
   override def asKotlin: String = ""
 }
+
+case class TypeParam(name: String,
+                     variance: TypeParamVariance,
+                     upperBound: Option[Type],
+                     lowerBound: Option[Type]) extends AST
+
+sealed trait TypeParamVariance {
+  def kotlinKeyword: String
+  def isInvariant: Boolean = false
+}
+case object InvariantTypeParam extends TypeParamVariance {
+  override def kotlinKeyword: String = ""
+  override def isInvariant: Boolean = true
+}
+case object CovariantTypeParam extends TypeParamVariance {
+  override def kotlinKeyword: String = "out"
+}
+case object ContravariantTypeParam extends TypeParamVariance {
+  override def kotlinKeyword: String = "in"
+}

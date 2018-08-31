@@ -135,6 +135,9 @@ class ConvertTest extends ConverterTestBase {
         |fun bar(): Pair<Int, Int> =Pair<Int, Int>(1, 2)
       """.stripMargin)
 
-  Try
+  def testTypeParameter(): Unit =
+    doTest(
+      """class A[+T <: String]()""".stripMargin,
+      """open class A<out T : String>()""".stripMargin)
 }
 

@@ -9,6 +9,7 @@ import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
 object PrintKotlinCodeStep {
   type KotlinCode = String
 }
+
 class PrintKotlinCodeStep extends ConverterStep[AST, KotlinCode] {
 
   override def apply(from: AST, state: ConverterStepState): (String, ConverterStepState) = {
@@ -96,9 +97,9 @@ class KotlinBuilder extends BuilderBase {
         rep(attributes, " ")(gen)
         str(" ")
         str(x.keyword)
-//        str(" (")
+        //        str(" (")
         rep(patterns, ", ")(gen)
-//        str(")")
+        //        str(")")
         opt(expr) { e =>
           str(" = ")
           gen(e)
@@ -307,11 +308,23 @@ class KotlinBuilder extends BuilderBase {
         str("[")
         gen(inBrackets)
         str("]")
+
       case ThisExpr(exprType) =>
         str("this")
 
-      case TypeParam(name) =>
+      case TypeParam(name, variance, upperBound, lowerBound) =>
+        str(variance.kotlinKeyword)
+        if (!variance.isInvariant) str(" ")
         str(name)
+        opt(upperBound) { b =>
+          str(" : ")
+          genType(b, false)
+        }
+        opt(lowerBound) { b =>
+          str("/* Kotlin does not support lower bounds :( Lower bound was ")
+          genType(b)
+          str("*/")
+        }
 
       case ThrowExpr(expr) =>
         str("throw ")
