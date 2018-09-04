@@ -53,8 +53,8 @@ object Inspection {
           else None
         }
     }),
-//    new IntentionBaseInspection(new RemoveUnnecessaryParenthesesIntention, classOf[KtParenthesizedExpression]),
-//    new IntentionBaseInspection(new UsePropertyAccessSyntaxIntention, classOf[KtCallExpression]),
+    new IntentionBaseInspection(new RemoveUnnecessaryParenthesesIntention, classOf[KtParenthesizedExpression]),
+    new IntentionBaseInspection(new UsePropertyAccessSyntaxIntention, classOf[KtCallExpression]),
     new ApplicabilityBasedInspection(new MoveLambdaOutsideParenthesesInspection, classOf[KtCallExpression])
   )
 }

@@ -15,7 +15,7 @@ class ExpressionConverterTest extends ConverterTestBase {
   def testIntExpr(): Unit =
     doExprTest(
       """(1) + (4 / 2 - 3)""".stripMargin,
-      """(1) + (4 / 2 - 3)""".stripMargin)
+      """1 + (4 / 2 - 3)""".stripMargin)
 
   def testStringConcat(): Unit =
     doExprTest(
@@ -62,8 +62,8 @@ class ExpressionConverterTest extends ConverterTestBase {
       """1.asInstanceOf[Long]
         |1.isInstanceOf[Long]
       """.stripMargin,
-      """(1 as Long)
-        |(1 is Long)
+      """1 as Long
+        |1 is Long
       """.stripMargin)
 
   def testTryFinally(): Unit =

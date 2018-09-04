@@ -3,14 +3,14 @@ package darthorimar.scalaToKotlinConverter
 class CollectionConverterTest extends ConverterTestBase {
   def testOptionConverters(): Unit =
     doExprTest(" Some(1).map(x => x + 1).get",
-      "(1?.let { x -> x + 1 })!!")
+      "1?.let { x -> x + 1 }!!")
 
   def testOptionCall(): Unit =
     doExprTest("Option(1)", "1")
 
   def testOptionGetOrElse(): Unit =
     doExprTest(" Some(1).getOrElse(2)",
-      "(1 ?: 2)")
+      "1 ?: 2")
 
   def testListCon(): Unit =
     doExprTest(

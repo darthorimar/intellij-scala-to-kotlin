@@ -16,7 +16,7 @@ class MatchConvertTest extends ConverterTestBase {
         |  case _ if 1 == 1 => 2
         | }
       """.stripMargin,
-      """import convertedFromScala.lib.*
+      """
         |fun a(x: Any): Int {
         |    val match = x
         |    data class `B(a, B(C(e Int), C(d)))_data`(public val a: A, public val e: Int, public val d: Int)
@@ -81,60 +81,7 @@ class MatchConvertTest extends ConverterTestBase {
         |    }
         |}""".stripMargin)
   }
-
-
-  def testOuterUnapplyInMatch(): Unit =
-    doTest(
-      """trait I
-        |  case class A(i: I) extends I
-        |  case class B(x: Int) extends I
-        |  object O {
-        |    def unapply(arg: Int): Option[A] = Some(A(B(1)))
-        |  }
-        |  val q = 1 match {
-        |    case O(A(B(x))) => x
-        |  }""".stripMargin,
-      """val q: Int = run {
-        |   val match = 1
-        |  data class `O(A(B(x)))_data`(public val x: Int)
-        |  val `O(A(B(x)))` by lazy {
-        |     val l = O.unapply(match)
-        |    if (l != null && l is A) {
-        |       val (l1) = l
-        |      if (l1 is A) {
-        |         val (l2) = l1
-        |        if (l2 is B) {
-        |           val (x) = l2
-        |          if (x is Int) return@lazy `O(A(B(x)))_data`(x)
-        |        }
-        |      }
-        |    }
-        |    return@lazy null
-        |  }
-        |  when {
-        |    `O(A(B(x)))` != null -> {
-        |       val (x) = `O(A(B(x)))`
-        |      x
-        |    }
-        |    else -> throw Exception("Match exception")
-        |  }
-        |}
-        |interface I
-        |data class A( val i: I) : I {
-        |  companion object  {
-        |    fun apply(i: I): A =A(i)
-        |    fun unapply(x: A): A? =x
-        |  }
-        |}
-        |data class B( val x: Int) : I {
-        |  companion object  {
-        |    fun apply(x: Int): B =B(x)
-        |    fun unapply(x: B): B? =x
-        |  }
-        |}
-        |object O {
-        |  fun unapply(arg: Int): A? =A.apply(B.apply(1))
-        |}""".stripMargin)
+  
 
   def testInnerUnapplyInMatch(): Unit =
     doTest(
@@ -147,7 +94,7 @@ class MatchConvertTest extends ConverterTestBase {
         |  val q = Right(1) match {
         |    case Right(O(A(B(x)))) => x
         |  }""".stripMargin,
-      """ import convertedFromScala.lib.*
+      """
         |val q: Int = run {
         |    val match = Right.apply(1)
         |    data class `Right(O(A(B(x))))_data`(public val x: Int)
