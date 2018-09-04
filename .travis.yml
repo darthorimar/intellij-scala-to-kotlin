@@ -1,0 +1,8 @@
+language: scala
+install: true
+
+jdk:
+- oraclejdk8
+
+script:
+- ./gradlew test
