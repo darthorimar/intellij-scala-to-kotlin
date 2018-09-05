@@ -1,4 +1,4 @@
-sealed class Either<out A, out B> {
+public sealed class Either<out A, out B> {
     abstract fun isLeft(): Boolean
     abstract fun isRight(): Boolean
     abstract fun toOption(): B?
@@ -6,7 +6,7 @@ sealed class Either<out A, out B> {
     abstract fun <A1, B1> flatMap(f: (B) -> Either<A1, B1>): Either<A1, B1>
 }
 
-class Left<out A, out B>(public val value: A) : Either<A, B>() {
+public class Left<out A, out B>(public val value: A) : Either<A, B>() {
     override fun isLeft(): Boolean = true
     override fun isRight(): Boolean = false
     override fun toOption(): B? = null
@@ -15,7 +15,7 @@ class Left<out A, out B>(public val value: A) : Either<A, B>() {
             this as Either<A1, B1>
 }
 
-class Right<out A, out B>(public val value: B) : Either<A, B>() {
+public class Right<out A, out B>(public val value: B) : Either<A, B>() {
     override fun isLeft(): Boolean = false
     override fun isRight(): Boolean = true
     override fun toOption(): B? = value

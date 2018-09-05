@@ -6,7 +6,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.{PsiDocumentManager, PsiManager}
 import darthorimar.scalaToKotlinConverter.Utils
 import darthorimar.scalaToKotlinConverter.ast.Import
-import darthorimar.scalaToKotlinConverter.definition.{Definition, DefinitionGenerator}
+import darthorimar.scalaToKotlinConverter.definition.{Definition, DefinitionGenerator, FileDefinition}
 import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.{KtElement, KtFile}
@@ -47,12 +47,19 @@ class ConverterStepState(var elementGenerator: Option[KtElementGenerator] = None
   private var imports: Set[Import] = Set.empty
 
   def addDefinition(definition: Definition): Unit = {
-    imports += Import(DefinitionGenerator.packageName)
-    definitions = definitions + definition
+    val definitionNames = definition match {
+      case fileDefinition: FileDefinition =>
+        fileDefinition.usedDefinitions
+      case _ => Seq(definition.name)
+    }
+    definitionNames foreach { definitionName =>
+      imports += Import(DefinitionGenerator.packageName + "." + definitionName)
+    }
+    definitions += definition
   }
 
   def addImport(imp: Import): Unit =
-    imports = imports + imp
+    imports += imp
 
   def collectedDefinitions: Seq[Definition] =
     definitions.toSeq

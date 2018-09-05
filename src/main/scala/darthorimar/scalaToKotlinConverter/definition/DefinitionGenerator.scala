@@ -65,7 +65,7 @@ object DefinitionGenerator {
   }
 
   def generate(definitions: Seq[Definition], baseDirectory: PsiDirectory): Unit = {
-    if (definitions.nonEmpty) {
+    if (definitions.nonEmpty && baseDirectory != null) {
       val file = getOrCreateLibFile(baseDirectory)
       val collectedDefinitions = collectDefinitions(definitions)
       val existingDefinitionNames = getExistingDefinitionNames(file)
@@ -84,13 +84,7 @@ object DefinitionGenerator {
 
   def getExistingDefinitionNames(file: PsiFile): Seq[String] = file match {
     case ktFile: KtFile =>
-      ktFile.getDeclarations.asScala map {
-        case funct: KtNamedFunction if funct.getReceiverTypeReference != null =>
-          val typeName = funct.getReceiverTypeReference.getText.takeWhile(_.isLetter).toLowerCase
-          val funName = funct.getName.toLowerCase.capitalize
-          s"$typeName$funName"
-        case decl => decl.getName
-      }
+      ktFile.getDeclarations.asScala.map(_.getName)
     case _ => Seq.empty
   }
 }

@@ -8,11 +8,11 @@ trait Definition {
 object Definition {
   val unzip3 = FileDefinition("unzip3")
   val matchError = FileDefinition("MatchError")
-  val tryDefinition = FileDefinition("Try", Seq(matchError))
-  val listCollect = FileDefinition("listCollect", Seq(matchError))
-  val arrayCollect = FileDefinition("arrayCollect", Seq(matchError))
+  val tryDefinition = FileDefinition("Try", Seq(matchError), Seq("runTry", "Failure", "Success"))
+  val eitherDefinition = FileDefinition("Either", Seq.empty, Seq("Right", "Left"))
+  val collect = FileDefinition("collect", Seq(matchError))
   val partialFunction = FileDefinition("PartialFunction", Seq(matchError))
-  val stringStripSuffix = FileDefinition("stringStripSuffix", Seq(matchError))
+  val stripSuffix = FileDefinition("stripSuffix", Seq(matchError))
 
   def tuple(arity: Int) = new TupleDefinition(arity)
 }

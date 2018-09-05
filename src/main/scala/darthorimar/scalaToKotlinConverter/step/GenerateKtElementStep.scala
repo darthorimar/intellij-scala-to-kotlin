@@ -24,8 +24,8 @@ class GenerateKtElementStep extends ConverterStep[KotlinCode, KtElement] {
   override def apply(from: KotlinCode, state: ConverterStepState): (KtElement, ConverterStepState) = {
     val ktElement = state.elementGenerator.get.insertCode(from)
     val file = ktElement.getContainingFile
-    generateImports(state.collectImports, file.asInstanceOf[KtFile])
     generateDefinitions(state.collectedDefinitions, file.asInstanceOf[KtFile])
+    generateImports(state.collectImports, file.asInstanceOf[KtFile])
     PsiDocumentManager.getInstance(ktElement.getProject)
       .commitDocument(PsiDocumentManager.getInstance(ktElement.getProject).getDocument(ktElement.getContainingFile))
     val formated = Utils.reformatKtElement(ktElement)
@@ -33,8 +33,7 @@ class GenerateKtElementStep extends ConverterStep[KotlinCode, KtElement] {
   }
 
   private def generateDefinitions(definitions: Seq[Definition], ktFile: KtFile): Unit = {
-    //todo fix
-    //    DefinitionGenerator.generate(definitions, ktFile.getContainingDirectory)
+    DefinitionGenerator.generate(definitions, ktFile.getContainingDirectory)
   }
 
   private def generateImports(imports: Seq[Import], ktFile: KtFile): Unit = {
@@ -47,30 +46,30 @@ class GenerateKtElementStep extends ConverterStep[KotlinCode, KtElement] {
 
   private def generateSingleImport(imp: Import, ktFile: KtFile): Unit =
     imp match {
-      case Import(ref, importAll) =>
+      case Import(ref) =>
         val fqName = new FqName(ref)
         new J2kPostProcessor(false).insertImport(ktFile, fqName)
 
 
-        //todo replace ??
-//        val project = ktFile.getProject
-//        val facade =
-//          ServiceManager.getService(project, classOf[KotlinCacheService])
-//            .getResolutionFacade(util.Collections.singletonList(ktFile))
-//
-//        val importDirective = new KtPsiFactory(project).createImportDirective(new ImportPath(fqName, importAll))
-//        val qualifiedExpressionResolver =
-//          facade.getFrontendService(facade.getModuleDescriptor, classOf[QualifiedExpressionResolver])
-//        val importReferences =
-//          Option(qualifiedExpressionResolver.processImportReference(importDirective,
-//            facade.getModuleDescriptor,
-//            new BindingTraceContext(),
-//            util.Collections.emptyList(), null)
-//          ) map (_.getContributedDescriptors(DescriptorKindFilter.ALL, _ => true, false).asScala
-//            ) getOrElse List.empty
-//
-//        importReferences.headOption foreach { ref =>
-//          ImportInsertHelper.getInstance(project).importDescriptor(ktFile, ref, false)
-//        }
+      //todo replace ??
+      //        val project = ktFile.getProject
+      //        val facade =
+      //          ServiceManager.getService(project, classOf[KotlinCacheService])
+      //            .getResolutionFacade(util.Collections.singletonList(ktFile))
+      //
+      //        val importDirective = new KtPsiFactory(project).createImportDirective(new ImportPath(fqName, importAll))
+      //        val qualifiedExpressionResolver =
+      //          facade.getFrontendService(facade.getModuleDescriptor, classOf[QualifiedExpressionResolver])
+      //        val importReferences =
+      //          Option(qualifiedExpressionResolver.processImportReference(importDirective,
+      //            facade.getModuleDescriptor,
+      //            new BindingTraceContext(),
+      //            util.Collections.emptyList(), null)
+      //          ) map (_.getContributedDescriptors(DescriptorKindFilter.ALL, _ => true, false).asScala
+      //            ) getOrElse List.empty
+      //
+      //        importReferences.headOption foreach { ref =>
+      //          ImportInsertHelper.getInstance(project).importDescriptor(ktFile, ref, false)
+      //        }
     }
 }

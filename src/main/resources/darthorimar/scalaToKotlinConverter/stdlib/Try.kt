@@ -1,4 +1,4 @@
-sealed class Try<out T> {
+public sealed class Try<out T> {
     abstract fun isSuccess(): Boolean
     abstract fun isFailure(): Boolean
     abstract fun getOrElse(default: () -> @UnsafeVariance T): T
@@ -13,14 +13,14 @@ sealed class Try<out T> {
     abstract fun <U> recoverWith(f: (Throwable) -> Try<U>): Try<U>
 }
 
-fun <T> runTry(block: () -> T): Try<T> =
+public fun <T> runTry(block: () -> T): Try<T> =
         try {
             Success(block())
         } catch (e: Exception) {
             Failure(e)
         }
 
-class Failure<out T>(val exception: Throwable) : Try<T>() {
+public class Failure<out T>(val exception: Throwable) : Try<T>() {
     override fun isSuccess(): Boolean = false
     override fun isFailure(): Boolean = true
     override fun getOrElse(default: () -> @UnsafeVariance T): T = default()
@@ -57,7 +57,7 @@ class Failure<out T>(val exception: Throwable) : Try<T>() {
             }
 }
 
-class Success<out T>(public val value: T) : Try<T>() {
+public class Success<out T>(public val value: T) : Try<T>() {
     override fun isSuccess(): Boolean = true
     override fun isFailure(): Boolean = false
     override fun getOrElse(default: () -> @UnsafeVariance T): T = get()
