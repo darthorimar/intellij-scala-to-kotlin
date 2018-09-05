@@ -107,7 +107,7 @@ case object ObjectCompanion extends CompanionModule
 
 case class CallParameterInfo(expectedType: Type, isCallByName: Boolean) extends AST
 
-case class Import(ref: String, importAll: Boolean) extends AST
+case class Import(ref: String) extends AST
 
 case class RefWithQualifier(qualifier: Option[String], ref: String) extends AST {
   def qualified: String = qualifier.map(_ + ".").getOrElse("") + ref

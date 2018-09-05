@@ -48,25 +48,29 @@ class GenerateKtElementStep extends ConverterStep[KotlinCode, KtElement] {
   private def generateSingleImport(imp: Import, ktFile: KtFile): Unit =
     imp match {
       case Import(ref, importAll) =>
-        val project = ktFile.getProject
-        val facade =
-          ServiceManager.getService(project, classOf[KotlinCacheService])
-            .getResolutionFacade(util.Collections.singletonList(ktFile))
-
         val fqName = new FqName(ref)
-        val importDirective = new KtPsiFactory(project).createImportDirective(new ImportPath(fqName, importAll))
-        val qualifiedExpressionResolver =
-          facade.getFrontendService(facade.getModuleDescriptor, classOf[QualifiedExpressionResolver])
-        val importReferences =
-          Option(qualifiedExpressionResolver.processImportReference(importDirective,
-            facade.getModuleDescriptor,
-            new BindingTraceContext(),
-            util.Collections.emptyList(), null)
-          ) map (_.getContributedDescriptors(DescriptorKindFilter.ALL, _ => true, false).asScala
-            ) getOrElse List.empty
+        new J2kPostProcessor(false).insertImport(ktFile, fqName)
 
-        importReferences.headOption foreach { ref =>
-          ImportInsertHelper.getInstance(project).importDescriptor(ktFile, ref, false)
-        }
+
+        //todo replace ??
+//        val project = ktFile.getProject
+//        val facade =
+//          ServiceManager.getService(project, classOf[KotlinCacheService])
+//            .getResolutionFacade(util.Collections.singletonList(ktFile))
+//
+//        val importDirective = new KtPsiFactory(project).createImportDirective(new ImportPath(fqName, importAll))
+//        val qualifiedExpressionResolver =
+//          facade.getFrontendService(facade.getModuleDescriptor, classOf[QualifiedExpressionResolver])
+//        val importReferences =
+//          Option(qualifiedExpressionResolver.processImportReference(importDirective,
+//            facade.getModuleDescriptor,
+//            new BindingTraceContext(),
+//            util.Collections.emptyList(), null)
+//          ) map (_.getContributedDescriptors(DescriptorKindFilter.ALL, _ => true, false).asScala
+//            ) getOrElse List.empty
+//
+//        importReferences.headOption foreach { ref =>
+//          ImportInsertHelper.getInstance(project).importDescriptor(ktFile, ref, false)
+//        }
     }
 }

@@ -35,6 +35,9 @@ class FileElementGenerator(file: ScalaFile) extends KtElementGenerator {
       val fileName = Utils.createKotlinName(file)
       virtualFile.rename(this, fileName)
     }
+    val ktDocument = PsiDocumentManager.getInstance(project).getDocument(file)
+    PsiDocumentManager.getInstance(project).commitDocument(ktDocument)
+
     PsiManager.getInstance(project).findFile(virtualFile).asInstanceOf[KtFile]
   }
 }
@@ -44,7 +47,7 @@ class ConverterStepState(var elementGenerator: Option[KtElementGenerator] = None
   private var imports: Set[Import] = Set.empty
 
   def addDefinition(definition: Definition): Unit = {
-    imports += Import(DefinitionGenerator.packageName, importAll = true)
+    imports += Import(DefinitionGenerator.packageName)
     definitions = definitions + definition
   }
 
