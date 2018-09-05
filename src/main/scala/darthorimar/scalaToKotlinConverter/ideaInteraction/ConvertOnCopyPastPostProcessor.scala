@@ -56,7 +56,7 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
     if (content.isDataFlavorSupported(ScalaToKotlinData.dataFlavor))
       Collections.singletonList(
         content.getTransferData(ScalaToKotlinData.dataFlavor).asInstanceOf[ScalaToKotlinTransferableData])
-    else null
+    else Collections.emptyList[ScalaToKotlinTransferableData]
   }
 
   override def processTransferableData(project: Project,
