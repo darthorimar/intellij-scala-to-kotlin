@@ -1,39 +1,75 @@
 package darthorimar.scalaToKotlinConverter.step
-open class GenerateKtElementStep() : ConverterStep<String, KtElement> {
-  override fun apply(from: String, state: ConverterStepState): Pair<KtElement, ConverterStepState> {
-     val ktElement: KtElement = state.elementGenerator!!.insertCode(from)
-     val file: PsiFile = ktElement.getContainingFile()
-    generateDefinitions(state.collectedDefinitions(), (file as KtFile))
-    generateImports(state.collectImports(), (file as KtFile))
-    PsiDocumentManager.getInstance(ktElement.getProject()).commitDocument(PsiDocumentManager.getInstance(ktElement.getProject()).getDocument(ktElement.getContainingFile()))
-     val formated: KtElement = Utils.reformatKtElement(ktElement)
-    return Pair<KtElement, ConverterStepState>(formated, state)
+
+import java.util
+
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.ServiceManager
+import com.intellij.psi.PsiDocumentManager
+import darthorimar.scalaToKotlinConverter.Utils
+import darthorimar.scalaToKotlinConverter.ast.Import
+import darthorimar.scalaToKotlinConverter.definition.{Definition, DefinitionGenerator}
+import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
+import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
+import org.jetbrains.kotlin.idea.j2k.J2kPostProcessor
+import org.jetbrains.kotlin.idea.util.ImportInsertHelper
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.{KtElement, KtFile, KtPsiFactory}
+import org.jetbrains.kotlin.resolve.scopes.{DescriptorKindFilter, MemberScope}
+import org.jetbrains.kotlin.resolve.{BindingTraceContext, ImportPath, QualifiedExpressionResolver}
+import org.jetbrains.plugins.scala.extensions.inWriteAction
+
+import collection.JavaConverters._
+
+class GenerateKtElementStep extends ConverterStep[KotlinCode, KtElement] {
+  override def apply(from: KotlinCode, state: ConverterStepState): (KtElement, ConverterStepState) = {
+    val ktElement = state.elementGenerator.get.insertCode(from)
+    val file = ktElement.getContainingFile
+    generateDefinitions(state.collectedDefinitions, file.asInstanceOf[KtFile])
+    generateImports(state.collectImports, file.asInstanceOf[KtFile])
+    PsiDocumentManager.getInstance(ktElement.getProject)
+      .commitDocument(PsiDocumentManager.getInstance(ktElement.getProject).getDocument(ktElement.getContainingFile))
+    val formated = Utils.reformatKtElement(ktElement)
+    (formated, state)
   }
-  private fun generateDefinitions(definitions: List<Definition>, ktFile: KtFile): Unit {
-    DefinitionGenerator.generate(definitions, ktFile.getContainingDirectory())
+
+  private def generateDefinitions(definitions: Seq[Definition], ktFile: KtFile): Unit = {
+    DefinitionGenerator.generate(definitions, ktFile.getContainingDirectory)
   }
-  private fun generateImports(imports: List<Import>, ktFile: KtFile): Unit {
-    ApplicationManager.getApplication().invokeAndWait { inWriteAction { imports.sortBy(({ it.ref })).forEach(({ generateSingleImport(it, ktFile) })) } }
-  }
-  private fun generateSingleImport(imp: Import, ktFile: KtFile): Unit {
-     val match = imp
-    data class `Import(ref)_data`(public val ref: String)
-    val `Import(ref)` by lazy {
-      if (match is Import) {
-         val (ref) = match
-        if (ref is String) {
-          return@lazy `Import(ref)_data`(ref)
-        }
+
+  private def generateImports(imports: Seq[Import], ktFile: KtFile): Unit = {
+    ApplicationManager.getApplication.invokeAndWait { () =>
+      inWriteAction {
+        imports sortBy (_.ref) foreach (generateSingleImport(_, ktFile))
       }
-      return@lazy null
-    }
-    when {
-      `Import(ref)` != null -> {
-         val (ref) = `Import(ref)`
-         val fqName: FqName = FqName(ref)
-        J2kPostProcessor(false).insertImport(ktFile, fqName)
-      }
-      else -> throw MatchError(match)
     }
   }
+
+  private def generateSingleImport(imp: Import, ktFile: KtFile): Unit =
+    imp match {
+      case Import(ref) =>
+        val fqName = new FqName(ref)
+        new J2kPostProcessor( false).insertImport(ktFile, fqName)
+
+
+      //todo replace ??
+      //        val project = ktFile.getProject
+      //        val facade =
+      //          ServiceManager.getService(project, classOf[KotlinCacheService])
+      //            .getResolutionFacade(util.Collections.singletonList(ktFile))
+      //
+      //        val importDirective = new KtPsiFactory(project).createImportDirective(new ImportPath(fqName, importAll))
+      //        val qualifiedExpressionResolver =
+      //          facade.getFrontendService(facade.getModuleDescriptor, classOf[QualifiedExpressionResolver])
+      //        val importReferences =
+      //          Option(qualifiedExpressionResolver.processImportReference(importDirective,
+      //            facade.getModuleDescriptor,
+      //            new BindingTraceContext(),
+      //            util.Collections.emptyList(), null)
+      //          ) map (_.getContributedDescriptors(DescriptorKindFilter.ALL, _ => true, false).asScala
+      //            ) getOrElse List.empty
+      //
+      //        importReferences.headOption foreach { ref =>
+      //          ImportInsertHelper.getInstance(project).importDescriptor(ktFile, ref, false)
+      //        }
+    }
 }
