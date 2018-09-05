@@ -2,16 +2,21 @@
 
 <idea-plugin>
     <id>darthorimar.scalaToKotlin</id>
-    <name>Scala to Kotlin conveter</name>
+    <name>Scala to Kotlin Converter</name>
     <version>0.1</version>
     <vendor url="https://github.com/darthorimar"/>
 
     <description><![CDATA[
-      Scala to Kotlin conveter
+      Scala to Kotlin programming languages converter:
+      <ul>
+      <li> Selected files conversions
+      <li> Convert on copy-paste from Scala file to Kotlin one
+      </ul>
     ]]></description>
 
     <depends>org.intellij.scala</depends>
     <depends>org.jetbrains.kotlin</depends>
+
     <idea-version since-build="182.0"/>
 
     <actions>
