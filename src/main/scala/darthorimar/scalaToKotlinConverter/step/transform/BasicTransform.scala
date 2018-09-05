@@ -126,7 +126,7 @@ class BasicTransform extends Transform {
           namerVal.set(new LocalNamer),
           renamerVal.updated(_.addAll(renames.toMap))
         ) {
-          val newDef = copy(x).asInstanceOf[DefnDef]
+          val newDef = copy[DefnDef](x)
 
           def handleBody(body: Expr) = body match {
             case b@BlockExpr(stmts) =>
@@ -151,10 +151,10 @@ class BasicTransform extends Transform {
 
 
       case x: ValOrVarDef =>
-        copy(x).asInstanceOf[ValOrVarDef].copy(attributes = handleAttrs(x))
+        copy[ValOrVarDef](x).copy(attributes = handleAttrs(x))
 
       case x: SimpleValOrVarDef =>
-        copy(x).asInstanceOf[SimpleValOrVarDef].copy(attributes = handleAttrs(x))
+        copy[SimpleValOrVarDef](x).copy(attributes = handleAttrs(x))
 
       //implicit class --> extension function
       case Defn(attrs,
@@ -184,7 +184,7 @@ class BasicTransform extends Transform {
           }
         ) {
 
-          val defn = copy(x).asInstanceOf[Defn]
+          val defn = copy[Defn](x)
 
           def generateFakeCompanion: Defn = {
             val defnType = ClassType(defn.name)
@@ -237,7 +237,7 @@ class BasicTransform extends Transform {
             if (defn.companionDefn.contains(ObjectCompanion)) ""
             else defn.name
 
-          copy(defn).asInstanceOf[Defn]
+          copy[Defn](defn)
             .copy(attributes = handleAttrs(defn),
               defnType = defnType,
               body = newBody,
@@ -261,7 +261,7 @@ class BasicTransform extends Transform {
         val ref = collectRef(x)
         CallExpr(
           transform[Type](x.exprType),
-          copy(ref).asInstanceOf[RefExpr],
+          copy[RefExpr](ref),
           params.map(transform[Expr]),
           Seq.empty)
 
@@ -297,7 +297,7 @@ class BasicTransform extends Transform {
       //x.foo --> x.foo()
       case x@RefExpr(exprType, obj, ref, typeParams, true)
         if !parent.isInstanceOf[CallExpr] =>
-        CallExpr(exprType, copy(x).asInstanceOf[RefExpr], Seq.empty, Seq.empty)
+        CallExpr(exprType, copy[RefExpr](x), Seq.empty, Seq.empty)
 
 
       //foo.apply(sth) --> foo(sth)

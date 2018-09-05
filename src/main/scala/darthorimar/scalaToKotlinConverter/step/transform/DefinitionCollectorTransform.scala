@@ -19,6 +19,6 @@ class DefinitionCollectorTransform extends Transform {
     case c@CallExpr(_, RefExpr(_, Some(expr), name, _, _), _, _)
       if calls.isDefinedAt((expr.exprType, name)) =>
       stateStepVal.addDefinition(calls((expr.exprType, name)))
-      copy(c).asInstanceOf[CallExpr]
+      copy[CallExpr](c)
   }
 }

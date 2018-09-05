@@ -24,9 +24,9 @@ abstract class Transform extends ConverterStep[AST, AST] {
   protected def parent: AST =
     parents.head
 
-  def transform[T](ast: AST): T = {
+  def transform[T <: AST](ast: AST): T = {
     parentsStack = ast :: parentsStack
-    val res =  action.applyOrElse(ast, copy).asInstanceOf[T]
+    val res =  action.applyOrElse(ast, copy[T]).asInstanceOf[T]
     parentsStack = parentsStack.tail
     res
   }
@@ -39,7 +39,7 @@ abstract class Transform extends ConverterStep[AST, AST] {
       (result, stateStepVal)
     }
 
-  protected def copy(ast: AST): AST = ast match {
+  protected def copy[T <: AST](ast: AST): T = (ast match {
     case x: ErrorAst =>
       x
 
@@ -290,5 +290,5 @@ abstract class Transform extends ConverterStep[AST, AST] {
     case EmptyDefExpr => EmptyDefExpr
 
     case x: Keyword => x
-  }
+  }).asInstanceOf[T]
 }
