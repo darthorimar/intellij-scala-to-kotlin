@@ -60,7 +60,7 @@ class CollectionTransform extends Transform {
     //Seqs
 
     //Seq(1,2,3) --> listOf(1,2,3)
-    case CallExpr(exprType, RefExpr(refTy, Some(RefExpr(_, None, "scala.Seq", typeParams, false)), "apply", _, _), params, paramsExpectedTypes) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(RefExpr(_, None, "scala.Seq" | "scala.List", typeParams, false)), "apply", _, _), params, paramsExpectedTypes) =>
       Some(CallExpr(
         transform[Type](exprType),
         RefExpr(transform[Type](refTy), None, "listOf", typeParams.map(transform[Type]), true),

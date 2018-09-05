@@ -159,16 +159,21 @@ class BasicTransform extends Transform {
         Some(copy(x).asInstanceOf[SimpleValOrVarDef].copy(attributes = handleAttrs(x)))
 
       //implicit class --> extension function
-      case Defn(attrs, ClassDefn, _, _,
-      Some(ParamsConstructor(Seq(ConstructorParam(_, _, parameterName, parameterType)))), _, Some(BlockExpr(defns)), _)
-        if attrs.contains(ImplicitAttribute) =>
+      case Defn(attrs,
+        ClassDefn,
+        _,
+        typeParams,
+       Some(ParamsConstructor(Seq(ConstructorParam(_, _, parameterName, parameterType)))),
+        _,
+        Some(BlockExpr(defns)),
+        _) if attrs.contains(ImplicitAttribute) =>
 
         val functions = defns collect {
           case defn: DefnDef =>
             scoped(
               renamerVal.updated(_.add(parameterName -> ThisExpr(parameterType)))
             ) {
-              val transformed = transform[DefnDef](defn)
+              val transformed = transform[DefnDef](defn.copy(typeParameters = typeParams ++ defn.typeParameters))
               transformed.copy(receiver = Some(parameterType))
             }
         }

@@ -82,4 +82,15 @@ class DefinitionConverterTest extends ConverterTestBase {
         |fun Int.minusOne(): Int = this - 1
       """.stripMargin)
 
+  def testImplicitClassTypeParams(): Unit =
+    doTest(
+      """
+        | implicit class ListOps[T](val list: List[T]) {
+        |    def cast[K]: List[K] = list.asInstanceOf[List[K]]
+        |  }
+        |  def foo = List(1).cast[Double]
+      """.stripMargin,
+      """fun foo(): List<Double> = listOf(1).cast<Double>()
+        |fun <T, K> List<T>.cast(): List<K> = this as List<K>
+      """.stripMargin)
 }
