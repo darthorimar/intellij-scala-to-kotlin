@@ -56,6 +56,9 @@ trait Transform extends ConverterStep[AST, AST] {
         block.map(transform[BlockExpr]),
         companionDefn.map(transform[CompanionModule]))
 
+    case ExprContainer(exprs) =>
+      ExprContainer(exprs.map(transform[Expr]))
+
     case ClassCompanion(companion) =>
       ClassCompanion(transform[Defn](companion))
 
@@ -99,8 +102,9 @@ trait Transform extends ConverterStep[AST, AST] {
     case ValOrVarDef(attributes, isVal, patterns, expr) =>
       ValOrVarDef(attributes, isVal, patterns.map(transform[CasePattern]), expr.map(transform[Expr]))
 
-    case DefnDef(attrss, name, typeParams, args, retType, body) =>
-      DefnDef(attrss,
+    case DefnDef(attrs, receiver, name, typeParams, args, retType, body) =>
+      DefnDef(attrs,
+        receiver.map(transform[Type]),
         name,
         typeParams.map(transform[TypeParam]),
         args.map(transform[DefParameter]),

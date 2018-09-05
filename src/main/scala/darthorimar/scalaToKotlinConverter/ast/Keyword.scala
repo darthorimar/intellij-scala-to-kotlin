@@ -37,6 +37,9 @@
   case object AbstractAttribute extends Attribute {
     override def name: String = "abstract"
   }
+  case object ImplicitAttribute extends Attribute {
+    override def name: String = "implicit"
+  }
   case object CompanionAttribute extends Attribute {
     override def name: String = "companion"
   }

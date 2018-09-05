@@ -68,4 +68,18 @@ class DefinitionConverterTest extends ConverterTestBase {
         |abstract class C()
       """.stripMargin)
 
+  def testImplicitClass(): Unit =
+    doTest(
+      """
+        | implicit class IntOps(val i: Int) {
+        |    def plusOne = i + 1
+        |    def minusOne = i - 1
+        |  }
+        |  def foo = 1.plusOne.minusOne
+      """.stripMargin,
+      """fun foo(): Int = 1.plusOne().minusOne()
+        |fun Int.plusOne(): Int = this + 1
+        |fun Int.minusOne(): Int = this - 1
+      """.stripMargin)
+
 }

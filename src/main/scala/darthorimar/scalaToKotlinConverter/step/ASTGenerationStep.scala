@@ -8,6 +8,7 @@ import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.scopes.{ASTGeneratorState, ScopedVal}
 import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, LibTypes, ScalaTypes}
 import darthorimar.scalaToKotlinConverter.{Exprs, ast}
+import org.jetbrains.plugins.scala.lang.lexer.ScalaTokenTypes
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.lang.psi.api.base._
 import org.jetbrains.plugins.scala.lang.psi.api.base.patterns._
@@ -121,21 +122,22 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
     if (exprs.nonEmpty) Some(BlockExpr(exprs))
     else None
 
-  private def genAttributes(x: ScMember): Seq[Attribute] = {
-    def attr(p: Boolean, a: Attribute) =
-      if (p) Some(a) else None
+  private def genAttributes(member: ScMember): Seq[Attribute] = {
+    def addAttribute(add: Boolean, attribute: Attribute) =
+      if (add) Some(attribute) else None
 
-    val memberAttrs = (attr(x.isPrivate, PrivateAttribute) ::
-      attr(x.isPublic, PublicAttribute) ::
-      attr(x.isProtected, ProtectedAttribute) ::
-      attr(x.hasFinalModifier, FinalAttribute) ::
-      attr(x.hasAbstractModifier, AbstractAttribute) ::
+    val memberAttrs = (addAttribute(member.isPrivate, PrivateAttribute) ::
+      addAttribute(member.isPublic, PublicAttribute) ::
+      addAttribute(member.isProtected, ProtectedAttribute) ::
+      addAttribute(member.hasFinalModifier, FinalAttribute) ::
+      addAttribute(member.hasAbstractModifier, AbstractAttribute) ::
+      addAttribute(member.getModifierList().has(ScalaTokenTypes.kIMPLICIT), ImplicitAttribute) ::
       Nil).flatten
-    val extraAttrs = x match {
+    val extraAttrs = member match {
       case y: ScFunction =>
-        attr(y.superMethod.isDefined, OverrideAttribute).toSeq
+        addAttribute(y.superMethod.isDefined, OverrideAttribute).toSeq
       case y: ScTypeDefinition =>
-        (attr(y.isCase, CaseAttribute) ::
+        (addAttribute(y.isCase, CaseAttribute) ::
           Nil).flatten
 
       case _ => Seq.empty
@@ -214,21 +216,26 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
         )
       }
 
-    case x: ScTypeDefinition =>
-      val construct = x match {
-        case y: ScClass => Some(y.constructor.map(gen[Constructor]).getOrElse(EmptyConstructor))
+
+
+
+    case typeDef: ScTypeDefinition =>
+      val construct = typeDef match {
+        case cls: ScClass => Some(cls.constructor.map(gen[Constructor]).getOrElse(EmptyConstructor))
         case _ => None
       }
 
+
       val overrideConstuctParamsDefs =
-        x match {
-          case y: ScClass => y.constructor.toSeq.collect {
-            case z: ScPrimaryConstructor =>
-              z.parameters
+        typeDef match {
+          case cls: ScClass => cls.constructor.toSeq.collect {
+            case constructor: ScPrimaryConstructor =>
+              constructor.parameters
                 .filter(p => ScalaPsiUtil.superValsSignatures(p).nonEmpty)
           }.flatten
             .map { p: ScClassParameter =>
               DefnDef(Seq(PublicAttribute, OverrideAttribute),
+                None,
                 p.name,
                 Seq.empty,
                 Seq.empty,
@@ -239,27 +246,27 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
         }
 
       val defnType =
-        x match {
+        typeDef match {
           case _: ScClass => ClassDefn
           case _: ScTrait => TraitDefn
           case _: ScObject => ObjDefn
         }
 
 
-      val companionDefn = x.baseCompanionModule.map {
+      val companionDefn = typeDef.baseCompanionModule.map {
         case _ if defnType == ObjDefn => ObjectCompanion
         case c => ClassCompanion(gen[Defn](c))
       }
 
       Defn(
-        genAttributes(x),
+        genAttributes(typeDef),
         defnType,
-        x.name,
-        x.typeParameters.map(gen[TypeParam]),
+        typeDef.name,
+        typeDef.typeParameters.map(gen[TypeParam]),
         construct,
-        x.extendsBlock.templateParents.map(gen[SupersBlock]),
+        typeDef.extendsBlock.templateParents.map(gen[SupersBlock]),
         blockOrNone(
-          overrideConstuctParamsDefs ++ x.extendsBlock.members.map(gen[DefExpr])),
+          overrideConstuctParamsDefs ++ typeDef.extendsBlock.members.map(gen[DefExpr])),
         companionDefn)
 
     case x: ScTemplateParents =>
@@ -283,6 +290,7 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
     case x: ScFunction =>
       DefnDef(
         genAttributes(x),
+        None,
         x.name,
         x.typeParameters.map(gen[TypeParam]),
         x.parameters.map(gen[DefParameter]),

@@ -76,6 +76,13 @@ case class BlockExpr(exprs: Seq[Expr]) extends Expr {
     else exprs.last.exprType
 }
 
+case class ExprContainer (exprs: Seq[Expr]) extends DefExpr {
+  override def exprType: Type =
+    if (exprs.isEmpty) NoType
+    else exprs.last.exprType
+
+  override def attributes: Seq[Attribute] = Seq.empty
+}
 
 sealed trait DefExpr extends Expr {
   override def exprType: Type = NoType
@@ -128,6 +135,7 @@ case class LazyValDef(name: String, valType: Type, expr: Expr) extends DefExpr {
 }
 
 case class DefnDef(attributes: Seq[Attribute],
+                   receiver: Option[Type],
                    name: String,
                    typeParameters: Seq[TypeParam],
                    parameters: Seq[DefParameter],

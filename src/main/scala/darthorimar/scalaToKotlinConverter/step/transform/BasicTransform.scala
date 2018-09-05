@@ -158,6 +158,22 @@ class BasicTransform extends Transform {
       case x: SimpleValOrVarDef =>
         Some(copy(x).asInstanceOf[SimpleValOrVarDef].copy(attributes = handleAttrs(x)))
 
+      //implicit class --> extension function
+      case Defn(attrs, ClassDefn, _, _,
+      Some(ParamsConstructor(Seq(ConstructorParam(_, _, parameterName, parameterType)))), _, Some(BlockExpr(defns)), _)
+        if attrs.contains(ImplicitAttribute) =>
+
+        val functions = defns collect {
+          case defn: DefnDef =>
+            scoped(
+              renamerVal.updated(_.add(parameterName -> ThisExpr(parameterType)))
+            ) {
+              val transformed = transform[DefnDef](defn)
+              transformed.copy(receiver = Some(parameterType))
+            }
+        }
+        Some(ExprContainer(functions))
+
       case x: Defn =>
         scoped(
           stateVal.updated { s =>
@@ -184,13 +200,13 @@ class BasicTransform extends Transform {
                   Exprs.simpleRef(paramName, parameterType)
                 }
               val body = NewExpr(defnType, arguments)
-              DefnDef(Seq.empty, "apply", Seq.empty, parameters, defnType, Some(body))
+              DefnDef(Seq.empty, receiver = None, "apply", Seq.empty, parameters, defnType, Some(body))
             }
             val unapplyDef = {
               val parameters =
                 Seq(DefParameter(defnType, "x", false, false))
               val body = Exprs.simpleRef("x", defnType)
-              DefnDef(Seq.empty, "unapply", Seq.empty, parameters, NullableType(defnType), Some(body))
+              DefnDef(Seq.empty, receiver = None, "unapply", Seq.empty, parameters, NullableType(defnType), Some(body))
             }
             Defn(Seq(CompanionAttribute), ObjDefn, "", Seq.empty, None, None, Some(BlockExpr(Seq(applyDef, unapplyDef))), None)
           }
@@ -269,7 +285,7 @@ class BasicTransform extends Transform {
               case (y, _) => transform[Expr](y)
             }.zip(paramsInfo).map {
               case (e, CallParameterInfo(_, true)) =>
-                val exp =transform[Expr](e)
+                val exp = transform[Expr](e)
                 LambdaExpr(exp.exprType, Seq.empty, exp, needBraces = false)
               case (e, _) => e
             },

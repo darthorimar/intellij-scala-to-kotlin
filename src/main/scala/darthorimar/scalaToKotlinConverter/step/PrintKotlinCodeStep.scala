@@ -34,8 +34,10 @@ class KotlinBuilder extends BuilderBase {
           str(pckg)
           nl()
         }
-
         repNl(defns)(gen)
+
+      case ExprContainer(exprs) =>
+        repNl(exprs)(gen)
 
       case Defn(attrs, t, name, typeParams, consruct, supersBlock, block, companionDefn) =>
         rep(attrs, " ")(gen)
@@ -124,7 +126,7 @@ class KotlinBuilder extends BuilderBase {
       case p: CasePattern =>
         str(p.representation)
 
-      case DefnDef(attrs, name, typeParams, args, retType, body) =>
+      case DefnDef(attrs, receiver, name, typeParams, args, retType, body) =>
         rep(attrs, " ")(gen)
         if (attrs.nonEmpty) str(" ")
         str("fun")
@@ -134,11 +136,15 @@ class KotlinBuilder extends BuilderBase {
           str(">")
         }
         str(" ")
+        opt(receiver) { receiverType =>
+          genType(receiverType, pref = false)
+          str(".")
+        }
         str(name)
         str("(")
-        rep(args, ", ") { case DefParameter(parameterType, name, isVarArg, _) =>
+        rep(args, ", ") { case DefParameter(parameterType, parameterName, isVarArg, _) =>
           if (isVarArg) str("vararg ")
-          str(name)
+          str(parameterName)
           genType(parameterType)
         }
         str(")")
