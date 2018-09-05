@@ -28,13 +28,12 @@ class BasicTransform extends Transform {
       case _ => false
     }
 
-  override protected def action(ast: AST): Option[AST] = {
-    ast match {
+  override protected val action: PartialFunction[AST, AST] = {
       case InfixCall(name, left, right, returnType) if isDefaultInfix(name, left.exprType, right.exprType, returnType) =>
-        Some(Exprs.simpleInfix(returnType, name, transform[Expr](left), transform[Expr](right)))
+        Exprs.simpleInfix(returnType, name, transform[Expr](left), transform[Expr](right))
 
       case PrefixCall(name, arg, returnType) if isDefaultPrefix(name, arg.exprType, returnType) =>
-        Some(PrefixExpr(returnType, transform[Expr](arg), name))
+        PrefixExpr(returnType, transform[Expr](arg), name)
 
       //scala try --> kotlin try
       case ScalaTryExpr(exprType, tryBlock, catchBlock, finallyBlock) =>
@@ -57,22 +56,22 @@ class BasicTransform extends Transform {
             val matchExpr = BlockExpr(MatchUtils.convertMatchToWhen(ref, badClauses, exprType, this))
             Seq(KotlinCatchCase(ref.referenceName, ref.exprType, matchExpr))
         }
-        Some(KotlinTryExpr(exprType,
+        KotlinTryExpr(exprType,
           transform[Expr](tryBlock),
           (goodCatches ++ badCatches).map(transform[KotlinCatchCase]),
-          finallyBlock.map(transform[Expr])))
+          finallyBlock.map(transform[Expr]))
 
 
       //rename refs
       case x: RefExpr if renamerVal.call(_.renames.contains(x.referenceName)) =>
-        Some(renamerVal.get.renames(x.referenceName))
+        renamerVal.get.renames(x.referenceName)
 
       //Remove renault brackets for lambda like in seq.map {x => x * 2}
       case BlockExpr(stmts) if stmts.size == 1 && stmts.head.isInstanceOf[LambdaExpr] =>
-        Some(transform[Expr](stmts.head))
+        transform[Expr](stmts.head)
 
       case ParamsConstructor(params) =>
-        Some(ParamsConstructor(params.map {
+        ParamsConstructor(params.map {
           case ConstructorParam(parType, mod, name, exprType) =>
             val t = if (parType == NoMemberKind) ValKind else parType
             val m =
@@ -83,7 +82,7 @@ class BasicTransform extends Transform {
                 PrivateAttribute
               else mod
             ConstructorParam(t, m, name, transform[Type](exprType))
-        }))
+        })
 
 
       case ForExpr(exprType, generators, isYield, body) =>
@@ -111,11 +110,10 @@ class BasicTransform extends Transform {
         }
         if (isYield) {
           stateStepVal.addImport(Import("kotlin.coroutines.experimental.buildSequence"))
-          Some(
             Exprs.simpleCall("buildSequence",
               exprType,
-              Seq(LambdaExpr(exprType, Seq.empty, result, false))))
-        } else Some(result)
+              Seq(LambdaExpr(exprType, Seq.empty, result, false)))
+        } else result
 
 
       // sort fun attrs, add return to the function end
@@ -145,18 +143,18 @@ class BasicTransform extends Transform {
             case p => p
           }
 
-          Some(newDef.copy(
+          newDef.copy(
             attributes = handleAttrs(newDef),
             body = newDef.body.map(handleBody),
-            parameters = params))
+            parameters = params)
         }
 
 
       case x: ValOrVarDef =>
-        Some(copy(x).asInstanceOf[ValOrVarDef].copy(attributes = handleAttrs(x)))
+        copy(x).asInstanceOf[ValOrVarDef].copy(attributes = handleAttrs(x))
 
       case x: SimpleValOrVarDef =>
-        Some(copy(x).asInstanceOf[SimpleValOrVarDef].copy(attributes = handleAttrs(x)))
+        copy(x).asInstanceOf[SimpleValOrVarDef].copy(attributes = handleAttrs(x))
 
       //implicit class --> extension function
       case Defn(attrs,
@@ -177,7 +175,7 @@ class BasicTransform extends Transform {
               transformed.copy(receiver = Some(parameterType))
             }
         }
-        Some(ExprContainer(functions))
+        ExprContainer(functions)
 
       case x: Defn =>
         scoped(
@@ -239,11 +237,11 @@ class BasicTransform extends Transform {
             if (defn.companionDefn.contains(ObjectCompanion)) ""
             else defn.name
 
-          Some(copy(defn).asInstanceOf[Defn]
+          copy(defn).asInstanceOf[Defn]
             .copy(attributes = handleAttrs(defn),
               defnType = defnType,
               body = newBody,
-              name = name))
+              name = name)
         }
 
       //uncarry
@@ -261,11 +259,11 @@ class BasicTransform extends Transform {
 
         val params = collectParams(x)
         val ref = collectRef(x)
-        Some(CallExpr(
+        CallExpr(
           transform[Type](x.exprType),
           copy(ref).asInstanceOf[RefExpr],
           params.map(transform[Expr]),
-          Seq.empty))
+          Seq.empty)
 
 
       //a.foo(f) --> a.foo{f(it)}
@@ -274,7 +272,7 @@ class BasicTransform extends Transform {
       case CallExpr(exprType, ref, params, paramsExpectedTypes) =>
         val paramsInfo =
           paramsExpectedTypes ++ Seq.fill(params.length - paramsExpectedTypes.length)(CallParameterInfo(NoType, false))
-        Some(
+
           CallExpr(
             transform[Type](exprType),
             transform[Expr](ref),
@@ -294,18 +292,18 @@ class BasicTransform extends Transform {
                 LambdaExpr(exp.exprType, Seq.empty, exp, needBraces = false)
               case (e, _) => e
             },
-            Seq.empty))
+            Seq.empty)
 
       //x.foo --> x.foo()
       case x@RefExpr(exprType, obj, ref, typeParams, true)
         if !parent.isInstanceOf[CallExpr] =>
-        Some(CallExpr(exprType, copy(x).asInstanceOf[RefExpr], Seq.empty, Seq.empty))
+        CallExpr(exprType, copy(x).asInstanceOf[RefExpr], Seq.empty, Seq.empty)
 
 
       //foo.apply(sth) --> foo(sth)
       case x@RefExpr(exprType, Some(obj), "apply", typeParams, _)
         if parent.isInstanceOf[CallExpr] && obj.exprType.isFunction =>
-        Some(transform[Expr](obj))
+        transform[Expr](obj)
 
       // matchExpr to when one
       case MatchExpr(exprType, expr, clauses) =>
@@ -313,11 +311,10 @@ class BasicTransform extends Transform {
         val valExpr = SimpleValOrVarDef(Seq.empty, true, namerVal.newName("match"), None, Some(newExpr))
         val valRef = RefExpr(newExpr.exprType, None, valExpr.name, Seq.empty, false)
         val whenExpr = MatchUtils.convertMatchToWhen(valRef, clauses, exprType, this)
-        Some(BlockExpr(valExpr +: whenExpr))
+        BlockExpr(valExpr +: whenExpr)
 
-      case _ => None
     }
-  }
+
 
 
   private def handleAttrs(x: DefExpr): Seq[Attribute] = {

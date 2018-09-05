@@ -134,10 +134,5 @@ class ConvertTest extends ConverterTestBase {
         |fun foo(): Tuple3<Int, Int, Int> =Tuple3<Int, Int, Int>(1, 2, 3)
         |fun bar(): Pair<Int, Int> =Pair<Int, Int>(1, 2)
       """.stripMargin)
-
-  def testTypeParameter(): Unit =
-    doTest(
-      """class A[+T <: String]()""".stripMargin,
-      """open class A<out T : String>()""".stripMargin)
 }
 

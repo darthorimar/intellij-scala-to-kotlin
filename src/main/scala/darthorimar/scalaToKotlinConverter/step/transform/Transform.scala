@@ -7,8 +7,8 @@ import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.step.{ConverterStep, ConverterStepState}
 
 
-trait Transform extends ConverterStep[AST, AST] {
-  protected def action(ast: AST): Option[AST]
+abstract class Transform extends ConverterStep[AST, AST] {
+  protected val action: PartialFunction[AST, AST]
 
   val renamerVal = new ScopedVal[Renamer](Renamer(Map.empty))
   val namerVal = new ScopedVal[LocalNamer](new LocalNamer)
@@ -26,7 +26,7 @@ trait Transform extends ConverterStep[AST, AST] {
 
   def transform[T](ast: AST): T = {
     parentsStack = ast :: parentsStack
-    val res = action(ast).getOrElse(copy(ast)).asInstanceOf[T]
+    val res =  action.applyOrElse(ast, copy).asInstanceOf[T]
     parentsStack = parentsStack.tail
     res
   }
