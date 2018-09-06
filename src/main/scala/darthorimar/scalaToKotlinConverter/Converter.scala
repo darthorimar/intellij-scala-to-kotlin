@@ -13,30 +13,19 @@ object Converter {
       new ASTGenerationStep
 
 
-  val astToKotlinCode: ConverterStep[AST, KotlinCode] =
+  val astToKotlinPsi: ConverterStep[AST, KtElement] =
     new TypeTransform -->
       new BasicTransform -->
       new CollectionTransform -->
       new TypeTransform -->
       new DefinitionCollectorTransform -->
       new CollectImportsStep -->
-      new PrintKotlinCodeStep
-
-  val kotlinCodeToKotlinPsi: ConverterStep[KotlinCode, KtElement] =
-    new GenerateKtElementStep -->
+      new PrintKotlinCodeStep -->
+      new GenerateKtElementStep -->
       new ApplyInspectionsStep
 
 
-  val scalaPsiToKotlinCode: ConverterStep[ScalaPsiElement, KotlinCode] =
-    scalaPsiToAst -->
-      astToKotlinCode
-
-
   val scalaPsiToKotlinPsi: ConverterStep[ScalaPsiElement, KtElement] =
-    scalaPsiToKotlinCode -->
-      kotlinCodeToKotlinPsi
-
-  val astToKotlinPsi: ConverterStep[AST, KtElement] =
-    astToKotlinCode -->
-      kotlinCodeToKotlinPsi
+    scalaPsiToAst -->
+      astToKotlinPsi
 }

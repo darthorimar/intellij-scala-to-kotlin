@@ -3,8 +3,10 @@ package darthorimar.scalaToKotlinConverter.ideaInteraction
 import com.intellij.ide.scratch.{ScratchFileService, ScratchRootType}
 import com.intellij.notification.{NotificationDisplayType, NotificationType}
 import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent, CommonDataKeys}
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.progress.{ProgressIndicator, ProgressManager, Task}
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ex.MessagesEx
 import com.intellij.psi._
@@ -71,14 +73,14 @@ class ConvertScalaToKotlinAction extends AnAction {
     }
 
     if (filesToConvert.nonEmpty) {
-      project.executeRunCommand("Convert Scala to Kotlin") {
+      ScalaUtils.runWriteAction(() => {
         filesToConvert foreach { file =>
           val state = new ConverterStepState
           state.elementGenerator = Some(new FileElementGenerator(file))
           Converter.scalaPsiToKotlinPsi(file, state)
         }
         PsiDocumentManager.getInstance(project).commitAllDocuments()
-      }
+      }, project, "Convert Scala to Kotlin")
     }
   }
 }
