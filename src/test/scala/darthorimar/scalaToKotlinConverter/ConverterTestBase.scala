@@ -47,8 +47,9 @@ abstract class ConverterTestBase extends ScalaLightPlatformCodeInsightTestCaseAd
 //      }
 
 
-    val (ktFile: KtFile, _) =
-      Converter.scalaPsiToKotlinPsi(scalaFile, new ConverterStepState(Some(new TestElementGenerator(getProjectAdapter))))
+    val ktFile =
+      new Converter(getProjectAdapter)
+        .convertScalaPsiToKotlinPsi(scalaFile, new ConverterStepState(Some(new TestElementGenerator(getProjectAdapter))))
     val formatedExpected = formatKotlinCode(kotlin)
     val formatedActual = formatKotlinCode(ktFile.getText)
     assertEquals(formatedExpected, formatedActual)

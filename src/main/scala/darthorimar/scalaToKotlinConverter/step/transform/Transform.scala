@@ -4,6 +4,7 @@ import darthorimar.scalaToKotlinConverter
 import darthorimar.scalaToKotlinConverter.ast.{PostfixExpr, _}
 import darthorimar.scalaToKotlinConverter.scopes._
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
+import darthorimar.scalaToKotlinConverter.step.ConverterStep.Notifier
 import darthorimar.scalaToKotlinConverter.step.{ConverterStep, ConverterStepState}
 
 
@@ -31,10 +32,14 @@ abstract class Transform extends ConverterStep[AST, AST] {
     res
   }
 
-  override def apply(from: AST, state: ConverterStepState): (AST, ConverterStepState) =
+  override def apply(from: AST,
+                     state: ConverterStepState,
+                     index: Int,
+                     notifier: Notifier): (AST, ConverterStepState) =
     scoped(
       stateStepVal.set(state)
     ) {
+      notifier.notify(this, index)
       val result = transform[AST](from)
       (result, stateStepVal)
     }

@@ -6,6 +6,7 @@ import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.TupleDefinition
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.scopes.{ASTGeneratorState, ScopedVal}
+import darthorimar.scalaToKotlinConverter.step.ConverterStep.Notifier
 import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, LibTypes, ScalaTypes}
 import darthorimar.scalaToKotlinConverter.{Exprs, ast}
 import org.jetbrains.plugins.scala.lang.lexer.ScalaTokenTypes
@@ -14,7 +15,7 @@ import org.jetbrains.plugins.scala.lang.psi.api.base._
 import org.jetbrains.plugins.scala.lang.psi.api.base.patterns._
 import org.jetbrains.plugins.scala.lang.psi.api.base.types.{ScTypeArgs, ScTypeElement}
 import org.jetbrains.plugins.scala.lang.psi.api.expr._
-import org.jetbrains.plugins.scala.lang.psi.api.statements._
+import org.jetbrains.plugins.scala.lang.psi.api.statements.{ScFunction, ScFunctionDefinition, _}
 import org.jetbrains.plugins.scala.lang.psi.api.statements.params.{ScClassParameter, ScParameter, ScTypeParam}
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.templates.{ScClassParents, ScTemplateParents}
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef._
@@ -24,7 +25,7 @@ import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
 import org.jetbrains.plugins.scala.lang.psi.types.api.designator.{DesignatorOwner, ScProjectionType, ScThisType}
 import org.jetbrains.plugins.scala.lang.psi.types.api.{JavaArrayType, StdType, TypeParameterType}
 import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ScMethodType, ScTypePolymorphicType}
-import org.jetbrains.plugins.scala.lang.psi.types.result.TypeResult
+import org.jetbrains.plugins.scala.lang.psi.types.result.{TypeResult, Typeable}
 import org.jetbrains.plugins.scala.lang.psi.types.{ScAbstractType, ScCompoundType, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
 import org.jetbrains.plugins.scala.lang.psi.{ScalaPsiElement, ScalaPsiUtil}
 import org.jetbrains.plugins.scala.extensions._
@@ -36,11 +37,20 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
   val stateVal = new ScopedVal[ASTGeneratorState](ASTGeneratorState(Map.empty))
   val stepStateVal = new ScopedVal[ConverterStepState](new ConverterStepState)
 
-  override def apply(from: ScalaPsiElement, state: ConverterStepState): (AST, ConverterStepState) =
+  override def name: String = "Collecting code data"
+
+
+  override def apply(from: ScalaPsiElement,
+                     state: ConverterStepState,
+                     index: Int,
+                     notifier: Notifier): (AST, ConverterStepState) =
     scoped(
       stepStateVal.set(state)
     ) {
-      val ast = inReadAction { gen[AST](from) }
+      notifier.notify(this, index)
+      val ast = inReadAction {
+        gen[AST](from)
+      }
       (ast, stepStateVal)
     }
 
@@ -218,8 +228,6 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
       }
 
 
-
-
     case typeDef: ScTypeDefinition =>
       val construct = typeDef match {
         case cls: ScClass => Some(cls.constructor.map(gen[Constructor]).getOrElse(EmptyConstructor))
@@ -340,12 +348,8 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
         case _ => containingClass(p.getParent)
       }
 
-
-      val ty = x.multiType
-        .headOption
-        .flatMap(_.toOption)
-        .map(genType)
-        .getOrElse(genType(x.`type`()))
+      val ty = genType(x.`type`())
+      val binded = x.bind().get
       val isFunc = {
         val sourceElement = x.getReference.resolve()
         sourceElement.isInstanceOf[ScFunction] || sourceElement.isInstanceOf[PsiMethod]
@@ -353,14 +357,27 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
 
       val refName =
         if (x.smartQualifier.isDefined) x.refName
-        else canonicalName(x.resolve(), containingClass(x).orNull)
+        else canonicalName(binded.getActualElement, containingClass(x).orNull)
 
-      RefExpr(
-        ty,
-        x.smartQualifier.map(gen[Expr]),
-        refName,
-        Seq.empty,
-        isFunc)
+      val referencedObject =
+        RefExpr(
+          ty,
+          x.smartQualifier.map(gen[Expr]),
+          refName,
+          Seq.empty,
+          isFunc)
+
+      binded.innerResolveResult.getOrElse(binded).element match {
+        case target: PsiNamedElement
+          if x.refName != target.name && target.name == "apply" =>
+          val refType = binded.getActualElement match {
+            case typeable: Typeable => genType(typeable.`type`())
+            case _ => ty
+          }
+          RefExpr(ty, Some(referencedObject.copy(isFunctionRef = false, exprType = refType)),
+            "apply", Seq.empty, isFunctionRef = true)
+        case _ => referencedObject
+      }
 
     case psi: MethodInvocation =>
       val paramsInfo =

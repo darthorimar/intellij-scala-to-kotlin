@@ -76,7 +76,7 @@ class ConvertScalaToKotlinAction extends AnAction {
       filesToConvert foreach { file =>
         val state = new ConverterStepState
         state.elementGenerator = Some.apply(new FileElementGenerator(file))
-        new Converter(project).scalaPsiToKotlinPsi.apply(file, state)
+        new Converter(project).convertScalaPsiToKotlinPsi(file, state)
       }
     }
   }

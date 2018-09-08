@@ -10,6 +10,7 @@ import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, StdTypes, TypeUtil
 import org.scalafmt.internal.SyntacticGroup.Term
 
 class CollectionTransform extends Transform {
+  override def name: String = "Transforming collections"
 
   override protected val action: PartialFunction[AST, AST] = {
     //Options

@@ -9,6 +9,8 @@ import darthorimar.scalaToKotlinConverter.types.TypeUtils.NumericType
 import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, StdTypes}
 
 class BasicTransform extends Transform {
+  override def name: String = "Converting Kotlin Code"
+
 
   val stateVal: ScopedVal[BasicTransformState] = new ScopedVal[BasicTransformState](BasicTransformState(false))
 

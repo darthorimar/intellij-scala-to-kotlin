@@ -4,6 +4,7 @@ import darthorimar.scalaToKotlinConverter.BuilderBase
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.scopes.{BuilderState, ScopedVal}
+import darthorimar.scalaToKotlinConverter.step.ConverterStep.Notifier
 import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
 
 object PrintKotlinCodeStep {
@@ -11,8 +12,13 @@ object PrintKotlinCodeStep {
 }
 
 class PrintKotlinCodeStep extends ConverterStep[AST, KotlinCode] {
+  override def name: String = "Generating Kotlin Code"
 
-  override def apply(from: AST, state: ConverterStepState): (String, ConverterStepState) = {
+  override def apply(from: AST,
+                     state: ConverterStepState,
+                     index: Int,
+                     notifier: Notifier): (String, ConverterStepState) = {
+    notifier.notify(this, index)
     val builder = new KotlinBuilder
     builder.gen(from)
     (builder.text, state) //not modifying state

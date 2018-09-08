@@ -7,6 +7,8 @@ import darthorimar.scalaToKotlinConverter.definition.{Definition, TupleDefinitio
 import darthorimar.scalaToKotlinConverter.types.TypeUtils.ScalaTuple
 
 class TypeTransform extends Transform {
+  override def name: String = "Transforming types"
+
   override protected val action: PartialFunction[AST, AST] = {
     case FunctionType(ProductType(Seq(left)), right) =>
       FunctionType(transform[Type](left), transform[Type](right))

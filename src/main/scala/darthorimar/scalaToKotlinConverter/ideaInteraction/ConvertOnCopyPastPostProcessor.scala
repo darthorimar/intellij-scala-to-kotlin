@@ -9,7 +9,7 @@ import com.intellij.openapi.editor.{Editor, RangeMarker}
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.{Ref, TextRange}
 import com.intellij.psi.{PsiDocumentManager, PsiElement, PsiFile}
-import darthorimar.scalaToKotlinConverter.{Converter, Utils}
+import darthorimar.scalaToKotlinConverter.{Converter, Utils, ideaInteraction}
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
 import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
@@ -41,9 +41,10 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
             (startOffsets zip endOffsets) map {
               case (from, to) =>
                 val psiInRange = getPsiInRange[ScalaPsiElement](scalaFile, new TextRange(from, to))
-                val (ast, state) = new Converter(scalaFile.getProject)
-                  .scalaPsiToAst(psiInRange.asInstanceOf[ScalaPsiElement], new ConverterStepState)
-                new ScalaToKotlinData(from, to, ast, state)
+//                val (ast, state) = new Converter(scalaFile.getProject)
+//                  .scalaPsiToAst(psiInRange.asInstanceOf[ScalaPsiElement], new ConverterStepState)
+//                new ScalaToKotlinData(from, to, ast, state)
+              ??? : ideaInteraction.ScalaToKotlinData
             }
           }
 
@@ -84,7 +85,8 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
                   }
 
                 state.elementGenerator = Some(ktElementGenerator)
-                new Converter(project).astToKotlinPsi(ast, state)
+//                new Converter(project).(ast, state, )
+                ???
               }
             }
           }
