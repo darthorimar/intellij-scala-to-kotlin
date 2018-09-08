@@ -41,7 +41,7 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
             (startOffsets zip endOffsets) map {
               case (from, to) =>
                 val psiInRange = getPsiInRange[ScalaPsiElement](scalaFile, new TextRange(from, to))
-                val (ast, state) = Converter
+                val (ast, state) = new Converter(scalaFile.getProject)
                   .scalaPsiToAst(psiInRange.asInstanceOf[ScalaPsiElement], new ConverterStepState)
                 new ScalaToKotlinData(from, to, ast, state)
             }
@@ -84,7 +84,7 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
                   }
 
                 state.elementGenerator = Some(ktElementGenerator)
-                Converter.astToKotlinPsi(ast, state)
+                new Converter(project).astToKotlinPsi(ast, state)
               }
             }
           }

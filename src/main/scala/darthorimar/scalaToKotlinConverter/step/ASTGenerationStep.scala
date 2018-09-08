@@ -27,6 +27,7 @@ import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ScMethodType, ScType
 import org.jetbrains.plugins.scala.lang.psi.types.result.TypeResult
 import org.jetbrains.plugins.scala.lang.psi.types.{ScAbstractType, ScCompoundType, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
 import org.jetbrains.plugins.scala.lang.psi.{ScalaPsiElement, ScalaPsiUtil}
+import org.jetbrains.plugins.scala.extensions._
 
 import scala.annotation.tailrec
 import scala.util.Try
@@ -39,7 +40,7 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
     scoped(
       stepStateVal.set(state)
     ) {
-      val ast = gen[AST](from)
+      val ast = inReadAction { gen[AST](from) }
       (ast, stepStateVal)
     }
 

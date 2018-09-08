@@ -73,14 +73,11 @@ class ConvertScalaToKotlinAction extends AnAction {
     }
 
     if (filesToConvert.nonEmpty) {
-      ScalaUtils.runWriteAction(() => {
-        filesToConvert foreach { file =>
-          val state = new ConverterStepState
-          state.elementGenerator = Some(new FileElementGenerator(file))
-          Converter.scalaPsiToKotlinPsi(file, state)
-        }
-        PsiDocumentManager.getInstance(project).commitAllDocuments()
-      }, project, "Convert Scala to Kotlin")
+      filesToConvert foreach { file =>
+        val state = new ConverterStepState
+        state.elementGenerator = Some.apply(new FileElementGenerator(file))
+        new Converter(project).scalaPsiToKotlinPsi.apply(file, state)
+      }
     }
   }
 }
