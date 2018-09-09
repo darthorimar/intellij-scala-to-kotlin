@@ -7,18 +7,17 @@ import com.intellij.psi.{PsiDocumentManager, PsiManager}
 import darthorimar.scalaToKotlinConverter.Utils
 import darthorimar.scalaToKotlinConverter.ast.Import
 import darthorimar.scalaToKotlinConverter.definition.{Definition, DefinitionGenerator, FileDefinition}
-import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.{KtElement, KtFile}
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.extensions._
 
 trait KtElementGenerator {
-  def insertCode(text: KotlinCode): KtElement
+  def insertCode(text: String): KtElement
 }
 
 class FileElementGenerator(file: ScalaFile) extends KtElementGenerator {
-  override def insertCode(text: KotlinCode): KtElement = inWriteAction {
+  override def insertCode(text: String): KtElement = inWriteAction {
     val project = file.getProject
     val document = PsiDocumentManager.getInstance(project).getDocument(file)
     PsiDocumentManager.getInstance(project).doPostponedOperationsAndUnblockDocument(document)

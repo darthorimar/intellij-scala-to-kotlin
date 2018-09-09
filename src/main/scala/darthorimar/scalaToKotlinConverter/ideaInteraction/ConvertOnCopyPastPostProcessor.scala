@@ -9,10 +9,9 @@ import com.intellij.openapi.editor.{Editor, RangeMarker}
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.{Ref, TextRange}
 import com.intellij.psi.{PsiDocumentManager, PsiElement, PsiFile}
-import darthorimar.scalaToKotlinConverter.{Converter, Utils, ideaInteraction}
+import darthorimar.scalaToKotlinConverter._
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
-import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
 import darthorimar.scalaToKotlinConverter.step.{ConverterStepState, KtElementGenerator}
 import org.jetbrains.kotlin.psi.{KtElement, KtFile}
 import org.jetbrains.plugins.hocon.CommonUtil.TextRange
@@ -44,13 +43,12 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
                 case (from, to) =>
                   getPsiInRange(scalaFile, new TextRange(from, to)) match {
                     case scalaPsi: ScalaPsiElement =>
-                      Seq(??? : ScalaToKotlinData)
+                      val (ast, state) =
+                        new ScalaPsiToAstConverter(scalaFile.getProject).convert(scalaPsi, new ConverterStepState)
+                      val data = new ScalaToKotlinData(from, to, ast, state)
+                      Seq(data)
                     case _ => Seq.empty
                   }
-
-                //                val (ast, state) = new Converter(scalaFile.getProject)
-                //                  .scalaPsiToAst(psiInRange.asInstanceOf[ScalaPsiElement], new ConverterStepState)
-                //                new ScalaToKotlinData(from, to, ast, state)
               }
             }
 
@@ -76,25 +74,21 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
     PsiDocumentManager.getInstance(project).getPsiFile(bounds.getDocument) match {
       case ktFile: KtFile =>
         if (new ConvertScalaToKotlinDialog(project).showAndGet()) {
-          inWriteAction {
-            values.asScala foreach { transData =>
-              transData.data foreach { data =>
-                val ast = data.ast
-                val state = data.state
-                val document = editor.getDocument
+          values.asScala foreach { transData =>
+            transData.data foreach { data =>
+              val ast = data.ast
+              val state = data.state
+              val document = editor.getDocument
 
-                val ktElementGenerator: KtElementGenerator =
-                  (code: KotlinCode) =>  {
-                    document.replaceString(bounds.getStartOffset, bounds.getEndOffset, code)
-                    PsiDocumentManager.getInstance(project).commitDocument(document)
-                    val generatedCodeTextRange = new TextRange(bounds.getStartOffset, bounds.getStartOffset + code.length)
-                    getPsiInRange(ktFile, generatedCodeTextRange).asInstanceOf[KtElement]
-                  }
-
-                state.elementGenerator = Some(ktElementGenerator)
-//                new Converter(project).(ast, state, )
-                ???
-              }
+              val ktElementGenerator: KtElementGenerator =
+                (code: String) => {
+                  document.replaceString(bounds.getStartOffset, bounds.getEndOffset, code)
+                  PsiDocumentManager.getInstance(project).commitDocument(document)
+                  val generatedCodeTextRange = new TextRange(bounds.getStartOffset, bounds.getStartOffset + code.length)
+                  getPsiInRange(ktFile, generatedCodeTextRange).asInstanceOf[KtElement]
+                }
+              state.elementGenerator = Some(ktElementGenerator)
+              new AstToKotlinPsiConverter(project).convert(ast, state)
             }
           }
         }

@@ -9,7 +9,6 @@ import darthorimar.scalaToKotlinConverter.Utils
 import darthorimar.scalaToKotlinConverter.ast.Import
 import darthorimar.scalaToKotlinConverter.definition.{Definition, DefinitionGenerator}
 import darthorimar.scalaToKotlinConverter.step.ConverterStep.Notifier
-import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
 import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
 import org.jetbrains.kotlin.idea.j2k.J2kPostProcessor
 import org.jetbrains.kotlin.idea.util.ImportInsertHelper
@@ -21,10 +20,10 @@ import org.jetbrains.plugins.scala.extensions.inWriteAction
 
 import collection.JavaConverters._
 
-class GenerateKtElementStep extends ConverterStep[KotlinCode, KtElement] {
+class GenerateKtElementStep extends ConverterStep[String, KtElement] {
   override def name: String = "Creating Kotlin File"
 
-  override def apply(from: KotlinCode,
+  override def apply(from: String,
                      state: ConverterStepState,
                      index: Int,
                      notifier: Notifier): (KtElement, ConverterStepState) = {

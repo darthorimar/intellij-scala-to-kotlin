@@ -31,5 +31,8 @@ object ConverterStep {
   trait Notifier {
     def notify(step: ConverterStep[_, _], index: Int)
   }
+  object Notifier {
+    val empty: Notifier = (step: ConverterStep[_, _], index: Int) => {}
+  }
 
 }

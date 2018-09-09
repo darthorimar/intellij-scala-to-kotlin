@@ -10,9 +10,8 @@ import com.intellij.openapi.progress.{ProgressIndicator, ProgressManager, Task}
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ex.MessagesEx
 import com.intellij.psi._
-import darthorimar.scalaToKotlinConverter.{Converter, Utils}
+import darthorimar.scalaToKotlinConverter.{Converter, ScalaPsiToKotlinPsiConverter, Utils}
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
-import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
 import darthorimar.scalaToKotlinConverter.step.{ApplyInspectionsStep, ConverterStepState, FileElementGenerator, KtElementGenerator}
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
@@ -76,7 +75,7 @@ class ConvertScalaToKotlinAction extends AnAction {
       filesToConvert foreach { file =>
         val state = new ConverterStepState
         state.elementGenerator = Some.apply(new FileElementGenerator(file))
-        new Converter(project).convertScalaPsiToKotlinPsi(file, state)
+        new ScalaPsiToKotlinPsiConverter(project).convert(file, state)
       }
     }
   }

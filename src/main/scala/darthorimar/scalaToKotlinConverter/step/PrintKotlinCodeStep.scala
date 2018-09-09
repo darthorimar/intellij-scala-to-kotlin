@@ -5,13 +5,8 @@ import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.scopes.{BuilderState, ScopedVal}
 import darthorimar.scalaToKotlinConverter.step.ConverterStep.Notifier
-import darthorimar.scalaToKotlinConverter.step.PrintKotlinCodeStep.KotlinCode
 
-object PrintKotlinCodeStep {
-  type KotlinCode = String
-}
-
-class PrintKotlinCodeStep extends ConverterStep[AST, KotlinCode] {
+class PrintStringStep extends ConverterStep[AST, String] {
   override def name: String = "Generating Kotlin Code"
 
   override def apply(from: AST,
