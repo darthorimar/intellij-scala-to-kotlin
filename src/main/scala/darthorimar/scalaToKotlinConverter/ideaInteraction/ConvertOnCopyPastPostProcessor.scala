@@ -21,37 +21,44 @@ import org.jetbrains.plugins.scala.lang.psi.ScalaPsiElement
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotlinTransferableData] {
 
-  private def getPsiInRange[Elem <: PsiElement](file: PsiFile, range: TextRange): Elem =
-    (file depthFirst() filter { element =>
+  private def getPsiInRange(file: PsiFile, range: TextRange): PsiElement =
+    file depthFirst() filter { element =>
       range contains element.getTextRange
-    } maxBy (_.getTextRange.getLength)).asInstanceOf[Elem]
+    } maxBy (_.getTextRange.getLength)
 
 
   override def collectTransferableData(file: PsiFile,
                                        editor: Editor,
                                        startOffsets: Array[Int],
                                        endOffsets: Array[Int]): util.List[ScalaToKotlinTransferableData] =
-    file match {
-      case scalaFile: ScalaFile =>
-        val data =
-          inWriteAction {
-            (startOffsets zip endOffsets) map {
-              case (from, to) =>
-                val psiInRange = getPsiInRange[ScalaPsiElement](scalaFile, new TextRange(from, to))
-//                val (ast, state) = new Converter(scalaFile.getProject)
-//                  .scalaPsiToAst(psiInRange.asInstanceOf[ScalaPsiElement], new ConverterStepState)
-//                new ScalaToKotlinData(from, to, ast, state)
-              ??? : ideaInteraction.ScalaToKotlinData
-            }
-          }
+    Try {
+      file match {
+        case scalaFile: ScalaFile =>
+          val data =
+            inWriteAction {
+              (startOffsets zip endOffsets) flatMap {
+                case (from, to) =>
+                  getPsiInRange(scalaFile, new TextRange(from, to)) match {
+                    case scalaPsi: ScalaPsiElement =>
+                      Seq(??? : ScalaToKotlinData)
+                    case _ => Seq.empty
+                  }
 
-        Collections.singletonList(new ScalaToKotlinTransferableData(data))
-      case _ =>
-        Collections.emptyList[ScalaToKotlinTransferableData]
-    }
+                //                val (ast, state) = new Converter(scalaFile.getProject)
+                //                  .scalaPsiToAst(psiInRange.asInstanceOf[ScalaPsiElement], new ConverterStepState)
+                //                new ScalaToKotlinData(from, to, ast, state)
+              }
+            }
+
+          Collections.singletonList(new ScalaToKotlinTransferableData(data))
+        case _ =>
+          Collections.emptyList[ScalaToKotlinTransferableData]
+      }
+    } getOrElse Collections.emptyList[ScalaToKotlinTransferableData]
 
   override def extractTransferableData(content: Transferable): util.List[ScalaToKotlinTransferableData] = {
     if (content.isDataFlavorSupported(ScalaToKotlinData.dataFlavor))
@@ -81,7 +88,7 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
                     document.replaceString(bounds.getStartOffset, bounds.getEndOffset, code)
                     PsiDocumentManager.getInstance(project).commitDocument(document)
                     val generatedCodeTextRange = new TextRange(bounds.getStartOffset, bounds.getStartOffset + code.length)
-                    getPsiInRange[KtElement](ktFile, generatedCodeTextRange)
+                    getPsiInRange(ktFile, generatedCodeTextRange).asInstanceOf[KtElement]
                   }
 
                 state.elementGenerator = Some(ktElementGenerator)
