@@ -17,9 +17,6 @@ import org.jetbrains.plugins.scala.util.ScalaUtils
 import org.jetbrains.plugins.scala.extensions._
 
 class Converter(project: Project) {
-  val scalaPsiToAst: ConverterStep[ScalaPsiElement, AST] =
-//      new InnerPsiTransformStep -->
-    new ASTGenerationStep
 
   def convertScalaPsiToKotlinPsi(from: ScalaPsiElement, state: ConverterStepState): KtElement = {
     val stepsCount = 10
@@ -39,16 +36,21 @@ class Converter(project: Project) {
 
 
   val scalaPsiToKotlinPsi: ConverterStep[ScalaPsiElement, KtElement] =
-    wrapped[ScalaPsiElement, KotlinCode](withProgress(background = true),
-      new ASTGenerationStep -->
-        new TypeTransform -->
-        new BasicTransform -->
-        new CollectionTransform -->
-        new TypeTransform -->
-        new DefinitionCollectorTransform -->
-        new CollectImportsStep -->
-        new PrintKotlinCodeStep
+    wrapped[ScalaPsiElement, ScalaPsiElement](inWriteCommand,
+      wrapped(withProgress(background = false),
+        new InnerPsiTransformStep
+      )
     ) -->
+      wrapped[ScalaPsiElement, KotlinCode](withProgress(background = true),
+        new ASTGenerationStep -->
+          new TypeTransform -->
+          new BasicTransform -->
+          new CollectionTransform -->
+          new TypeTransform -->
+          new DefinitionCollectorTransform -->
+          new CollectImportsStep -->
+          new PrintKotlinCodeStep
+      ) -->
       wrapped(inWriteCommand,
         wrapped(withProgress(background = false),
           new GenerateKtElementStep -->
@@ -65,6 +67,7 @@ class Converter(project: Project) {
 
     override def name: String = step.name
   }
+
   def withProgress[T](background: Boolean)(data: => T): T = {
     val convert: ThrowableComputable[T, Exception] = () =>
       ProgressManager.getInstance().runProcess(

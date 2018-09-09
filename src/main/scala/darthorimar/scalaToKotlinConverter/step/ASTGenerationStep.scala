@@ -2,6 +2,7 @@ package darthorimar.scalaToKotlinConverter.step
 
 import com.intellij.lang.jvm.JvmModifier
 import com.intellij.psi._
+import com.intellij.psi.impl.source.JavaDummyHolder
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.TupleDefinition
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
@@ -29,6 +30,19 @@ import org.jetbrains.plugins.scala.lang.psi.types.result.{TypeResult, Typeable}
 import org.jetbrains.plugins.scala.lang.psi.types.{ScAbstractType, ScCompoundType, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
 import org.jetbrains.plugins.scala.lang.psi.{ScalaPsiElement, ScalaPsiUtil}
 import org.jetbrains.plugins.scala.extensions._
+import org.jetbrains.plugins.scala.lang.transformation.{bindTo, qualifiedNameOf}
+import com.intellij.psi.PsiElement
+import com.intellij.psi.impl.source.JavaDummyHolder
+import org.jetbrains.plugins.scala.extensions.{FirstChild, ImplicitConversion}
+import org.jetbrains.plugins.scala.lang.psi.ScalaPsiElement
+import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
+import org.jetbrains.plugins.scala.lang.psi.api.base.patterns.ScReferencePattern
+import org.jetbrains.plugins.scala.lang.psi.api.expr.ScReferenceExpression
+import org.jetbrains.plugins.scala.lang.psi.api.statements.ScFunction
+import org.jetbrains.plugins.scala.lang.psi.impl.ScalaCode._
+import org.jetbrains.plugins.scala.lang.transformation.{AbstractTransformer, bindTo, qualifiedNameOf}
+import org.jetbrains.plugins.scala.project.ProjectContext
+
 
 import scala.annotation.tailrec
 import scala.util.Try

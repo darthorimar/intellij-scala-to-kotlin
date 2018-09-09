@@ -11,7 +11,6 @@ class InnerPsiTransformStep extends ConverterStep[ScalaPsiElement, ScalaPsiEleme
   override def name: String = "Preparing code for translation"
 
   private val transformers: Set[Transformer] = Set(
-    new ExpandApplyCall(),
     new ImplicitTransform()
   )
   override def apply(from: ScalaPsiElement,
@@ -19,9 +18,11 @@ class InnerPsiTransformStep extends ConverterStep[ScalaPsiElement, ScalaPsiEleme
                      index: Int,
                      notifier: Notifier): (ScalaPsiElement, ConverterStepState) = {
     notifier.notify(this, index)
-    inWriteAction {
-      Transformer.transform(from, None, transformers)
+    val result = inWriteAction {
+      val copy  = from.copy()
+      Transformer.transform(copy, None, transformers)
+      copy.asInstanceOf[ScalaPsiElement]
     }
-    (from, state)
+    (result, state)
   }
 }
