@@ -3,7 +3,7 @@
 <idea-plugin>
     <id>darthorimar.scalaToKotlin</id>
     <name>Scala to Kotlin Converter</name>
-    <version>0.1</version>
+    <version>0.1.1</version>
     <vendor url="https://github.com/darthorimar"/>
 
     <description><![CDATA[
