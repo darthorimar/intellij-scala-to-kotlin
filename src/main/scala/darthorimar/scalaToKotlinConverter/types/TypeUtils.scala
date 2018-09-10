@@ -19,10 +19,9 @@ object TypeUtils {
   }
 
   object NumericType {
-    def unapply(t: Type): Option[Type] = t match {
-      case StdTypes.INT | StdTypes.FLOAT | StdTypes.DOUBLE => Some(t)
-      case _ => None
-    }
+    def unapply(t: Type): Option[Type] =
+      if (StdTypes.NUMERIC_TYPES contains t) Some(t)
+      else None
   }
 
   object WithType {

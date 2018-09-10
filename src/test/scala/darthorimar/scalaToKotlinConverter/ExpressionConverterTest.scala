@@ -32,8 +32,6 @@ class ExpressionConverterTest extends ConverterTestBase {
       """ val a = 1.0f + 2 """.stripMargin,
       """ val a: Float = 1.0f + 2""".stripMargin)
 
-
-
   def testForComprehension(): Unit =
     doExprTest(
       """for {

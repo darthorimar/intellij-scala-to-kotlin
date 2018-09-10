@@ -16,6 +16,9 @@ class TypeTransform extends Transform {
     case GenericType(inner, Seq(i)) if TypeUtils.isOption(transform[Type](inner)) =>
       NullableType(transform[Type](i))
 
+    case StdTypes.ANY_REF | StdTypes.ANY =>
+      StdTypes.ANY
+
     case ScalaTypes.STRING | ScalaTypes.JAVA_STRING =>
       StdTypes.STRING
 
