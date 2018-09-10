@@ -3,19 +3,23 @@ package darthorimar.scalaToKotlinConverter.types
 import darthorimar.scalaToKotlinConverter.ast._
 
 object TypeUtils {
-  def isOption(ty: Type): Boolean =
-    ty match {
-      case GenericType(t, _) if isOption(t)=>
-        true
-      case ScalaTypes.OPTION | ScalaTypes.SOME | ScalaTypes.NONE => true
-      case _ => false
-    }
 
-  def isKotlinList(ty: Type): Boolean = ty match {
-    case GenericType(KotlinTypes.LIST, _) =>
-      true
-    case KotlinTypes.LIST => true
-    case _ => false
+  object OptionType {
+    def unapply(ty: Type): Option[Type] = ty match {
+      case GenericType(ScalaTypes.OPTION | ScalaTypes.SOME, Seq(inner)) =>
+        Some(inner)
+      case ScalaTypes.NONE =>
+        Some(StdTypes.NOTHING)
+      case _ => None
+    }
+  }
+
+  object KotlinList {
+    def unapply(ty: Type): Option[Type] =  ty match {
+      case GenericType(KotlinTypes.LIST, Seq(inner)) =>
+        Some(inner)
+      case _ => None
+    }
   }
 
   object NumericType {
@@ -37,6 +41,7 @@ object TypeUtils {
 
   object ScalaTuple {
     private val tuplePrefix = "scala.Tuple"
+
     def unapply(t: Type): Option[Int] = t match {
       case ScalaType(name) if name.startsWith(tuplePrefix) =>
         val arity = name.stripPrefix(tuplePrefix).toInt

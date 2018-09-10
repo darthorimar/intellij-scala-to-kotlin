@@ -4,17 +4,23 @@ import darthorimar.scalaToKotlinConverter
 import darthorimar.scalaToKotlinConverter.types._
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.{Definition, TupleDefinition}
-import darthorimar.scalaToKotlinConverter.types.TypeUtils.ScalaTuple
+import darthorimar.scalaToKotlinConverter.step.{ConverterStep, ConverterStepState}
+import darthorimar.scalaToKotlinConverter.types.TypeUtils.{OptionType, ScalaTuple}
 
 class TypeTransform extends Transform {
   override def name: String = "Transforming types"
+
+  override def apply(from: AST, state: ConverterStepState, index: Int, notifier: ConverterStep.Notifier): (AST, ConverterStepState) = {
+    val r = super.apply(from, state, index, notifier)
+    r
+  }
 
   override protected val action: PartialFunction[AST, AST] = {
     case FunctionType(ProductType(Seq(left)), right) =>
       FunctionType(transform[Type](left), transform[Type](right))
 
-    case GenericType(inner, Seq(i)) if TypeUtils.isOption(transform[Type](inner)) =>
-      NullableType(transform[Type](i))
+    case OptionType(inner) =>
+      NullableType(transform[Type](inner))
 
     case StdTypes.ANY_REF | StdTypes.ANY =>
       StdTypes.ANY
@@ -36,12 +42,6 @@ class TypeTransform extends Transform {
     case ScalaType("scala.PartialFunction") =>
       stateStepVal.addDefinition(Definition.partialFunction)
       ClassType("PartialFunction")
-
-    case ClassType(name) if name.stripPrefix("_root_.").startsWith("scala.") =>
-      transform[Type](ScalaType(name))
-
-    case ClassType(name) if name.stripPrefix("_root_.").startsWith("java.") =>
-      transform[Type](JavaType(name))
 
     case JavaType("java.lang.Exception") =>
       KotlinType("Exception")

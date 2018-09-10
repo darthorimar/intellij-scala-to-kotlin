@@ -93,6 +93,15 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
       .map(z => genType(z.`type`()))
   }
 
+  private def createTypeByName(typeName: String): Type =
+    typeName.stripPrefix("_root_.") match {
+      case name if name.startsWith("scala.") =>
+        ScalaType(name)
+      case name if name.startsWith("java.") =>
+        JavaType(name)
+      case name => ClassType(name)
+    }
+
   private def genType(ty: ScType): Type =
     ty match {
       case x: StdType =>
@@ -110,11 +119,11 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
         FunctionType(ProductType(x.params.map(t => genType(t.paramType))), genType(x.returnType))
       case x: DesignatorOwner =>
         x.extractClass.map {
-          case c: ScClassImpl => ClassType(c.qualifiedName)
-          case c: PsiClass => ClassType(c.getQualifiedName)
-        }.orElse {
+          case c: ScClassImpl => createTypeByName(c.qualifiedName)
+          case c: PsiClass => createTypeByName(c.getQualifiedName)
+        } orElse {
           x.extractDesignatorSingleton.map(genType)
-        }.getOrElse(ClassType(x.canonicalText))
+        } getOrElse createTypeByName(x.canonicalText)
       case x: ScProjectionType =>
         genType(x.projected)
       case x: ScThisType =>
@@ -134,7 +143,6 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
           c => c.canonicalText != "Product" && c.canonicalText != "Serializable"
         }.get)
     }
-
 
   private def genType(t: Option[ScTypeElement]): Type =
     t.flatMap(_.`type`().toOption).map(genType)
@@ -443,7 +451,9 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
       val arity = x.patternList.toSeq.flatMap(_.patterns).size
       val constructorType =
         if (arity == 2) ClassType("Pair")
-        else {ClassType(s"Tuple$arity")}
+        else {
+          ClassType(s"Tuple$arity")
+        }
 
       if (arity != 2) stepStateVal.addDefinition(new TupleDefinition(arity))
       ConstructorPattern(

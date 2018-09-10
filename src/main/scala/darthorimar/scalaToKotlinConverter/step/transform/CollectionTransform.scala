@@ -5,7 +5,7 @@ import darthorimar.scalaToKotlinConverter.Exprs.listType
 import darthorimar.scalaToKotlinConverter.{Exprs, Utils}
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.step.transform.Helpers.ApplyCall
-import darthorimar.scalaToKotlinConverter.types.TypeUtils.{ListType, WithType}
+import darthorimar.scalaToKotlinConverter.types.TypeUtils.{KotlinList, ListType, WithType}
 import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, StdTypes, TypeUtils}
 import org.scalafmt.internal.SyntacticGroup.Term
 
@@ -20,12 +20,11 @@ class CollectionTransform extends Transform {
       transform[Expr](v)
 
     // None --> null
-    case RefExpr(ScalaType("scala.None$"), None, _, _, _) =>
+    case RefExpr(NullableType(_), None, "scala.None", _, _) =>
       Exprs.nullLit
 
     // opt.map(f), opt.flatMap(f) --> opt?.let {f(it)}
-    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "map" | "flatMap", typeParams, true), Seq(p), paramsExpectedTypes)
-      if referenceObject.exprType.isInstanceOf[NullableType] =>
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject@WithType(NullableType(_))), "map" | "flatMap", typeParams, true), Seq(p), paramsExpectedTypes) =>
       ParenthesesExpr(CallExpr(
         transform[Type](exprType),
         RefExpr(transform[Type](refTy),
@@ -47,8 +46,7 @@ class CollectionTransform extends Transform {
         Exprs.simpleInfix(transform[Type](refTy), "?:", transform[Expr](referenceObject), transform[Expr](param)))
 
     //opt.get --> opt!!
-    case CallExpr(_, RefExpr(refTy, Some(referenceObject), "get", _, true), _, paramsExpectedTypes)
-      if referenceObject.exprType.isInstanceOf[NullableType] =>
+    case CallExpr(_, RefExpr(refTy, Some(referenceObject@WithType(NullableType(_))), "get", _, true), _, paramsExpectedTypes) =>
       PostfixExpr(transform[Type](refTy), transform[Expr](referenceObject), "!!")
 
     //Seqs
@@ -109,8 +107,7 @@ class CollectionTransform extends Transform {
         transform[Expr](right))
 
     // seq.mkString(a,b,c) --> seq.joinToString(b,a,c)
-    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "mkString", typeParams, true), params, paramsExpectedTypes)
-      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject@WithType(KotlinList(_))), "mkString", typeParams, true), params, paramsExpectedTypes) =>
       val newParams =
         if (params.length == 3) Seq(params(1), params(0), params(2))
         else params
@@ -122,65 +119,55 @@ class CollectionTransform extends Transform {
         paramsExpectedTypes.map(transform[CallParameterInfo]))
 
     // seq.tail --> seq.drop(1)
-    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "tail", typeParams, true), _, paramsExpectedTypes)
-      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject@WithType(KotlinList(_))), "tail", typeParams, true), _, paramsExpectedTypes) =>
       CallExpr(exprType,
         RefExpr(refTy, Some(transform[Expr](referenceObject)), "drop", typeParams, true),
         Seq(LitExpr(StdTypes.INT, "1")),
         paramsExpectedTypes.map(transform[CallParameterInfo]))
 
     // seq.head --> seq.first
-    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "head", typeParams, true), _, paramsExpectedTypes)
-      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject@WithType(KotlinList(_))), "head", typeParams, true), _, paramsExpectedTypes) =>
       CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "first", typeParams, true), Seq.empty,
         paramsExpectedTypes.map(transform[CallParameterInfo]))
 
 
     // seq.init --> seq.dropLast(1)
-    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "init", typeParams, true), _, paramsExpectedTypes)
-      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject@WithType(KotlinList(_))), "init", typeParams, true), _, paramsExpectedTypes) =>
       CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "dropLast", typeParams, true), Seq(LitExpr(StdTypes.INT, "1")),
         paramsExpectedTypes.map(transform[CallParameterInfo]))
 
     //seq.foreach --> seq.forEach
-    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "foreach", typeParams, true), params, paramsExpectedTypes)
-      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject@WithType(KotlinList(_))), "foreach", typeParams, true), params, paramsExpectedTypes) =>
       CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "forEach", typeParams, true), params.map(transform[Expr]),
         paramsExpectedTypes.map(transform[CallParameterInfo]))
 
     //seq.forall --> seq.all
-    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "forall", typeParams, true), params, paramsExpectedTypes)
-      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject@WithType(KotlinList(_))), "forall", typeParams, true), params, paramsExpectedTypes) =>
       CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "all", typeParams, true), params.map(transform[Expr]),
         paramsExpectedTypes.map(transform[CallParameterInfo]))
 
 
     //     str * i => str.repeat(i)
-    case CallExpr(exprType, RefExpr(refTy, Some(left), "*", _, _), Seq(right), paramsExpectedTypes)
-      if left.exprType == StdTypes.STRING && right.exprType == StdTypes.INT =>
+    case CallExpr(exprType, RefExpr(refTy, Some(left@WithType(StdTypes.STRING)), "*", _, _), Seq(right@WithType(StdTypes.INT)), paramsExpectedTypes) =>
       CallExpr(exprType, RefExpr(exprType, Some(transform[Expr](left)), "repeat", Seq.empty, true), Seq(right),
         paramsExpectedTypes.map(transform[CallParameterInfo]))
 
     //seq(i) --> seq[i]
-    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "apply", typeParams, true), Seq(i), paramsExpectedTypes)
-      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject@WithType(KotlinList(_))), "apply", typeParams, true), Seq(i), paramsExpectedTypes) =>
       BracketsExpr(exprType, transform[Expr](referenceObject), transform[Expr](i))
 
     //seq1 ++ seq2  --> seq1+ seq2
-    case CallExpr(exprType, RefExpr(refTy, Some(left), "++", typeParams, true), Seq(right), paramsExpectedTypes)
-      if TypeUtils.isKotlinList(left.exprType) && TypeUtils.isKotlinList(right.exprType) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(left@WithType(KotlinList(_))), "++", typeParams, true), Seq(right@WithType(KotlinList(_))), paramsExpectedTypes) =>
       Exprs.simpleInfix(exprType, "+", transform[Expr](left), transform[Expr](right))
 
     // seq.nonEmpty --> seq.isNotEmpty
-    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "nonEmpty", typeParams, _), _, paramsExpectedTypes)
-      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject@WithType(KotlinList(_))), "nonEmpty", typeParams, _), _, paramsExpectedTypes) =>
       CallExpr(exprType, RefExpr(refTy, Some(transform[Expr](referenceObject)), "isNotEmpty", typeParams, true), Seq.empty,
         paramsExpectedTypes.map(transform[CallParameterInfo]))
 
 
     // seq.size() --> seq.size
-    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject), "size", typeParams, _), _, paramsExpectedTypes)
-      if TypeUtils.isKotlinList(referenceObject.exprType) =>
+    case CallExpr(exprType, RefExpr(refTy, Some(referenceObject@WithType(KotlinList(_))), "size", typeParams, _), _, paramsExpectedTypes) =>
       RefExpr(refTy, Some(transform[Expr](referenceObject)), "size", typeParams, true)
 
     // seqOfOptions.flatten --> seqOfOptions.filterNotNull()

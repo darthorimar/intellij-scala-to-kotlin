@@ -252,7 +252,7 @@ object MatchUtils {
 
 
   def genTypeCheckCondition(refName: String, constructorRef: ConstructorRef, valRef: RefExpr): Expr = constructorRef match {
-    case CaseClassConstructorRef(ScalaType("scala.Some")) =>
+    case CaseClassConstructorRef(NullableType(_))=>
       Exprs.simpleInfix(StdTypes.BOOLEAN, "!=", valRef, Exprs.nullLit)
 
     case CaseClassConstructorRef(constrType) =>

@@ -99,7 +99,7 @@ class MatchConvertTest extends ConverterTestBase {
         |    val match = Right.apply(1)
         |    data class `Right(O(A(B(x))))_data`(public val x: Int)
         |    val `Right(O(A(B(x))))` by lazy {
-        |        if (match is scala.util.Right) {
+        |        if (match is Right) {
         |            val (l) = match
         |            run {
         |                val (l1) = O.unapply(l) ?: return@lazy null
