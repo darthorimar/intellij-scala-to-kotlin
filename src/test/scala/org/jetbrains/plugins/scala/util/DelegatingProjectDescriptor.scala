@@ -28,7 +28,8 @@ abstract class DelegatingProjectDescriptor(val delegate: LightProjectDescriptor)
 }
 
 object DelegatingProjectDescriptor {
-  def withAfterSetupProject(delegate: LightProjectDescriptor)(work: ThrowableRunnable[Nothing]): LightProjectDescriptor = {
+  def withAfterSetupProject(delegate: LightProjectDescriptor)(
+      work: ThrowableRunnable[Nothing]): LightProjectDescriptor = {
     new DelegatingProjectDescriptor(delegate) {
       override def setUpProject(project: Project, handler: LightProjectDescriptor.SetupHandler): Unit = {
         super.setUpProject(project, handler)

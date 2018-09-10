@@ -1,6 +1,5 @@
 package darthorimar.scalaToKotlinConverter.definition
 
-
 class TupleDefinition(arity: Int) extends TextDefinition {
   def generate(): Unit = {
     str("data class Tuple")

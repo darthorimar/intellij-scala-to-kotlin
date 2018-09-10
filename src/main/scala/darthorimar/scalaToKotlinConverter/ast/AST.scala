@@ -18,11 +18,9 @@ case class ErrorWhenClause(text: String) extends WhenClause with ErrorAst
 
 case class ErrorForEnumerator(text: String) extends ForEnumerator with ErrorAst
 
-
 case class DefParameter(parameterType: Type, name: String, isVarArg: Boolean, isCallByName: Boolean) extends AST
 
 case class MatchCaseClause(pattern: CasePattern, expr: Expr, guard: Option[Expr]) extends AST
-
 
 sealed trait Constructor extends AST
 
@@ -46,10 +44,9 @@ case class CompositePattern(parts: Seq[CasePattern], label: Option[String]) exte
   override def representation: String = parts.mkString(" | ")
 }
 
-
 case class LitPattern(expr: Expr, label: Option[String]) extends CasePattern {
   override def representation: String = expr match {
-    case LitExpr(_, name) => name
+    case LitExpr(_, name)         => name
     case RefExpr(_, _, ref, _, _) => ref
   }
 }
@@ -60,11 +57,11 @@ case class CaseClassConstructorRef(name: Type) extends ConstructorRef
 
 case class UnapplyCallConstuctorRef(objectName: String, unapplyReturnType: Type) extends ConstructorRef
 
-
 case class ConstructorPattern(ref: ConstructorRef,
                               patterns: Seq[CasePattern],
                               label: Option[String],
-                              representation: String) extends CasePattern {
+                              representation: String)
+    extends CasePattern {
   override def isConstructorPattern: Boolean = true
 }
 
@@ -79,7 +76,6 @@ case class ReferencePattern(referenceName: String, label: Option[String]) extend
 case class WildcardPattern(label: Option[String]) extends CasePattern {
   override def representation: String = "_"
 }
-
 
 sealed trait WhenClause extends AST
 
@@ -117,8 +113,7 @@ case class RefWithQualifier(qualifier: Option[String], ref: String) extends AST 
   def qualified: String = qualifier.map(_ + ".").getOrElse("") + ref
 }
 
-trait KotlinValDestructor extends AST
-case class ReferenceKotlinValDestructor(reference: String) extends KotlinValDestructor
-case object WildcardKotlinValDestructor extends KotlinValDestructor
+trait KotlinValDestructor                                       extends AST
+case class ReferenceKotlinValDestructor(reference: String)      extends KotlinValDestructor
+case object WildcardKotlinValDestructor                         extends KotlinValDestructor
 case class TypedKotlinValDestructor(ref: String, valType: Type) extends KotlinValDestructor
-

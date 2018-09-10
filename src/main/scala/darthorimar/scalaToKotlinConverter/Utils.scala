@@ -5,9 +5,9 @@ import java.util
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.util.TextRange
-import com.intellij.psi.{PsiDirectory, PsiDocumentManager, PsiElement, PsiFile}
+import com.intellij.psi.{ PsiDirectory, PsiDocumentManager, PsiElement, PsiFile }
 import com.intellij.psi.codeStyle.CodeStyleManager
-import darthorimar.scalaToKotlinConverter.ast.{Import, Type}
+import darthorimar.scalaToKotlinConverter.ast.{ Import, Type }
 import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
 import org.jetbrains.kotlin.idea.j2k.J2kPostProcessor
 import org.jetbrains.kotlin.idea.util.ImportInsertHelper
@@ -24,16 +24,15 @@ object Utils {
     nameWithoutExtension + ".kt"
   }
 
-
   def getSrcDir(psi: PsiElement): PsiDirectory = {
     def byPackageName(packageName: String): PsiDirectory = {
       if (packageName.nonEmpty) {
-        val packageParts = packageName.split('.')
+        val packageParts  = packageName.split('.')
         val fileDirectory = psi.getContainingFile.getContainingDirectory
-        val packagePath = packageParts.mkString("/")
+        val packagePath   = packageParts.mkString("/")
         if (fileDirectory.getVirtualFile.getCanonicalPath.endsWith(packagePath)) {
-          val goUp = (_: PsiDirectory).getParent
-          val levelsUp = packageParts.length
+          val goUp         = (_: PsiDirectory).getParent
+          val levelsUp     = packageParts.length
           val getDirectory = Function.chain(Seq.fill(levelsUp)(goUp))
           getDirectory(fileDirectory)
         } else fileDirectory
@@ -50,16 +49,14 @@ object Utils {
     }
   }
 
-
   def escapeName(name: String): String =
     s"`$name`".replaceAllLiterally(":", "")
 
-
   def prettyPrint(a: Any, indentSize: Int = 2, depth: Int = 0): String = {
-    val indent = " " * depth * indentSize
+    val indent      = " " * depth * indentSize
     val fieldIndent = indent + (" " * indentSize)
-    val thisDepth = prettyPrint(_: Any, indentSize, depth)
-    val nextDepth = prettyPrint(_: Any, indentSize, depth + 1)
+    val thisDepth   = prettyPrint(_: Any, indentSize, depth)
+    val nextDepth   = prettyPrint(_: Any, indentSize, depth + 1)
     a match {
       case t: Type =>
         t.asKotlin
@@ -79,12 +76,12 @@ object Utils {
         result.substring(0, result.length - 1) + "\n" + indent + ")"
       case p: Product =>
         val prefix = p.productPrefix
-        val cls = p.getClass
+        val cls    = p.getClass
         val fields = cls.getDeclaredFields.filterNot(_.isSynthetic).map(_.getName)
         val values = p.productIterator.toSeq
         if (fields.length != values.length) return p.toString
         fields.zip(values).toList match {
-          case Nil => p.toString
+          case Nil               => p.toString
           case (_, value) :: Nil => s"$prefix(${thisDepth(value)})"
           case kvps =>
             val prettyFields = kvps.map { case (k, v) => s"$fieldIndent$k = ${nextDepth(v)}" }
@@ -96,9 +93,8 @@ object Utils {
 
   def reformatKtElement(ktElement: KtElement): KtElement = inWriteAction {
     val manager = CodeStyleManager.getInstance(ktElement.getProject)
-    manager.reformatRange(ktElement,
-      ktElement.getTextRange.getStartOffset,
-      ktElement.getTextRange.getEndOffset
-    ).asInstanceOf[KtElement]
+    manager
+      .reformatRange(ktElement, ktElement.getTextRange.getStartOffset, ktElement.getTextRange.getEndOffset)
+      .asInstanceOf[KtElement]
   }
 }

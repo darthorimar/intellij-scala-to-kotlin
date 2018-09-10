@@ -5,7 +5,7 @@ import scala.collection.mutable
 class LocalNamer {
   val prefixes = mutable.Map.empty[String, Int]
   def newName(name: String): String =
-    prefixes.get(name)  match {
+    prefixes.get(name) match {
       case Some(index) =>
         prefixes(name) += 1
         s"$name$index"

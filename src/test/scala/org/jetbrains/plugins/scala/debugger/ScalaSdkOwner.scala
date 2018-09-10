@@ -7,8 +7,6 @@ import org.jetbrains.plugins.scala.base.libraryLoaders.LibraryLoader
 
 import scala.collection.mutable.ListBuffer
 
-
-
 trait ScalaSdkOwner {
   implicit val version: ScalaVersion
 

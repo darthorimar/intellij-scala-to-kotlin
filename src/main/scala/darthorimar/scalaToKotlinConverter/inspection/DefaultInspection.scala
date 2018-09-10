@@ -3,12 +3,12 @@ package darthorimar.scalaToKotlinConverter.inspection
 import com.intellij.codeInspection._
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
-import com.intellij.psi.{PsiElement, PsiFile}
+import com.intellij.psi.{ PsiElement, PsiFile }
 import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.idea.inspections.AbstractKotlinInspection
 import org.jetbrains.kotlin.idea.intentions.SelfTargetingIntention
 import org.jetbrains.kotlin.idea.quickfix.QuickFixActionBase
-import org.jetbrains.kotlin.psi.{KtBlockExpression, KtElement}
+import org.jetbrains.kotlin.psi.{ KtBlockExpression, KtElement }
 
 import scala.collection.mutable
 import darthorimar.scalaToKotlinConverter.inspection.DefaultInspection._
@@ -21,9 +21,8 @@ class DefaultInspection(inspection: AbstractKotlinInspection) extends Inspection
       case (problemDescriptor: ProblemDescriptor, intentionFix: IntentionWrapper) =>
         def applySelfTargetingIntention(action: SelfTargetingIntention[PsiElement]): Unit = {
           val target =
-            action.getTargetByOffset(
-              problemDescriptor.getPsiElement.getTextRange.getStartOffset,
-              problemDescriptor.getPsiElement.getContainingFile)
+            action.getTargetByOffset(problemDescriptor.getPsiElement.getTextRange.getStartOffset,
+                                     problemDescriptor.getPsiElement.getContainingFile)
           if (target == null) return
           if (!action.isApplicableTo(target, problemDescriptor.getPsiElement.getTextRange.getStartOffset)) return
           action.applyTo(target, null)
@@ -36,8 +35,8 @@ class DefaultInspection(inspection: AbstractKotlinInspection) extends Inspection
 
         intentionFix.getAction match {
           case action: SelfTargetingIntention[PsiElement] => applySelfTargetingIntention(action)
-          case action: QuickFixActionBase[PsiElement] => applyQuickFixActionBase(action)
-          case _ =>
+          case action: QuickFixActionBase[PsiElement]     => applyQuickFixActionBase(action)
+          case _                                          =>
         }
 
       case _ =>
@@ -50,14 +49,14 @@ class DefaultInspection(inspection: AbstractKotlinInspection) extends Inspection
                             project: Project,
                             file: PsiFile,
                             diagnostics: Diagnostics): Option[Fix] = {
-    val holder = new ProblemsHolder(InspectionManager.getInstance(project), file, false)
+    val holder  = new ProblemsHolder(InspectionManager.getInstance(project), file, false)
     val visitor = inspection.buildVisitor(holder, false)
     element.accept(visitor)
     val actions = holder.getResults.asScala flatMap { descriptor =>
       descriptor.getFixes collectFirst {
         case f: LocalQuickFix => f
-      } map {
-        fix => () => applySmartFix(fix, descriptor, project)
+      } map { fix => () =>
+        applySmartFix(fix, descriptor, project)
       }
     }
     if (actions.isEmpty) None
@@ -72,8 +71,8 @@ object DefaultInspection {
 
   implicit class SelfTargetingIntentionOps(val intention: SelfTargetingIntention[PsiElement]) {
     def getTargetByOffset(offset: Int, file: PsiFile): PsiElement = {
-      val leaf1 = file.findElementAt(offset)
-      val leaf2 = file.findElementAt(offset - 1)
+      val leaf1        = file.findElementAt(offset)
+      val leaf2        = file.findElementAt(offset - 1)
       val commonParent = if (leaf1 != null && leaf2 != null) PsiTreeUtil.findCommonParent(leaf1, leaf2) else null
 
       val elementsToCheck = mutable.ListBuffer.empty[PsiElement]
@@ -82,12 +81,14 @@ object DefaultInspection {
         Stream.iterate(psi)(_.getParent) takeWhile (!_.isInstanceOf[PsiFile])
 
       if (leaf1 != null) {
-        elementsToCheck.appendAll(parentsWithSelf(leaf1)
-          .takeWhile(_ != commonParent))
+        elementsToCheck.appendAll(
+          parentsWithSelf(leaf1)
+            .takeWhile(_ != commonParent))
       }
       if (leaf2 != null) {
-        elementsToCheck.appendAll(parentsWithSelf(leaf2)
-          .takeWhile(_ != commonParent))
+        elementsToCheck.appendAll(
+          parentsWithSelf(leaf2)
+            .takeWhile(_ != commonParent))
       }
       if (commonParent != null && !commonParent.isInstanceOf[PsiFile]) {
         elementsToCheck.appendAll(parentsWithSelf(commonParent))

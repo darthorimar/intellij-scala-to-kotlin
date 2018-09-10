@@ -6,17 +6,11 @@ trait ConverterStep[From, To] {
   self =>
   def name: String
 
-  def apply(from: From,
-            state: ConverterStepState,
-            index: Int,
-            notifier: Notifier): Result[To]
+  def apply(from: From, state: ConverterStepState, index: Int, notifier: Notifier): Result[To]
 
   def -->[NextTo](nextStep: ConverterStep[To, NextTo]): ConverterStep[From, NextTo] =
     new ConverterStep[From, NextTo] {
-      override def apply(from: From,
-                         state: ConverterStepState,
-                         index: Int,
-                         notifier: Notifier): Result[NextTo] = {
+      override def apply(from: From, state: ConverterStepState, index: Int, notifier: Notifier): Result[NextTo] = {
         val (result, newState) = self(from, state, index, notifier)
         nextStep(result, newState, index + 1, notifier)
       }

@@ -17,8 +17,7 @@ class DefinitionCollectorTransform extends Transform {
   }
 
   override protected val action: PartialFunction[AST, AST] = {
-    case c@CallExpr(_, RefExpr(_, Some(expr), name, _, _), _, _)
-      if calls.isDefinedAt((expr.exprType, name)) =>
+    case c @ CallExpr(_, RefExpr(_, Some(expr), name, _, _), _, _) if calls.isDefinedAt((expr.exprType, name)) =>
       stateStepVal.addDefinition(calls((expr.exprType, name)))
       copy[CallExpr](c)
   }

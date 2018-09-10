@@ -1,8 +1,8 @@
 package darthorimar.scalaToKotlinConverter
 
 trait BuilderBase {
-  private val builder = new StringBuffer()
-  private var i = 0
+  private val builder    = new StringBuffer()
+  private var i          = 0
   private val indentStep = 2
   def str(v: Any): Unit =
     builder.append(v)

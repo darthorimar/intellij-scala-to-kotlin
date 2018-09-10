@@ -5,15 +5,11 @@ import scala.util.Try
 class ConvertTest extends ConverterTestBase {
 
   def testFuncCall(): Unit = {
-    doExprTest(
-      """ "nya".substring(1,2)""",
-      """ "nya".substring(1,2)""")
+    doExprTest(""" "nya".substring(1,2)""", """ "nya".substring(1,2)""")
   }
 
   def testVararg(): Unit =
-    doTest(
-      """def foo(xs: String*) = xs""".stripMargin,
-      """fun foo(vararg xs: String): List<String> =xs""".stripMargin)
+    doTest("""def foo(xs: String*) = xs""".stripMargin, """fun foo(vararg xs: String): List<String> =xs""".stripMargin)
 
   def testUncarry(): Unit = {
     doTest(
@@ -21,7 +17,8 @@ class ConvertTest extends ConverterTestBase {
         |def b = a(1,"2")('3')
       """.stripMargin,
       """fun a(x: Int, b: String, c: Char): Int =1
-        |fun b(): Int =a(1, "2", '3')""".stripMargin)
+        |fun b(): Int =a(1, "2", '3')""".stripMargin
+    )
   }
 
   def testOverride(): Unit =
@@ -40,7 +37,8 @@ class ConvertTest extends ConverterTestBase {
         |}
         |open class B() : A() {
         |  override fun a(): Int =42
-        |}""".stripMargin)
+        |}""".stripMargin
+    )
 
   def testImplicitLambda(): Unit =
     doExprTest(
@@ -58,13 +56,11 @@ class ConvertTest extends ConverterTestBase {
         |  else -> {
         |    0
         |  }}
-        | }""".stripMargin)
-
+        | }""".stripMargin
+    )
 
   def testSimpleValDef(): Unit =
-    doTest(
-      """val a = 5""".stripMargin,
-      """val a: Int = 5""".stripMargin)
+    doTest("""val a = 5""".stripMargin, """val a: Int = 5""".stripMargin)
 
   def testValInClass(): Unit =
     doTest(
@@ -81,13 +77,11 @@ class ConvertTest extends ConverterTestBase {
         |   var c: Int
         |   var d: Int = 1
         |}
-      """.stripMargin)
-
+      """.stripMargin
+    )
 
   def testClassTypeParams(): Unit =
-    doTest(
-      """class A[T]""".stripMargin,
-      """open class A<T>()""".stripMargin)
+    doTest("""class A[T]""".stripMargin, """open class A<T>()""".stripMargin)
 
   def testImplicits(): Unit =
     doExprTest(
@@ -96,18 +90,16 @@ class ConvertTest extends ConverterTestBase {
         |  println(q(1))""".stripMargin,
       """fun toStr(a: Int): String =a.toString()
         |  fun q(s: String): String =s
-        |  println(q(toStr(1)))""".stripMargin)
+        |  println(q(toStr(1)))""".stripMargin
+    )
 
   def testFunctionTypeParams(): Unit =
-    doTest(
-      """def a[T] = Seq.empty[T]""".stripMargin,
-      """fun<T> a(): List<T> =emptyList<T>()""".stripMargin)
+    doTest("""def a[T] = Seq.empty[T]""".stripMargin, """fun<T> a(): List<T> =emptyList<T>()""".stripMargin)
 
   def testCallByName(): Unit =
-    doTest(
-      """def a(x: => Int) = x
+    doTest("""def a(x: => Int) = x
         |def q = a(1)""".stripMargin,
-      """fun a(x: () -> Int): Int =x()
+           """fun a(x: () -> Int): Int =x()
         |fun q(): Int =a { 1 }""".stripMargin)
 
   def testForYeild(): Unit =
@@ -122,8 +114,8 @@ class ConvertTest extends ConverterTestBase {
         |      yield(i)
         |   }
         |}
-      """.stripMargin)
-
+      """.stripMargin
+    )
 
   def testTupleCreate(): Unit =
     doTest(
@@ -133,6 +125,6 @@ class ConvertTest extends ConverterTestBase {
       """
         |fun foo(): Tuple3<Int, Int, Int> =Tuple3<Int, Int, Int>(1, 2, 3)
         |fun bar(): Pair<Int, Int> =Pair<Int, Int>(1, 2)
-      """.stripMargin)
+      """.stripMargin
+    )
 }
-

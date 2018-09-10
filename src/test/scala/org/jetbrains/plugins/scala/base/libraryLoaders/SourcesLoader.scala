@@ -4,7 +4,7 @@ import java.io.File
 
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.util.io.FileUtil
-import com.intellij.openapi.vfs.{LocalFileSystem, VirtualFile}
+import com.intellij.openapi.vfs.{ LocalFileSystem, VirtualFile }
 import com.intellij.testFramework.PsiTestUtil
 import org.jetbrains.plugins.scala.debugger.ScalaVersion
 

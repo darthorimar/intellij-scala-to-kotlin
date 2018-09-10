@@ -4,7 +4,7 @@ import java.io.File
 
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
-import com.intellij.openapi.projectRoots.{JavaSdk, JavaSdkVersion, Sdk}
+import com.intellij.openapi.projectRoots.{ JavaSdk, JavaSdkVersion, Sdk }
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess
 import com.intellij.testFramework.IdeaTestUtil
@@ -24,7 +24,7 @@ case class MockJDKLoader(jdkVersion: JavaSdkVersion = JavaSdkVersion.JDK_1_8) ex
     case JavaSdkVersion.JDK_1_9 => IdeaTestUtil.getMockJdk9
     case JavaSdkVersion.JDK_1_8 => IdeaTestUtil.getMockJdk18
     case JavaSdkVersion.JDK_1_7 => IdeaTestUtil.getMockJdk17
-    case _ => Assert.fail(s"mock JDK version $jdkVersion is unavailable in IDEA test platform"); null
+    case _                      => Assert.fail(s"mock JDK version $jdkVersion is unavailable in IDEA test platform"); null
   }
 }
 
@@ -40,7 +40,7 @@ abstract class SmartJDKLoader(jdkVersion: JavaSdkVersion = JavaSdkVersion.JDK_1_
   override def clean(implicit module: Module): Unit = {
     ModuleRootModificationUtil.setModuleSdk(module, null)
     val jdkTable = JavaAwareProjectJdkTableImpl.getInstanceEx
-    val allJdks = jdkTable.getAllJdks
+    val allJdks  = jdkTable.getAllJdks
     inWriteAction { allJdks.foreach(jdkTable.removeJdk) }
   }
 
@@ -50,15 +50,15 @@ abstract class SmartJDKLoader(jdkVersion: JavaSdkVersion = JavaSdkVersion.JDK_1_
 object SmartJDKLoader {
 
   private val candidates = Seq(
-    "/usr/lib/jvm",                     // linux style
-    "C:\\Program Files\\Java\\",        // windows style
-    "C:\\Program Files (x86)\\Java\\",  // windows 32bit style
+    "/usr/lib/jvm", // linux style
+    "C:\\Program Files\\Java\\", // windows style
+    "C:\\Program Files (x86)\\Java\\", // windows 32bit style
     "/Library/Java/JavaVirtualMachines" // mac style
   )
 
   def getOrCreateJDK(jdkVersion: JavaSdkVersion = JavaSdkVersion.JDK_1_8): Sdk = {
     val jdkTable = JavaAwareProjectJdkTableImpl.getInstanceEx
-    val jdkName = jdkVersion.getDescription
+    val jdkName  = jdkVersion.getDescription
     Option(jdkTable.findJdk(jdkName)).getOrElse {
       val pathOption = SmartJDKLoader.discoverJDK(jdkVersion)
       Assert.assertTrue(s"Couldn't find $jdkVersion", pathOption.isDefined)
@@ -69,7 +69,8 @@ object SmartJDKLoader {
     }
   }
 
-  private def discoverJDK(jdkVersion: JavaSdkVersion): Option[String] = discoverJre(candidates, jdkVersion).map(new File(_).getParent)
+  private def discoverJDK(jdkVersion: JavaSdkVersion): Option[String] =
+    discoverJre(candidates, jdkVersion).map(new File(_).getParent)
 
   private def discoverJre(paths: Seq[String], jdkVersion: JavaSdkVersion): Option[String] = {
     import java.io._
@@ -80,15 +81,15 @@ object SmartJDKLoader {
       b.getName == "bin" && b.listFiles().exists(x => x.getName == "javac.exe" || x.getName == "javac")
     }
     def inJvm(path: String, suffix: String) = {
-      val postfix = if (path.startsWith("/Library")) "/Contents/Home" else ""  // mac workaround
+      val postfix = if (path.startsWith("/Library")) "/Contents/Home" else "" // mac workaround
       Option(new File(path))
         .filter(_.exists())
-        .flatMap(_.listFiles()
-          .sortBy(_.getName) // TODO somehow sort by release number to get the newest actually
-          .reverse
-          .find(f => f.getName.contains(suffix) && isJDK(new File(f, postfix)))
-          .map(new File(_, s"$postfix/jre").getAbsolutePath)
-        )
+        .flatMap(
+          _.listFiles()
+            .sortBy(_.getName) // TODO somehow sort by release number to get the newest actually
+            .reverse
+            .find(f => f.getName.contains(suffix) && isJDK(new File(f, postfix)))
+            .map(new File(_, s"$postfix/jre").getAbsolutePath))
     }
     def currentJava() = {
       sys.props.get("java.version") match {
@@ -104,23 +105,22 @@ object SmartJDKLoader {
     val versionStrings = Seq(s"1.$versionMajor", s"-$versionMajor")
     val priorityPaths = Seq(
       currentJava(),
-      Option(sys.env.getOrElse(s"JDK_1${versionMajor}_x64",
-        sys.env.getOrElse(s"JDK_1$versionMajor", null))
-      ).map(_+"/jre")  // teamcity style
+      Option(sys.env.getOrElse(s"JDK_1${versionMajor}_x64", sys.env.getOrElse(s"JDK_1$versionMajor", null)))
+        .map(_ + "/jre") // teamcity style
     )
     if (priorityPaths.exists(_.isDefined)) {
       priorityPaths.flatten.headOption
     } else {
-      val fullSearchPaths = paths flatMap { p => versionStrings.map((p, _)) }
+      val fullSearchPaths = paths flatMap { p =>
+        versionStrings.map((p, _))
+      }
       for ((path, ver) <- fullSearchPaths) {
         inJvm(path, ver) match {
-          case x@Some(p) => return x
-          case _ => None
+          case x @ Some(p) => return x
+          case _           => None
         }
       }
       None
     }
   }
 }
-
-

@@ -7,7 +7,8 @@ import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics
 
 class ApplicabilityBasedInspection[Elem <: KtElement](val inspection: AbstractApplicabilityBasedInspection[Elem],
-                                                      elementType: Class[Elem]) extends Inspection {
+                                                      elementType: Class[Elem])
+    extends Inspection {
   override def createAction(element: KtElement,
                             project: Project,
                             file: PsiFile,

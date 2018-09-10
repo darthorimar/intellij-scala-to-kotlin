@@ -15,7 +15,7 @@ object TypeUtils {
   }
 
   object KotlinList {
-    def unapply(ty: Type): Option[Type] =  ty match {
+    def unapply(ty: Type): Option[Type] = ty match {
       case GenericType(KotlinTypes.LIST, Seq(inner)) =>
         Some(inner)
       case _ => None
@@ -35,7 +35,7 @@ object TypeUtils {
   object ListType {
     def unapply(t: Type): Option[Type] = t match {
       case GenericType(KotlinTypes.LIST, Seq(of)) => Some(of)
-      case _ => None
+      case _                                      => None
     }
   }
 

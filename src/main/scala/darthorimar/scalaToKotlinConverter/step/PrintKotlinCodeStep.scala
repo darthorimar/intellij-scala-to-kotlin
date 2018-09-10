@@ -3,7 +3,7 @@ package darthorimar.scalaToKotlinConverter.step
 import darthorimar.scalaToKotlinConverter.BuilderBase
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
-import darthorimar.scalaToKotlinConverter.scopes.{BuilderState, ScopedVal}
+import darthorimar.scalaToKotlinConverter.scopes.{ BuilderState, ScopedVal }
 import darthorimar.scalaToKotlinConverter.step.ConverterStep.Notifier
 
 class PrintStringStep extends ConverterStep[AST, String] {
@@ -52,25 +52,25 @@ class KotlinBuilder extends BuilderBase {
           str(">")
         }
         opt(consruct)(gen)
-        opt(supersBlock) { case SupersBlock(constuctor, supers) =>
-          str(" : ")
-          opt(constuctor) { case SuperConstructor(exprType, exprs, needBrackets) =>
-            genType(exprType, false)
-            if (needBrackets || exprs.nonEmpty) str("(")
-            rep(exprs, ", ")(gen)
-            if (needBrackets || exprs.nonEmpty) str(")")
-          }
-          if (constuctor.isDefined && supers.nonEmpty) {
-            str(", ")
-          }
-          rep(supers, ", ")(genType(_, false))
+        opt(supersBlock) {
+          case SupersBlock(constuctor, supers) =>
+            str(" : ")
+            opt(constuctor) {
+              case SuperConstructor(exprType, exprs, needBrackets) =>
+                genType(exprType, false)
+                if (needBrackets || exprs.nonEmpty) str("(")
+                rep(exprs, ", ")(gen)
+                if (needBrackets || exprs.nonEmpty) str(")")
+            }
+            if (constuctor.isDefined && supers.nonEmpty) {
+              str(", ")
+            }
+            rep(supers, ", ")(genType(_, false))
         }
         str(" ")
         opt(block)(genAsBlock)
 
-
       case EmptyConstructor =>
-
       case ParamsConstructor(params) =>
         str("(")
         rep(params, ", ")(gen)
@@ -84,7 +84,7 @@ class KotlinBuilder extends BuilderBase {
         str(name)
         genType(exprType)
 
-      case x@SimpleValOrVarDef(attributes, isVal, name, valType, expr) =>
+      case x @ SimpleValOrVarDef(attributes, isVal, name, valType, expr) =>
         rep(attributes, " ")(gen)
         str(" ")
         str(x.keyword)
@@ -96,7 +96,7 @@ class KotlinBuilder extends BuilderBase {
           gen(e)
         }
 
-      case x@KotlinValOrVarDef(attributes, isVal, patterns, expr) =>
+      case x @ KotlinValOrVarDef(attributes, isVal, patterns, expr) =>
         rep(attributes, " ")(gen)
         str(" ")
         str(x.keyword)
@@ -123,7 +123,6 @@ class KotlinBuilder extends BuilderBase {
         str(name)
         str(" by lazy ")
         genBlockOrExpr(expr)
-
 
       case ReturnExpr(label, expr) =>
         str("return")
@@ -153,10 +152,11 @@ class KotlinBuilder extends BuilderBase {
         }
         str(name)
         str("(")
-        rep(args, ", ") { case DefParameter(parameterType, parameterName, isVarArg, _) =>
-          if (isVarArg) str("vararg ")
-          str(parameterName)
-          genType(parameterType)
+        rep(args, ", ") {
+          case DefParameter(parameterType, parameterName, isVarArg, _) =>
+            if (isVarArg) str("vararg ")
+            str(parameterName)
+            genType(parameterType)
         }
         str(")")
         genType(retType)
@@ -171,12 +171,13 @@ class KotlinBuilder extends BuilderBase {
       case KotlinTryExpr(exprType, tryBlock, catches, finallyBlock) =>
         str("try ")
         genAsBlock(tryBlock)
-        rep(catches, " ") { case KotlinCatchCase(name, valueType, expr) =>
-          str("catch (")
-          str(name)
-          genType(valueType)
-          str(") ")
-          genAsBlock(expr)
+        rep(catches, " ") {
+          case KotlinCatchCase(name, valueType, expr) =>
+            str("catch (")
+            str(name)
+            genType(valueType)
+            str(") ")
+            genAsBlock(expr)
         }
         opt(finallyBlock) { f =>
           str(" finally ")
@@ -200,8 +201,9 @@ class KotlinBuilder extends BuilderBase {
       case LambdaExpr(exprType, params, expr, needBraces) =>
         str("{ ")
         if (needBraces) str("(")
-        rep(params, ", ") { case DefParameter(_, name, _, _) =>
-          str(name)
+        rep(params, ", ") {
+          case DefParameter(_, name, _, _) =>
+            str(name)
         }
         if (needBraces) str(")")
         if (params.nonEmpty) str(" -> ")
@@ -233,7 +235,9 @@ class KotlinBuilder extends BuilderBase {
         }
 
       case RefExpr(exprType, obj, ref, typeParams, isFunc) =>
-        opt(obj) { x => gen(x); str(".") }
+        opt(obj) { x =>
+          gen(x); str(".")
+        }
         str(ref)
         if (typeParams.nonEmpty) {
           str("<")
@@ -258,7 +262,6 @@ class KotlinBuilder extends BuilderBase {
       case PrefixExpr(exprType, obj, op) =>
         str(op)
         gen(obj)
-
 
       case LitExpr(exprType, name) =>
         str(name)
@@ -308,10 +311,11 @@ class KotlinBuilder extends BuilderBase {
           stateVal.updated(_.copy(inInterpolatedString = true))
         ) {
           str("\"")
-          rep(parts.zip(injected), "") { case (p, i) =>
-            str(p)
-            str("$")
-            gen(i)
+          rep(parts.zip(injected), "") {
+            case (p, i) =>
+              str(p)
+              str("$")
+              gen(i)
           }
           str(parts.last)
           str("\"")
@@ -345,7 +349,6 @@ class KotlinBuilder extends BuilderBase {
         gen(expr)
 
       case EmptyDefExpr =>
-
       case x: Keyword =>
         genKeyword(x)
 
@@ -371,7 +374,7 @@ class KotlinBuilder extends BuilderBase {
 
   def genBlockOrExpr(expr: Expr): Unit = expr match {
     case b: BlockExpr => genAsBlock(b)
-    case e => gen(e)
+    case e            => gen(e)
   }
 
   def genRunBlock(block: BlockExpr): Unit = block.exprs match {
@@ -390,4 +393,3 @@ class KotlinBuilder extends BuilderBase {
     str(t.asKotlin)
   }
 }
-

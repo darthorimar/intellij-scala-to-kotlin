@@ -71,6 +71,6 @@ class RealConverterTest extends ConverterTestBase {
         |        }
         |        fun <T> implicitGet(scopedVal: ScopedVal<T>): T = scopedVal.get()
         |    }
-        |}""".stripMargin)
+        |}""".stripMargin
+    )
 }
-

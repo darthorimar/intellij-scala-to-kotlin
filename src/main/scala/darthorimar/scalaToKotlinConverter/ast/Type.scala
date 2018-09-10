@@ -9,15 +9,14 @@ case class FunctionType(left: Type, right: Type) extends Type {
   override def asKotlin: String = {
     val leftStr = left match {
       case StdType("Unit") => "()"
-      case t: ProductType => t.asKotlin
-      case t => s"(${t.asKotlin})"
+      case t: ProductType  => t.asKotlin
+      case t               => s"(${t.asKotlin})"
     }
     s"$leftStr -> ${right.asKotlin}"
   }
 
   override def isFunction: Boolean = true
 }
-
 
 case class GenericType(baseType: Type, parameters: Seq[Type]) extends Type {
   override def asKotlin: String =
@@ -53,7 +52,6 @@ case class JavaType(name: String) extends Type {
   override def asKotlin: String = name
 }
 
-
 case class KotlinType(name: String) extends Type {
   override def asKotlin: String = name
 }
@@ -70,10 +68,8 @@ case class ErrorType(text: String) extends Type with ErrorAst {
   override def asKotlin: String = ""
 }
 
-case class TypeParam(name: String,
-                     variance: TypeParamVariance,
-                     upperBound: Option[Type],
-                     lowerBound: Option[Type]) extends AST
+case class TypeParam(name: String, variance: TypeParamVariance, upperBound: Option[Type], lowerBound: Option[Type])
+    extends AST
 
 sealed trait TypeParamVariance {
   def kotlinKeyword: String
@@ -81,7 +77,7 @@ sealed trait TypeParamVariance {
 }
 case object InvariantTypeParam extends TypeParamVariance {
   override def kotlinKeyword: String = ""
-  override def isInvariant: Boolean = true
+  override def isInvariant: Boolean  = true
 }
 case object CovariantTypeParam extends TypeParamVariance {
   override def kotlinKeyword: String = "out"

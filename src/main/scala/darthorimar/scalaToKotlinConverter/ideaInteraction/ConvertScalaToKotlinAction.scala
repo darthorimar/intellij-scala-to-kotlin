@@ -1,22 +1,27 @@
 package darthorimar.scalaToKotlinConverter.ideaInteraction
 
-import com.intellij.ide.scratch.{ScratchFileService, ScratchRootType}
-import com.intellij.notification.{NotificationDisplayType, NotificationType}
-import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent, CommonDataKeys}
+import com.intellij.ide.scratch.{ ScratchFileService, ScratchRootType }
+import com.intellij.notification.{ NotificationDisplayType, NotificationType }
+import com.intellij.openapi.actionSystem.{ AnAction, AnActionEvent, CommonDataKeys }
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.progress.{ProgressIndicator, ProgressManager, Task}
+import com.intellij.openapi.progress.{ ProgressIndicator, ProgressManager, Task }
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ex.MessagesEx
 import com.intellij.psi._
-import darthorimar.scalaToKotlinConverter.{Converter, ScalaPsiToKotlinPsiConverter, Utils}
+import darthorimar.scalaToKotlinConverter.{ Converter, ScalaPsiToKotlinPsiConverter, Utils }
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
-import darthorimar.scalaToKotlinConverter.step.{ApplyInspectionsStep, ConverterStepState, FileElementGenerator, KtElementGenerator}
+import darthorimar.scalaToKotlinConverter.step.{
+  ApplyInspectionsStep,
+  ConverterStepState,
+  FileElementGenerator,
+  KtElementGenerator
+}
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
-import org.jetbrains.plugins.scala.util.{NotificationUtil, ScalaUtils}
+import org.jetbrains.plugins.scala.util.{ NotificationUtil, ScalaUtils }
 
 class ConvertScalaToKotlinAction extends AnAction {
 
@@ -37,8 +42,7 @@ class ConvertScalaToKotlinAction extends AnAction {
       val elements = getSelectedFiles(e)
       if (elements.nonEmpty) enable()
       else disable()
-    }
-    catch {
+    } catch {
       case _: Exception => disable()
     }
 
@@ -55,16 +59,16 @@ class ConvertScalaToKotlinAction extends AnAction {
       case file: ScalaFile if file.getContainingDirectory.isWritable => file
     }
 
-
   def actionPerformed(e: AnActionEvent) {
     val project = e.getProject
-    val files = getSelectedFiles(e)
+    val files   = getSelectedFiles(e)
     val (filesToConvert, existingFiles) = files.partition { file =>
       file.getParent.getVirtualFile.findChild(Utils.createKotlinName(file)) == null
     }
     existingFiles foreach { file =>
-      NotificationUtil.builder(project, s"File ${Utils.createKotlinName(file)} already exists").
-        setDisplayType(NotificationDisplayType.BALLOON)
+      NotificationUtil
+        .builder(project, s"File ${Utils.createKotlinName(file)} already exists")
+        .setDisplayType(NotificationDisplayType.BALLOON)
         .setNotificationType(NotificationType.WARNING)
         .setGroup("convert.scala.to.kotlin")
         .setTitle("Cannot create file")

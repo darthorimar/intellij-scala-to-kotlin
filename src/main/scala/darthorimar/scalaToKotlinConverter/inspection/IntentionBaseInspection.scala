@@ -1,14 +1,13 @@
 package darthorimar.scalaToKotlinConverter.inspection
 
 import com.intellij.openapi.project.Project
-import com.intellij.psi.{PsiElement, PsiFile}
-import org.jetbrains.kotlin.idea.intentions.{SelfTargetingIntention, SelfTargetingRangeIntention}
+import com.intellij.psi.{ PsiElement, PsiFile }
+import org.jetbrains.kotlin.idea.intentions.{ SelfTargetingIntention, SelfTargetingRangeIntention }
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics
 
-class IntentionBaseInspection[Elem <: KtElement](intension: SelfTargetingIntention[Elem],
-                                                 elementType: Class[Elem]) extends Inspection {
-
+class IntentionBaseInspection[Elem <: KtElement](intension: SelfTargetingIntention[Elem], elementType: Class[Elem])
+    extends Inspection {
 
   override def createAction(element: KtElement,
                             project: Project,

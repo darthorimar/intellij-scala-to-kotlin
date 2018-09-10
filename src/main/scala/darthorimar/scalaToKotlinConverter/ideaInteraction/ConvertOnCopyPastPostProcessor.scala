@@ -1,19 +1,19 @@
 package darthorimar.scalaToKotlinConverter.ideaInteraction
 
-import java.awt.datatransfer.{DataFlavor, Transferable}
+import java.awt.datatransfer.{ DataFlavor, Transferable }
 import java.util.Collections
-import java.{lang, util}
+import java.{ lang, util }
 
-import com.intellij.codeInsight.editorActions.{CopyPastePostProcessor, TextBlockTransferableData}
-import com.intellij.openapi.editor.{Editor, RangeMarker}
+import com.intellij.codeInsight.editorActions.{ CopyPastePostProcessor, TextBlockTransferableData }
+import com.intellij.openapi.editor.{ Editor, RangeMarker }
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.{Ref, TextRange}
-import com.intellij.psi.{PsiDocumentManager, PsiElement, PsiFile}
+import com.intellij.openapi.util.{ Ref, TextRange }
+import com.intellij.psi.{ PsiDocumentManager, PsiElement, PsiFile }
 import darthorimar.scalaToKotlinConverter._
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.DefinitionGenerator
-import darthorimar.scalaToKotlinConverter.step.{ConverterStepState, KtElementGenerator}
-import org.jetbrains.kotlin.psi.{KtElement, KtFile}
+import darthorimar.scalaToKotlinConverter.step.{ ConverterStepState, KtElementGenerator }
+import org.jetbrains.kotlin.psi.{ KtElement, KtFile }
 import org.jetbrains.plugins.hocon.CommonUtil.TextRange
 import org.jetbrains.plugins.scala.extensions._
 import org.jetbrains.plugins.scala.lang.psi.ScalaPsiElement
@@ -25,10 +25,9 @@ import scala.util.Try
 class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotlinTransferableData] {
 
   private def getPsiInRange(file: PsiFile, range: TextRange): PsiElement =
-    file depthFirst() filter { element =>
+    file depthFirst () filter { element =>
       range contains element.getTextRange
     } maxBy (_.getTextRange.getLength)
-
 
   override def collectTransferableData(file: PsiFile,
                                        editor: Editor,
@@ -76,8 +75,8 @@ class ConvertOnCopyPastPostProcessor extends CopyPastePostProcessor[ScalaToKotli
         if (new ConvertScalaToKotlinDialog(project).showAndGet()) {
           values.asScala foreach { transData =>
             transData.data foreach { data =>
-              val ast = data.ast
-              val state = data.state
+              val ast      = data.ast
+              val state    = data.state
               val document = editor.getDocument
 
               val ktElementGenerator: KtElementGenerator =
@@ -123,21 +122,16 @@ class ScalaToKotlinTransferableData(val data: Array[ScalaToKotlinData]) extends 
 
 }
 
-case class ScalaToKotlinData(var startOffset: Int = 0,
-                             var endOffset: Int = 0,
-                             ast: AST,
-                             state: ConverterStepState)
+case class ScalaToKotlinData(var startOffset: Int = 0, var endOffset: Int = 0, ast: AST, state: ConverterStepState)
 
 object ScalaToKotlinData {
   lazy val dataFlavor: DataFlavor =
     try {
       val dataClass = ScalaToKotlinData.getClass
       new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType + ";class=" + dataClass.getName,
-        "KotlinReferenceData",
-        dataClass.getClassLoader)
-    }
-    catch {
+                     "KotlinReferenceData",
+                     dataClass.getClassLoader)
+    } catch {
       case _: Throwable => null
     }
 }
-

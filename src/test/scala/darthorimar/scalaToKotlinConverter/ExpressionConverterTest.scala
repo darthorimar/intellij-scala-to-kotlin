@@ -3,34 +3,22 @@ package darthorimar.scalaToKotlinConverter
 class ExpressionConverterTest extends ConverterTestBase {
 
   def testBoolExpression(): Unit =
-    doExprTest(
-      """!(!true || false) && false""".stripMargin,
-      """!(!true || false) && false""".stripMargin)
+    doExprTest("""!(!true || false) && false""".stripMargin, """!(!true || false) && false""".stripMargin)
 
   def testPrefixExpr(): Unit =
-    doExprTest(
-      """!true""".stripMargin,
-      """!true""".stripMargin)
+    doExprTest("""!true""".stripMargin, """!true""".stripMargin)
 
   def testIntExpr(): Unit =
-    doExprTest(
-      """(1) + (4 / 2 - 3)""".stripMargin,
-      """1 + (4 / 2 - 3)""".stripMargin)
+    doExprTest("""(1) + (4 / 2 - 3)""".stripMargin, """1 + (4 / 2 - 3)""".stripMargin)
 
   def testStringConcat(): Unit =
-    doExprTest(
-      """ "1" + "2" """.stripMargin,
-      """ "1" + "2" """.stripMargin)
+    doExprTest(""" "1" + "2" """.stripMargin, """ "1" + "2" """.stripMargin)
 
   def testDoubles(): Unit =
-    doExprTest(
-      """ val a = 1.0 + 2 """.stripMargin,
-      """ val a: Double = 1.0 + 2""".stripMargin)
+    doExprTest(""" val a = 1.0 + 2 """.stripMargin, """ val a: Double = 1.0 + 2""".stripMargin)
 
   def testFloats(): Unit =
-    doExprTest(
-      """ val a = 1.0f + 2 """.stripMargin,
-      """ val a: Float = 1.0f + 2""".stripMargin)
+    doExprTest(""" val a = 1.0f + 2 """.stripMargin, """ val a: Float = 1.0f + 2""".stripMargin)
 
   def testForComprehension(): Unit =
     doExprTest(
@@ -51,16 +39,14 @@ class ExpressionConverterTest extends ConverterTestBase {
         |      }
         |    }
         |  }
-      """.stripMargin)
-
-
+      """.stripMargin
+    )
 
   def testCasts(): Unit =
-    doExprTest(
-      """1.asInstanceOf[Long]
+    doExprTest("""1.asInstanceOf[Long]
         |1.isInstanceOf[Long]
       """.stripMargin,
-      """1 as Long
+               """1 as Long
         |1 is Long
       """.stripMargin)
 
@@ -82,23 +68,16 @@ class ExpressionConverterTest extends ConverterTestBase {
         |
         |  } finally {
         |    5
-        |  }""".stripMargin)
+        |  }""".stripMargin
+    )
 
   def testLambda(): Unit =
-    doExprTest(
-      """Seq(1).map(x => x + 1)""".stripMargin,
-      """listOf(1).map{x -> x + 1}""".stripMargin)
+    doExprTest("""Seq(1).map(x => x + 1)""".stripMargin, """listOf(1).map{x -> x + 1}""".stripMargin)
 
   def testLambdaWithUnderscore(): Unit =
-    doExprTest(
-      """Seq(1).map(_+1)""".stripMargin,
-      """listOf(1).map { it + 1}""".stripMargin)
-
-
+    doExprTest("""Seq(1).map(_+1)""".stripMargin, """listOf(1).map { it + 1}""".stripMargin)
 
   def testStringInterpolation(): Unit =
-    doExprTest(
-      """ s"${1} + $None" """.stripMargin,
-      """ "${1} + $null"""".stripMargin)
+    doExprTest(""" s"${1} + $None" """.stripMargin, """ "${1} + $null"""".stripMargin)
 
 }

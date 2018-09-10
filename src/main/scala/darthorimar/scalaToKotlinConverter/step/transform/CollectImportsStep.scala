@@ -12,7 +12,7 @@ class CollectImportsStep extends Transform {
     case JavaType(name) =>
       val className = addNewImport(name)
       JavaType(className)
-    case r@RefExpr(_, None, name, _, _) =>
+    case r @ RefExpr(_, None, name, _, _) =>
       val className = addNewImport(name)
       copy[RefExpr](r).copy(referenceName = className)
   }

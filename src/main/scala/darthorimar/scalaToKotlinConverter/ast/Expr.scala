@@ -1,7 +1,7 @@
 package darthorimar.scalaToKotlinConverter.ast
 
 import darthorimar.scalaToKotlinConverter.ast
-import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, StdTypes}
+import darthorimar.scalaToKotlinConverter.types.{ KotlinTypes, StdTypes }
 
 sealed trait Expr extends AST {
   def exprType: Type
@@ -10,7 +10,6 @@ sealed trait Expr extends AST {
 case class ErrorExpr(text: String) extends Expr with ErrorAst {
   override def exprType: Type = NoType
 }
-
 
 case class InfixExpr(exprType: Type, op: RefExpr, left: Expr, right: Expr, isLeftAssoc: Boolean) extends Expr {
   def rightOrder: (Expr, Expr) =
@@ -22,7 +21,8 @@ case class ParenthesesExpr(inner: Expr) extends Expr {
   override def exprType: Type = inner.exprType
 }
 
-case class CallExpr(exprType: Type, ref: Expr, params: Seq[Expr], paramsExpectedTypes: Seq[CallParameterInfo]) extends Expr
+case class CallExpr(exprType: Type, ref: Expr, params: Seq[Expr], paramsExpectedTypes: Seq[CallParameterInfo])
+    extends Expr
 
 case class LitExpr(exprType: Type, name: String) extends Expr
 
@@ -33,7 +33,7 @@ case class RefExpr(exprType: Type,
                    referenceName: String,
                    typeParams: Seq[Type],
                    isFunctionRef: Boolean)
-  extends Expr
+    extends Expr
 
 case class PostfixExpr(exprType: Type, expr: Expr, op: String) extends Expr
 
@@ -77,15 +77,11 @@ case class ReturnExpr(label: Option[String], expr: Option[Expr]) extends Expr {
   override def exprType: Type = StdTypes.NOTHING
 }
 
-case class ScalaTryExpr(exprType: Type,
-                        tryBlock: Expr,
-                        catchBlock: Option[ScalaCatch],
-                        finallyBlock: Option[Expr]) extends Expr
+case class ScalaTryExpr(exprType: Type, tryBlock: Expr, catchBlock: Option[ScalaCatch], finallyBlock: Option[Expr])
+    extends Expr
 
-case class KotlinTryExpr(exprType: Type,
-                         tryBlock: Expr,
-                         catchBlock: Seq[KotlinCatchCase],
-                         finallyBlock: Option[Expr]) extends Expr
+case class KotlinTryExpr(exprType: Type, tryBlock: Expr, catchBlock: Seq[KotlinCatchCase], finallyBlock: Option[Expr])
+    extends Expr
 
 case class TypeExpr(exprType: Type) extends Expr
 
@@ -126,7 +122,8 @@ case class Defn(attributes: Seq[Attribute],
                 constructor: Option[Constructor],
                 supersBlock: Option[SupersBlock],
                 body: Option[BlockExpr],
-                companionDefn: Option[CompanionModule]) extends DefExpr {
+                companionDefn: Option[CompanionModule])
+    extends DefExpr {
   override def exprType: Type = NoType
 
   override def isDefn: Boolean = true
@@ -148,27 +145,20 @@ trait ValOrVarDef extends DefExpr {
     else "var"
 }
 
-case class ScalaValOrVarDef(attributes: Seq[Attribute],
-                            isVal: Boolean,
-                            pattern: ConstructorPattern,
-                            expr: Expr) extends ValOrVarDef
+case class ScalaValOrVarDef(attributes: Seq[Attribute], isVal: Boolean, pattern: ConstructorPattern, expr: Expr)
+    extends ValOrVarDef
 
-case class KotlinValOrVarDef(attributes: Seq[Attribute],
-                             isVal: Boolean,
-                             patterns: Seq[KotlinValDestructor],
-                             expr: Expr) extends ValOrVarDef
-
+case class KotlinValOrVarDef(attributes: Seq[Attribute], isVal: Boolean, patterns: Seq[KotlinValDestructor], expr: Expr)
+    extends ValOrVarDef
 
 case class SimpleValOrVarDef(attributes: Seq[Attribute],
                              isVal: Boolean,
                              name: String,
                              valType: Option[Type],
-                             expr: Option[Expr]) extends ValOrVarDef
+                             expr: Option[Expr])
+    extends ValOrVarDef
 
-case class LazyValDef(attributes: Seq[Attribute],
-                      name: String,
-                      valType: Type,
-                      expr: Expr) extends ValOrVarDef {
+case class LazyValDef(attributes: Seq[Attribute], name: String, valType: Type, expr: Expr) extends ValOrVarDef {
   override def isVal: Boolean = true
 }
 
@@ -178,5 +168,5 @@ case class DefnDef(attributes: Seq[Attribute],
                    typeParameters: Seq[TypeParam],
                    parameters: Seq[DefParameter],
                    returnType: Type,
-                   body: Option[Expr]) extends DefExpr
-
+                   body: Option[Expr])
+    extends DefExpr

@@ -3,6 +3,7 @@ package org.jetbrains.plugins.scala.base
 import org.junit.Assert
 
 trait FailableTest {
+
   /**
     * A hook to allow tests that are currently failing to pass when they fail and vice versa.
     * @return

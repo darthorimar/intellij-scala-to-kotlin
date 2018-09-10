@@ -19,7 +19,7 @@ class InnerPsiTransformStep extends ConverterStep[ScalaPsiElement, ScalaPsiEleme
                      notifier: Notifier): (ScalaPsiElement, ConverterStepState) = {
     notifier.notify(this, index)
     val result = inWriteAction {
-      val copy  = from.copy()
+      val copy = from.copy()
       Transformer.transform(copy, None, transformers)
       copy.asInstanceOf[ScalaPsiElement]
     }

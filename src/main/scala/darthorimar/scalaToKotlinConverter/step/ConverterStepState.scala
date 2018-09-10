@@ -1,14 +1,14 @@
 package darthorimar.scalaToKotlinConverter.step
 
-import com.intellij.ide.scratch.{ScratchFileService, ScratchRootType}
+import com.intellij.ide.scratch.{ ScratchFileService, ScratchRootType }
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
-import com.intellij.psi.{PsiDocumentManager, PsiManager}
+import com.intellij.psi.{ PsiDocumentManager, PsiManager }
 import darthorimar.scalaToKotlinConverter.Utils
 import darthorimar.scalaToKotlinConverter.ast.Import
-import darthorimar.scalaToKotlinConverter.definition.{Definition, DefinitionGenerator, FileDefinition}
+import darthorimar.scalaToKotlinConverter.definition.{ Definition, DefinitionGenerator, FileDefinition }
 import org.jetbrains.kotlin.idea.KotlinFileType
-import org.jetbrains.kotlin.psi.{KtElement, KtFile}
+import org.jetbrains.kotlin.psi.{ KtElement, KtFile }
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.extensions._
 
@@ -18,7 +18,7 @@ trait KtElementGenerator {
 
 class FileElementGenerator(file: ScalaFile) extends KtElementGenerator {
   override def insertCode(text: String): KtElement = inWriteAction {
-    val project = file.getProject
+    val project  = file.getProject
     val document = PsiDocumentManager.getInstance(project).getDocument(file)
     PsiDocumentManager.getInstance(project).doPostponedOperationsAndUnblockDocument(document)
     document.replaceString(0, document.getTextLength, text)
@@ -29,8 +29,7 @@ class FileElementGenerator(file: ScalaFile) extends KtElementGenerator {
     if (ScratchRootType.getInstance().containsFile(virtualFile)) {
       val mapping = ScratchFileService.getInstance().getScratchesMapping
       mapping.setMapping(virtualFile, KotlinFileType.INSTANCE.getLanguage)
-    }
-    else {
+    } else {
       val fileName = Utils.createKotlinName(file)
       virtualFile.rename(this, fileName)
     }
@@ -43,7 +42,7 @@ class FileElementGenerator(file: ScalaFile) extends KtElementGenerator {
 
 class ConverterStepState(var elementGenerator: Option[KtElementGenerator] = None) {
   private var definitions: Set[Definition] = Set.empty
-  private var imports: Set[Import] = Set.empty
+  private var imports: Set[Import]         = Set.empty
 
   def addDefinition(definition: Definition): Unit = {
     val definitionNames = definition match {

@@ -79,9 +79,9 @@ class MatchConvertTest extends ConverterTestBase {
         |        fun apply(c: Int): C = C(c)
         |        fun unapply(x: C): C? = x
         |    }
-        |}""".stripMargin)
+        |}""".stripMargin
+    )
   }
-  
 
   def testInnerUnapplyInMatch(): Unit =
     doTest(
@@ -139,8 +139,8 @@ class MatchConvertTest extends ConverterTestBase {
         |}
         |object O {
         |    fun unapply(arg: Int): A? = A.apply(B.apply(1))
-        |}""".stripMargin)
-
+        |}""".stripMargin
+    )
 
   def testSomeInWhen(): Unit =
     doExprTest(
@@ -172,12 +172,11 @@ class MatchConvertTest extends ConverterTestBase {
         |            else -> throw MatchError(match)
         |        }
         |    }
-        |""".stripMargin)
-
+        |""".stripMargin
+    )
 
   def testValDestructingWithNotNestedConstructor(): Unit =
-    doExprTest("""val (a, b) = (1, 2)""",
-      """val (a, b) = Pair<Int, Int>(1, 2)""")
+    doExprTest("""val (a, b) = (1, 2)""", """val (a, b) = Pair<Int, Int>(1, 2)""")
 
   def testValDestructingWithNestedConstructor(): Unit =
     doTest(
@@ -217,6 +216,7 @@ class MatchConvertTest extends ConverterTestBase {
         |        fun apply(c: Int): C = C(c)
         |        fun unapply(x: C): C? = x
         |    }
-        |}""".stripMargin)
+        |}""".stripMargin
+    )
 
 }

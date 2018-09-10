@@ -14,8 +14,8 @@ class DefinitionConverterTest extends ConverterTestBase {
          |        fun unapply(x: A): A? = x
          |    }
          |}
-      """.stripMargin)
-
+      """.stripMargin
+    )
 
   def testTraitDef(): Unit =
     doTest(
@@ -28,7 +28,8 @@ class DefinitionConverterTest extends ConverterTestBase {
         |open class A(private val a: Int)
         |interface B
         |open class C() : A(1), B
-      """.stripMargin)
+      """.stripMargin
+    )
 
   def companionObjectTest(): Unit =
     doTest(
@@ -44,7 +45,8 @@ class DefinitionConverterTest extends ConverterTestBase {
         |}
         |object B
         |
-        |}""".stripMargin)
+        |}""".stripMargin
+    )
 
   def testMultipleConstctorParams(): Unit =
     doTest(
@@ -54,7 +56,8 @@ class DefinitionConverterTest extends ConverterTestBase {
       """.stripMargin,
       """open class A(private val a: Int, private val b: String)
         |open class C() : A(1, "nya")
-      """.stripMargin)
+      """.stripMargin
+    )
 
   def testClassModifiers(): Unit =
     doTest(
@@ -66,7 +69,8 @@ class DefinitionConverterTest extends ConverterTestBase {
       """class A()
         |open class B()
         |abstract class C()
-      """.stripMargin)
+      """.stripMargin
+    )
 
   def testImplicitClass(): Unit =
     doTest(
@@ -80,7 +84,8 @@ class DefinitionConverterTest extends ConverterTestBase {
       """fun foo(): Int = 1.plusOne().minusOne()
         |fun Int.plusOne(): Int = this + 1
         |fun Int.minusOne(): Int = this - 1
-      """.stripMargin)
+      """.stripMargin
+    )
 
   def testImplicitClassTypeParams(): Unit =
     doTest(
@@ -92,5 +97,6 @@ class DefinitionConverterTest extends ConverterTestBase {
       """.stripMargin,
       """fun foo(): List<Double> = listOf(1).cast<Double>()
         |fun <T, K> List<T>.cast(): List<K> = this as List<K>
-      """.stripMargin)
+      """.stripMargin
+    )
 }

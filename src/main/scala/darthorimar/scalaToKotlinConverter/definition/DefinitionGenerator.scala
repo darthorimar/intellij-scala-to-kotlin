@@ -1,8 +1,8 @@
 package darthorimar.scalaToKotlinConverter.definition
 
-import com.intellij.psi.{PsiDirectory, PsiDocumentManager, PsiFile}
+import com.intellij.psi.{ PsiDirectory, PsiDocumentManager, PsiFile }
 import darthorimar.scalaToKotlinConverter.Utils
-import org.jetbrains.kotlin.psi.{KtFile, KtFunction, KtNamedFunction}
+import org.jetbrains.kotlin.psi.{ KtFile, KtFunction, KtNamedFunction }
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -14,7 +14,7 @@ object DefinitionGenerator {
   final val libFileName = "lib.kt"
 
   private def collectDefinitions(definitions: Seq[Definition]): Seq[Definition] = {
-    val visited = mutable.Map.empty[String, Definition]
+    val visited                 = mutable.Map.empty[String, Definition]
     var stack: List[Definition] = definitions.toList
     while (stack.nonEmpty) {
       val definition = {
@@ -48,26 +48,27 @@ object DefinitionGenerator {
   private def getOrCreateLibFile(baseDirectory: PsiDirectory): KtFile = {
     val libDirectory =
       Try {
-        (baseDirectory /: packageName.split('.')) (_.findSubdirectory(_))
+        (baseDirectory /: packageName.split('.'))(_.findSubdirectory(_))
       } orElse
         Try {
-          (baseDirectory /: packageName.split('.')) (_.createSubdirectory(_))
+          (baseDirectory /: packageName.split('.'))(_.createSubdirectory(_))
         } getOrElse baseDirectory
 
     Option(libDirectory.findFile(libFileName))
       .getOrElse {
-        val file = libDirectory.createFile(libFileName)
+        val file     = libDirectory.createFile(libFileName)
         val document = PsiDocumentManager.getInstance(file.getProject).getDocument(file)
         document.insertString(0, s"package $packageName \n\n")
         PsiDocumentManager.getInstance(file.getProject).commitDocument(document)
         file
-      }.asInstanceOf[KtFile]
+      }
+      .asInstanceOf[KtFile]
   }
 
   def generate(definitions: Seq[Definition], baseDirectory: PsiDirectory): Unit = {
     if (definitions.nonEmpty && baseDirectory != null) {
-      val file = getOrCreateLibFile(baseDirectory)
-      val collectedDefinitions = collectDefinitions(definitions)
+      val file                    = getOrCreateLibFile(baseDirectory)
+      val collectedDefinitions    = collectDefinitions(definitions)
       val existingDefinitionNames = getExistingDefinitionNames(file)
       val definitionsToGenerate = collectedDefinitions.filter { definition =>
         !existingDefinitionNames.contains(definition.name)
