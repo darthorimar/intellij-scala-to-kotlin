@@ -174,4 +174,49 @@ class MatchConvertTest extends ConverterTestBase {
         |    }
         |""".stripMargin)
 
+
+  def testValDestructingWithNotNestedConstructor(): Unit =
+    doExprTest("""val (a, b) = (1, 2)""",
+      """val (a, b) = Pair<Int, Int>(1, 2)""")
+
+  def testValDestructingWithNestedConstructor(): Unit =
+    doTest(
+      """trait A
+        |case class B(a: A, b: A) extends A
+        |case class C(c: Int) extends A
+        |
+        |val B(a, B(C(e: Int), C(d))) = B(C(1), B(C(2), C(3)))
+        |""".stripMargin,
+      """val l = B.apply(C.apply(1), B.apply(C.apply(2), C.apply(3)))
+        |data class `B(a, B(C(e Int), C(d)))_data`(public val a: A, public val e: Int, public val d: Int)
+        |val (a, e, d) = run {
+        |    if (l is B) {
+        |        val (a, l1) = l
+        |        if (a is A && l1 is B) {
+        |            val (l2, l3) = l1
+        |            if (l2 is C && l3 is C) {
+        |                val (e) = l2
+        |                val (d) = l3
+        |                if (e is Int && d is Int) {
+        |                    return@run `B(a, B(C(e Int), C(d)))_data`(a, e, d)
+        |                }
+        |            }
+        |        }
+        |    }
+        |    throw MatchError(l)
+        |}
+        |interface A
+        |data class B(val a: A, val b: A) : A {
+        |    companion object {
+        |        fun apply(a: A, b: A): B = B(a, b)
+        |        fun unapply(x: B): B? = x
+        |    }
+        |}
+        |data class C(val c: Int) : A {
+        |    companion object {
+        |        fun apply(c: Int): C = C(c)
+        |        fun unapply(x: C): C? = x
+        |    }
+        |}""".stripMargin)
+
 }

@@ -27,7 +27,7 @@ abstract class Transform extends ConverterStep[AST, AST] {
 
   def transform[T <: AST](ast: AST): T = {
     parentsStack = ast :: parentsStack
-    val res =  action.applyOrElse(ast, copy[T]).asInstanceOf[T]
+    val res = action.applyOrElse(ast, copy[T]).asInstanceOf[T]
     parentsStack = parentsStack.tail
     res
   }
@@ -101,11 +101,23 @@ abstract class Transform extends ConverterStep[AST, AST] {
     case SimpleValOrVarDef(attributes, isVal, name, valType, expr) =>
       SimpleValOrVarDef(attributes, isVal, name, valType.map(transform[Type]), expr.map(transform[Expr]))
 
-    case LazyValDef(name, exprType, expr) =>
-      LazyValDef(name, transform[Type](exprType), transform[Expr](expr))
+    case LazyValDef(attributes, name, exprType, expr) =>
+      LazyValDef(attributes, name, transform[Type](exprType), transform[Expr](expr))
 
-    case ValOrVarDef(attributes, isVal, patterns, expr) =>
-      ValOrVarDef(attributes, isVal, patterns.map(transform[CasePattern]), expr.map(transform[Expr]))
+    case r: ReferenceKotlinValDestructor =>
+      r
+
+    case TypedKotlinValDestructor(reference, valType) =>
+      TypedKotlinValDestructor(reference, transform[Type](valType))
+
+    case WildcardKotlinValDestructor =>
+      WildcardKotlinValDestructor
+
+    case ScalaValOrVarDef(attributes, isVal, patterns, expr) =>
+      ScalaValOrVarDef(attributes, isVal, transform[ConstructorPattern](patterns), transform[Expr](expr))
+
+    case KotlinValOrVarDef(attributes, isVal, destructors, expr) =>
+      KotlinValOrVarDef(attributes, isVal, destructors.map(transform[KotlinValDestructor]), transform[Expr](expr))
 
     case DefnDef(attrs, receiver, name, typeParams, args, retType, body) =>
       DefnDef(attrs,

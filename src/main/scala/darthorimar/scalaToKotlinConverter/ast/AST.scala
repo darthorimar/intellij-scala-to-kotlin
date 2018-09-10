@@ -37,6 +37,8 @@ case class File(packageName: String, definitions: Seq[DefExpr]) extends AST
 sealed trait CasePattern extends AST {
   def representation: String
 
+  def isConstructorPattern: Boolean = false
+
   def label: Option[String]
 }
 
@@ -60,9 +62,11 @@ case class UnapplyCallConstuctorRef(objectName: String, unapplyReturnType: Type)
 
 
 case class ConstructorPattern(ref: ConstructorRef,
-                              args: Seq[CasePattern],
+                              patterns: Seq[CasePattern],
                               label: Option[String],
-                              representation: String) extends CasePattern
+                              representation: String) extends CasePattern {
+  override def isConstructorPattern: Boolean = true
+}
 
 case class TypedPattern(referenceName: String, patternType: Type, label: Option[String]) extends CasePattern {
   override def representation: String = s"$referenceName: ${patternType.asKotlin}"
@@ -112,3 +116,9 @@ case class Import(ref: String) extends AST
 case class RefWithQualifier(qualifier: Option[String], ref: String) extends AST {
   def qualified: String = qualifier.map(_ + ".").getOrElse("") + ref
 }
+
+trait KotlinValDestructor extends AST
+case class ReferenceKotlinValDestructor(reference: String) extends KotlinValDestructor
+case object WildcardKotlinValDestructor extends KotlinValDestructor
+case class TypedKotlinValDestructor(ref: String, valType: Type) extends KotlinValDestructor
+

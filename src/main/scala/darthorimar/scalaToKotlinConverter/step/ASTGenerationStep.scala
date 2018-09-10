@@ -438,11 +438,16 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
         x.expr.map(gen[Expr]).get, //todo fix
         x.guard.flatMap(_.expr).map(gen[Expr]))
 
+
     case x: ScTuplePattern =>
       val arity = x.patternList.toSeq.flatMap(_.patterns).size
-      stepStateVal.addDefinition(new TupleDefinition(arity))
+      val constructorType =
+        if (arity == 2) ClassType("Pair")
+        else {ClassType(s"Tuple$arity")}
+
+      if (arity != 2) stepStateVal.addDefinition(new TupleDefinition(arity))
       ConstructorPattern(
-        CaseClassConstructorRef(ClassType(s"Tuple$arity")),
+        CaseClassConstructorRef(constructorType),
         x.patternList.toSeq.flatMap(_.patterns.map(gen[CasePattern])),
         None,
         x.getText)
@@ -494,16 +499,16 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
       SimpleValOrVarDef(
         genAttributes(x),
         isVal = true,
-        x.pList.patterns.head.getText,
+        x.pList.patterns.head.getText, //todo add support of sth like `val a,b = "nya"`
         Some(genType(x.pList.patterns.head.`type`())),
         x.expr.map(gen[Expr])
       )
     case x: ScPatternDefinition =>
-      ValOrVarDef(
+      ScalaValOrVarDef(
         genAttributes(x),
         isVal = true,
-        x.pList.patterns.map(gen[CasePattern]),
-        x.expr.map(gen[Expr]))
+        gen[ConstructorPattern](x.pList.patterns.head), //todo add support of sth like `val a,b = "nya"`
+        x.expr.map(gen[Expr]).get)
 
     case x: ScVariableDefinition if x.isSimple =>
       SimpleValOrVarDef(

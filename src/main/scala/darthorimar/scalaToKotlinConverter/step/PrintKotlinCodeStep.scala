@@ -96,19 +96,29 @@ class KotlinBuilder extends BuilderBase {
           gen(e)
         }
 
-      case x@ValOrVarDef(attributes, isVal, patterns, expr) =>
+      case x@KotlinValOrVarDef(attributes, isVal, patterns, expr) =>
         rep(attributes, " ")(gen)
         str(" ")
         str(x.keyword)
         str(" (")
         rep(patterns, ", ")(gen)
         str(")")
-        opt(expr) { e =>
-          str(" = ")
-          gen(e)
-        }
+        str(" = ")
+        gen(expr)
 
-      case LazyValDef(name, ty, expr) =>
+      case ReferenceKotlinValDestructor(reference) =>
+        str(reference)
+
+      case TypedKotlinValDestructor(reference, valType) =>
+        str(reference)
+        str(": ")
+        genType(valType, false)
+
+      case WildcardKotlinValDestructor =>
+        str("_")
+
+      case LazyValDef(attributes, name, ty, expr) =>
+        rep(attributes, " ")(gen)
         str("val ")
         str(name)
         str(" by lazy ")
