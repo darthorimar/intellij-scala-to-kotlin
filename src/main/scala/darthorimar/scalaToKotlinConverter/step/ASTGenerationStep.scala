@@ -490,7 +490,7 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
             UnapplyCallConstuctorRef(o.name, genType(r.returnType))
           case _ =>
             val className = canonicalName(x.ref.resolve(), null).stripSuffix(".unapply")
-            CaseClassConstructorRef(ClassType(className))
+            CaseClassConstructorRef(createTypeByName(className))
         }
         ConstructorPattern(constuctorRef, x.args.patterns.map(gen[CasePattern]), None, x.getText)
 
