@@ -8,6 +8,7 @@ import com.intellij.openapi.extensions.AbstractExtensionPointBean
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -27,7 +28,7 @@ import org.jetbrains.kotlin.idea.refactoring.project
  *
  * [InternalRepresentation] stores data which will be collected by [convertPsiElementToInternalRepresentation] method
  * while copying code
- * [ConverterState] a internal state of convertor which may be used to pass infromation
+ * [ConverterState] a internal state of converter which may be used to pass infromation
  * during conversion steps
  *
  * @param languageFrom language to convert from
@@ -37,13 +38,15 @@ public abstract class LanguageConverterExtension<InternalRepresentation, Convert
                                                                                          val languageTo: Language) : AbstractExtensionPointBean() {
 
     /**
-     * Names of IDEA's menu in which convert action will be added
+     * Names of IDEA's menu in which convert actions will be added
      */
     open val actionGroupNames: Set<String>
         get() = setOf("RefactoringMenu", "EditorTabPopupMenu", "ProjectViewPopupMenu")
 
     val name
         get() = "${languageFrom.displayName.capitalize()}To${languageTo.displayName.capitalize()}"
+
+    val title ="Convert ${languageFrom.displayName} to ${languageTo.displayName}"
 
     /**
      * Get currently selected files in IDEA
@@ -95,7 +98,7 @@ public abstract class LanguageConverterExtension<InternalRepresentation, Convert
         } else {
             val fileNameWithoutExtension =
                     file.name.removeSuffix(languageFrom.associatedFileType!!.defaultExtension)
-            val newFilename = "$fileNameWithoutExtension.${languageTo.associatedFileType!!.defaultExtension}"
+            val newFilename = "$fileNameWithoutExtension${languageTo.associatedFileType!!.defaultExtension}"
             virtualFile.rename(this, newFilename)
         }
         val newDocument = PsiDocumentManager.getInstance(project).getDocument(file)
@@ -103,6 +106,17 @@ public abstract class LanguageConverterExtension<InternalRepresentation, Convert
         PsiDocumentManager.getInstance(project).commitDocument(newDocument)
         return PsiManager.getInstance(project).findFile(virtualFile)
     }
+
+
+    /**
+     *  Create a dialog which will be shown on paste
+     *  Iff ok button is pressed then code will be converted
+     *
+     *  @param project project in file of which converted code will be pasted in
+     *  @return created dialog, if null then no dilaog will be shown
+     */
+    open fun createOnPasteDialog(project: Project): DialogWrapper? =
+            ConverterDialog(this, project)
 
     /**
      * Convert [file] code to a [languageTo] code
@@ -127,7 +141,7 @@ public abstract class LanguageConverterExtension<InternalRepresentation, Convert
      *
      * @param representation [InternalRepresentation] which was collected by [convertPsiElementToInternalRepresentation]
      * @param state [ConverterState] which was collected by [convertPsiElementToInternalRepresentation]
-     * @param project project in which converted code will be pasted in
+     * @param project project in file of which converted code will be pasted in
      * @return [Pair] which contains converted code in [languageTo] and collected [ConverterState] if succeed, null otherwise
      */
     abstract fun convertInternalRepresentationToText(representation: InternalRepresentation,

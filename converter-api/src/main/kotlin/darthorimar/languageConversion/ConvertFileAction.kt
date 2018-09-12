@@ -13,7 +13,7 @@ import org.jetbrains.kotlin.idea.util.application.executeWriteCommand
 import org.jetbrains.plugins.scala.util.NotificationUtil
 
 class ConvertFileAction<InternalRepresentation, ConverterState>(private val converter: LanguageConverterExtension<InternalRepresentation, ConverterState>) :
-        AnAction("Convert ${converter.languageFrom.displayName} to ${converter.languageTo.displayName}") {
+        AnAction(converter.title) {
 
     override fun update(e: AnActionEvent) {
         val presentation: Presentation = e.presentation

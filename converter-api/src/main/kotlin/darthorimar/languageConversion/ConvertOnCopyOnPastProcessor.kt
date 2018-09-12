@@ -62,19 +62,21 @@ internal class ConvertOnCopyPastPostProcessor : CopyPastePostProcessor<Converter
         val document = editor.document
         val transferebleData = values.single()
         val converter = transferebleData.converter as LanguageConverterExtension<Any, Any>
-        for (data in transferebleData.data) {
-            val (text, state) = converter
-                    .convertInternalRepresentationToText(data.internalRepresentation as Any,
-                            data.state as Any,
-                            project) ?: continue
-            project.executeWriteCommand("Convert code from ${converter.languageFrom.displayName} to ${converter.languageTo.displayName}", null) {
-                document.replaceString(bounds.startOffset, bounds.endOffset, text)
-                PsiDocumentManager.getInstance(project).commitDocument(document)
+        if (converter.createOnPasteDialog(project)?.showAndGet() != false) {
+            for (data in transferebleData.data) {
+                val (text, state) = converter
+                        .convertInternalRepresentationToText(data.internalRepresentation as Any,
+                                data.state as Any,
+                                project) ?: continue
+                project.executeWriteCommand("Convert code from ${converter.languageFrom.displayName} to ${converter.languageTo.displayName}", null) {
+                    document.replaceString(bounds.startOffset, bounds.endOffset, text)
+                    PsiDocumentManager.getInstance(project).commitDocument(document)
+                }
+                val generatedCodeTextRange = TextRange(bounds.startOffset, bounds.endOffset)
+                val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: continue
+                val generatedElements = psiFile.elementsInRange(generatedCodeTextRange)
+                generatedElements.forEach { converter.runPostProcessOperations(it, state) }
             }
-            val generatedCodeTextRange = TextRange(bounds.startOffset, bounds.endOffset)
-            val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: continue
-            val generatedElements = psiFile.elementsInRange(generatedCodeTextRange)
-            generatedElements.forEach { converter.runPostProcessOperations(it, state) }
         }
     }
 
