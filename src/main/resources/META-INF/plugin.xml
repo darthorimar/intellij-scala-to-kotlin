@@ -19,24 +19,26 @@
 
     <idea-version since-build="182.0"/>
 
-    <actions>
-        <action id="Scala.ConvertScalaToKotlin"
-                class="darthorimar.scalaToKotlinConverter.ideaInteraction.ConvertScalaToKotlinAction"
-                text="Convert Scala to Kotlin" description="Convert Scala to Kotlin">
-            <add-to-group group-id="RefactoringMenu" anchor="last"/>
-            <add-to-group group-id="EditorTabPopupMenu" anchor="last"/>
-            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
-        </action>
-    </actions>
+
+    <!--Converter API -->
+    <extensionPoints>
+        <extensionPoint qualifiedName="com.intellij.languageConverter"
+                        interface="darthorimar.languageConversion.LanguageConverterExtension"/>
+    </extensionPoints>
+
 
     <extensions defaultExtensionNs="com.intellij">
+        <languageConverter
+                implementation="darthorimar.scalaToKotlinConverter.ScalaToKotlinLanguageConverter"/>
         <copyPastePostProcessor
-                implementation="darthorimar.scalaToKotlinConverter.ideaInteraction.ConvertOnCopyPastPostProcessor"/>
+                implementation="darthorimar.languageConversion.ConvertOnCopyPastPostProcessor"/>
     </extensions>
+
 
     <application-components>
         <component>
-            <implementation-class>darthorimar.languageConversion.LanguageConverterApplicationComponent</implementation-class>
+            <implementation-class>darthorimar.languageConversion.LanguageConverterApplicationComponent
+            </implementation-class>
         </component>
     </application-components>
 

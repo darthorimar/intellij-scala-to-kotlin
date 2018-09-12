@@ -1,29 +1,19 @@
 package darthorimar.languageConversion
 
-import com.intellij.ide.scratch.ScratchFileService
-import com.intellij.ide.scratch.ScratchRootType
 import com.intellij.notification.NotificationDisplayType
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.Presentation
-import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiManager
 import com.intellij.util.containers.isNullOrEmpty
-import org.jetbrains.kotlin.idea.util.application.runWriteAction
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
+import org.jetbrains.kotlin.idea.util.application.executeWriteCommand
 import org.jetbrains.plugins.scala.util.NotificationUtil
-import org.jetbrains.plugins.scala.util.NotificationUtil.NotificationBuilder
 
-class ConvertFileAction<InternalState>(private val converter: LanguageConverterExtension<InternalState>) : AnAction() {
-    companion object {
-        const val ACTION_PREFIX = "ConvertLanguageAction."
-    }
+class ConvertFileAction<InternalRepresentation, ConverterState>(private val converter: LanguageConverterExtension<InternalRepresentation, ConverterState>) :
+        AnAction("Convert ${converter.languageFrom.displayName} to ${converter.languageTo.displayName}") {
 
     override fun update(e: AnActionEvent) {
         val presentation: Presentation = e.presentation
@@ -42,10 +32,9 @@ class ConvertFileAction<InternalState>(private val converter: LanguageConverterE
         } catch (_: Exception) {
             disable()
         }
-
     }
 
-    override fun actionPerformed(e: AnActionEvent): Unit {
+    override fun actionPerformed(e: AnActionEvent) {
         val project: Project = e.project!!
         val selectedFiles: List<PsiFile> = converter.getSelectedFiles(e.dataContext) ?: return
         for (file in selectedFiles) {
@@ -54,40 +43,27 @@ class ConvertFileAction<InternalState>(private val converter: LanguageConverterE
                 showError("Can not convert file ${file.name}", project)
                 continue
             }
-            converter.runPosProcessOperation(result.first, result.second)
+            converter.runPostProcessOperations(result.first, result.second)
         }
     }
 
-    private fun convertFile(file: PsiFile, project: Project): Pair<PsiFile, InternalState>? =
-            runWriteAction {
-                val (text, state) = converter.convertPsiFile(file)
-                val document = PsiDocumentManager.getInstance(project).getDocument(file) ?: return@runWriteAction null
-                PsiDocumentManager.getInstance(project).doPostponedOperationsAndUnblockDocument(document)
-                document.replaceString(0, document.textLength, text)
-                PsiDocumentManager.getInstance(project).commitDocument(document)
-                FileDocumentManager.getInstance().saveDocument(document)
-
-                val virtualFile = file.virtualFile
-                if (ScratchRootType.getInstance().containsFile(virtualFile)) {
-                    val mapping = ScratchFileService.getInstance().scratchesMapping
-                    mapping.setMapping(virtualFile, converter.languageTo)
-                } else {
-                    val fileNameWithoutExtension =
-                            file.name.removeSuffix(converter.languageFrom.associatedFileType!!.defaultExtension)
-                    val newFilename = "$fileNameWithoutExtension.${converter.languageTo.associatedFileType!!.defaultExtension}"
-                    virtualFile.rename(this, newFilename)
-                }
-                val newDocument = PsiDocumentManager.getInstance(project).getDocument(file)
-                        ?: return@runWriteAction null
-                PsiDocumentManager.getInstance(project).commitDocument(newDocument)
-                PsiManager.getInstance(project).findFile(virtualFile)?.let { it to state }
+    private fun convertFile(file: PsiFile, project: Project): Pair<PsiFile, ConverterState>? =
+            project.executeWriteCommand("Convert file from ${converter.languageFrom.displayName} to ${converter.languageTo.displayName}", null) {
+                CommandProcessor.getInstance().markCurrentCommandAsGlobal(project)
+                val (text, state) = converter.convertPsiFileToText(file) ?: return@executeWriteCommand null
+                val newFile = converter.replaceFileContent(text, file, project)
+                newFile?.let { it to state }
             }
 
-    fun showError(message: String, project: Project) {
+    private fun showError(message: String, project: Project) {
         NotificationUtil.builder(project, message)
                 .setDisplayType(NotificationDisplayType.BALLOON)
                 .setNotificationType(NotificationType.WARNING)
                 .setGroup("language.converter")
                 .setTitle("Cannot convert file").show()
+    }
+
+    companion object {
+        const val ACTION_PREFIX = "ConvertLanguageAction."
     }
 }

@@ -1,23 +1,23 @@
 package darthorimar.scalaToKotlinConverter
 
 import com.intellij.openapi.command.CommandProcessor
-import com.intellij.openapi.progress.{ ProgressIndicator, ProgressManager, Task }
+import com.intellij.openapi.progress.{ProgressIndicator, ProgressManager, Task}
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.{ Computable, ThrowableComputable }
+import com.intellij.openapi.util.{Computable, ThrowableComputable}
 import com.intellij.util.Alarm
 import com.intellij.util.concurrency.Semaphore
 import darthorimar.scalaToKotlinConverter.ast.AST
-import darthorimar.scalaToKotlinConverter.step.ConverterStep.{ Notifier, Result }
+import darthorimar.scalaToKotlinConverter.step.ConverterStep.{Notifier, Result}
 import darthorimar.scalaToKotlinConverter.step.transform._
 import darthorimar.scalaToKotlinConverter.step._
-import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.{KtElement, KtFile}
 import org.jetbrains.plugins.scala.lang.psi.ScalaPsiElement
 import org.jetbrains.plugins.scala.util.ScalaUtils
 import org.jetbrains.plugins.scala.extensions._
 
-class ScalaPsiToKotlinPsiConverter(protect: Project) extends Converter[ScalaPsiElement, KtElement](protect) {
-  override def convert(from: ScalaPsiElement, state: ConverterStepState): Result[KtElement] = {
-    val converter: ConverterStep[ScalaPsiElement, KtElement] =
+class ScalaPsiToKotlinTextConverter(protect: Project) extends Converter[ScalaPsiElement, String](protect) {
+  override def convert(from: ScalaPsiElement, state: ConverterStepState): Result[String] = {
+    val converter: ConverterStep[ScalaPsiElement, String] =
       wrapped[ScalaPsiElement, ScalaPsiElement](
         inWriteCommand,
         wrapped(withProgress(background = false), new InnerPsiTransformStep)) -->
@@ -31,14 +31,23 @@ class ScalaPsiToKotlinPsiConverter(protect: Project) extends Converter[ScalaPsiE
             new DefinitionCollectorTransform -->
             new CollectImportsStep -->
             new PrintStringStep
-        ) -->
-        wrapped(inWriteCommand,
-                wrapped(withProgress(background = false),
-                        new GenerateKtElementStep -->
-                          new ApplyInspectionsStep))
-    converter(from, state, 0, notifier(stepsCount = 10, s"Converting file ${from.getContainingFile.getName}"))
+        )
+    converter(from, state, 0, notifier(stepsCount = 8, s"Converting file ${from.getContainingFile.getName}"))
   }
 }
+
+
+class PostProcessOperationConverter(protect: Project) extends Converter[KtElement, KtElement](protect) {
+  override def convert(from: KtElement, state: ConverterStepState): Result[KtElement] = {
+    val converter: ConverterStep[KtElement, KtElement] =
+      wrapped(inWriteCommand,
+        wrapped(withProgress(background = false),
+          new FormatFileAndGenerateImportsAndDefinitionsStep -->
+            new ApplyInspectionsStep))
+    converter(from, state, 0, notifier(stepsCount = 2, s"Converting file ${from.getContainingFile.getName}"))
+  }
+}
+
 
 class ScalaPsiToAstConverter(protect: Project) extends Converter[ScalaPsiElement, AST](protect) {
   override def convert(from: ScalaPsiElement, state: ConverterStepState): Result[AST] = {
@@ -49,9 +58,9 @@ class ScalaPsiToAstConverter(protect: Project) extends Converter[ScalaPsiElement
   }
 }
 
-class AstToKotlinPsiConverter(protect: Project) extends Converter[AST, KtElement](protect) {
-  override def convert(from: AST, state: ConverterStepState): Result[KtElement] = {
-    val converter: ConverterStep[AST, KtElement] =
+class AstToTextConverter(protect: Project) extends Converter[AST, String](protect) {
+  override def convert(from: AST, state: ConverterStepState): Result[String] = {
+    val converter: ConverterStep[AST, String] =
       wrapped[AST, String](
         withProgress(background = true),
         new TypeTransform -->
@@ -61,11 +70,7 @@ class AstToKotlinPsiConverter(protect: Project) extends Converter[AST, KtElement
           new DefinitionCollectorTransform -->
           new CollectImportsStep -->
           new PrintStringStep
-      ) -->
-        wrapped(inWriteCommand,
-                wrapped(withProgress(background = false),
-                        new GenerateKtElementStep -->
-                          new ApplyInspectionsStep))
+      )
     converter(from, state, 0, notifier(stepsCount = 10, "Converting copied Scala code"))
   }
 }
