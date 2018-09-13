@@ -1,21 +1,22 @@
 package darthorimar.scalaToKotlinConverter
 
+import com.intellij.openapi.command.CommandProcessor
 import com.intellij.psi.PsiFileFactory
 import com.intellij.testFramework.LightPlatformTestCase
 import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.psi.{KtFile, KtPsiFactory}
 import org.jetbrains.plugins.scala.base.ScalaLightPlatformCodeInsightTestCaseAdapter
+import org.jetbrains.plugins.scala.extensions.inWriteAction
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.junit.Assert._
 
 abstract class ConverterTestBase extends ScalaLightPlatformCodeInsightTestCaseAdapter {
 
-  private def formatString(unformatedCode: String): String = {
+  private def formatKotlinCode(unformatedCode: String): String = {
     val ktPsiFactory = new KtPsiFactory(LightPlatformTestCase.getProject)
     val ktFile = ktPsiFactory.createFile(unformatedCode)
     Utils.reformatKtElement(ktFile)
-    val formated = ktFile.getText.trim.split('\n').filterNot(_.isEmpty).mkString("\n")
-    formated
+    ktFile.getText.trim.split('\n').filterNot(_.isEmpty).mkString("\n")
   }
 
   def createKtFile(text: String): KtFile = {
@@ -32,13 +33,29 @@ abstract class ConverterTestBase extends ScalaLightPlatformCodeInsightTestCaseAd
 
     val converter = new ScalaToKotlinLanguageConverter
 
-    val result = converter.convertPsiFileToText(scalaFile)
-    val ktFile = createKtFile(result.getFirst)
-    converter.runPostProcessOperations(ktFile, result.getSecond)
+    val convertedCode = inWriteCommand {
+      val intermediateResult = converter.convertPsiElementToInternalRepresentation(scalaFile)
+      val result = converter.convertInternalRepresentationToText(intermediateResult.getFirst,
+        intermediateResult.getSecond, getProjectAdapter)
+      val ktFile = createKtFile(result.getFirst)
+      converter.runPostProcessOperations(ktFile, result.getSecond)
+      ktFile.getText
+    }
 
-    val formatedExpected = formatString(kotlin)
-    val formatedActual = formatString(ktFile.getText)
+    val formatedExpected = formatKotlinCode(kotlin)
+    val formatedActual = formatKotlinCode(convertedCode)
     assertEquals(formatedExpected, formatedActual)
+  }
+
+  private def inWriteCommand[T](data: => T): T = {
+    var result: T = null.asInstanceOf[T]
+    CommandProcessor
+      .getInstance()
+      .executeCommand(project, () => {
+        CommandProcessor.getInstance().markCurrentCommandAsGlobal(project)
+        result = inWriteAction(data)
+      }, "", null)
+    result
   }
 
   def doExprTest(scala: String, kotlin: String): Unit = {
@@ -50,7 +67,7 @@ abstract class ConverterTestBase extends ScalaLightPlatformCodeInsightTestCaseAd
          |fun a(): Int {${expressionCode.mkString("\n")}
          |return 42 }""".stripMargin
 
-    doTest(s"def a = {$scala \n 42}", formatString(newString))
+    doTest(s"def a = {$scala \n 42}", formatKotlinCode(newString))
   }
 
 }

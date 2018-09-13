@@ -37,7 +37,7 @@ abstract class LanguageConverterExtension<InternalRepresentation, ConverterState
                                                                                   val languageTo: Language) : AbstractExtensionPointBean() {
     /**
      * Converts given [element] to [InternalRepresentation]. Called when user performs copy operation
-     * Called in dispatch thread with alternative resolving enabled
+     * Called in dispatch thread and within a run action with alternative resolving enabled
      *
      * @param element PSI element to convert to [InternalRepresentation]
      * @return [Pair] which contains converted [InternalRepresentation] and collected [ConverterState] if succeed, null otherwise

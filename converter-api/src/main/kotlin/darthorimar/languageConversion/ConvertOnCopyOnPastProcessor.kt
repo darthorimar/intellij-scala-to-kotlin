@@ -11,7 +11,9 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import org.jetbrains.kotlin.idea.runInReadActionWithWriteActionPriority
 import org.jetbrains.kotlin.idea.util.application.executeWriteCommand
+import org.jetbrains.kotlin.idea.util.application.runReadAction
 import org.jetbrains.kotlin.psi.psiUtil.elementsInRange
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
@@ -42,8 +44,8 @@ internal class ConvertOnCopyPastPostProcessor : CopyPastePostProcessor<Converter
     private fun <InternalRepresentation, ConverterState> convertElement(
             converter: LanguageConverterExtension<InternalRepresentation, ConverterState>,
             element: PsiElement): ConverterData<InternalRepresentation, ConverterState>? {
-        val (internalRepresentation, state) = converter.convertPsiElementToInternalRepresentation(element)
-                ?: return null
+        val (internalRepresentation, state) =
+                runReadAction { converter.convertPsiElementToInternalRepresentation(element) } ?: return null
         if (internalRepresentation == null || state == null) return null
         return ConverterData(element.startOffset,
                 element.endOffset,
@@ -63,18 +65,22 @@ internal class ConvertOnCopyPastPostProcessor : CopyPastePostProcessor<Converter
         val converter = transferableData.converter as LanguageConverterExtension<Any, Any>
         if (OnPasteConverterDialog(converter, project).showAndGet()) {
             for (data in transferableData.data) {
-                val (text, state) = converter
-                        .convertInternalRepresentationToText(data.internalRepresentation as Any,
-                                data.state as Any,
-                                project) ?: continue
-                project.executeWriteCommand("Convert code from ${converter.languageFrom.displayName} to ${converter.languageTo.displayName}", null) {
+                converter.runConverterCommand(project) {
+                    val (text, state) = converter
+                            .convertInternalRepresentationToText(data.internalRepresentation as Any,
+                                    data.state as Any,
+                                    project)
+                            ?: return@runConverterCommand null
                     document.replaceString(bounds.startOffset, bounds.endOffset, text)
                     PsiDocumentManager.getInstance(project).commitDocument(document)
-                }
-                val generatedCodeTextRange = TextRange(bounds.startOffset, bounds.endOffset)
-                val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: continue
-                val generatedElements = psiFile.elementsInRange(generatedCodeTextRange)
-                generatedElements.forEach { converter.runPostProcessOperations(it, state) }
+                    val generatedCodeTextRange = TextRange(bounds.startOffset, bounds.endOffset)
+                    val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document)
+                            ?: return@runConverterCommand null
+                    val generatedElements = psiFile.elementsInRange(generatedCodeTextRange)
+                    generatedElements.forEach { converter.runPostProcessOperations(it, state) }
+                    psiFile
+                } ?: showError("Error while converting pasted code", project)
+
             }
         }
     }

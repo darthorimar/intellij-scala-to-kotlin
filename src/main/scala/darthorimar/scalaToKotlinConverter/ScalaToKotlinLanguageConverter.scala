@@ -12,13 +12,6 @@ import org.jetbrains.plugins.scala.lang.psi.ScalaPsiElement
 
 class ScalaToKotlinLanguageConverter extends LanguageConverterExtension[AST, ConverterStepState](
   ScalaLanguage.INSTANCE, KotlinLanguage.INSTANCE) {
-  override def convertPsiFileToText(file: PsiFile): kotlin.Pair[String, ConverterStepState] =
-    file match {
-      case scalaElement: ScalaPsiElement =>
-        val state = new ConverterStepState
-        new ScalaPsiToKotlinTextConverter(file.getProject).convert(scalaElement, state)
-      case _ => null
-    }
 
   override def runPostProcessOperations(element: PsiElement, internalState: ConverterStepState): Unit =
     element match {

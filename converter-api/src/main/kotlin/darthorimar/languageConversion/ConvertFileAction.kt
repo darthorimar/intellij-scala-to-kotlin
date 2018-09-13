@@ -2,10 +2,7 @@ package darthorimar.languageConversion
 
 import com.intellij.ide.scratch.ScratchFileService
 import com.intellij.ide.scratch.ScratchRootType
-import com.intellij.notification.NotificationDisplayType
-import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.*
-import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiDocumentManager
@@ -13,8 +10,6 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.util.containers.isNullOrEmpty
 import org.jetbrains.kotlin.idea.refactoring.project
-import org.jetbrains.kotlin.idea.util.application.executeWriteCommand
-import org.jetbrains.plugins.scala.util.NotificationUtil
 
 internal class ConvertFileAction<InternalRepresentation, ConverterState>(private val converter: LanguageConverterExtension<InternalRepresentation, ConverterState>) :
         AnAction("Convert ${converter.languageFrom.displayName} to ${converter.languageTo.displayName}") {
@@ -83,34 +78,22 @@ internal class ConvertFileAction<InternalRepresentation, ConverterState>(private
         val project: Project = e.project ?: return
         val selectedFiles: List<PsiFile> = getSelectedFiles(e.dataContext) ?: return
         for (file in selectedFiles) {
-            val result = convertFile(file, project)
-            if (result == null) {
-                showError("Can not convert file ${file.name}", project)
-                continue
-            }
-            converter.runPostProcessOperations(result.first, result.second)
+            convertFile(file, project)?: showError("Can not convert file ${file.name}", project)
         }
     }
 
-    private fun convertFile(file: PsiFile, project: Project): Pair<PsiFile, ConverterState>? =
-            project.executeWriteCommand("Convert file from ${converter.languageFrom.displayName} to ${converter.languageTo.displayName}", null) {
-                CommandProcessor.getInstance().markCurrentCommandAsGlobal(project)
-                val (internalRepresentation, state) =
-                        converter.convertPsiElementToInternalRepresentation(file) ?: return@executeWriteCommand null
-                val (text, newState) =
-                        converter.convertInternalRepresentationToText(internalRepresentation, state, project)
-                                ?: return@executeWriteCommand null
-                val newFile = replaceFileContent(text, file, project)
-                newFile?.let { it to newState }
-            }
+    private fun convertFile(file: PsiFile, project: Project): PsiFile? =
+        converter.runConverterCommand(project) {
+            val (internalRepresentation, state) =
+                    converter.convertPsiElementToInternalRepresentation(file) ?: return@runConverterCommand null
+            val (text, newState) =
+                    converter.convertInternalRepresentationToText(internalRepresentation, state, project)
+                            ?: return@runConverterCommand null
+            val newFile = replaceFileContent(text, file, project) ?: return@runConverterCommand null
+            converter.runPostProcessOperations(newFile, newState)
+            newFile
+        }
 
-    private fun showError(message: String, project: Project) {
-        NotificationUtil.builder(project, message)
-                .setDisplayType(NotificationDisplayType.BALLOON)
-                .setNotificationType(NotificationType.WARNING)
-                .setGroup("language.converter")
-                .setTitle("Cannot convert file").show()
-    }
 
     companion object {
         const val ACTION_PREFIX = "ConvertLanguageAction"

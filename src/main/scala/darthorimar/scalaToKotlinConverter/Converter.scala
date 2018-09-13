@@ -15,25 +15,6 @@ import org.jetbrains.plugins.scala.lang.psi.ScalaPsiElement
 import org.jetbrains.plugins.scala.util.ScalaUtils
 import org.jetbrains.plugins.scala.extensions._
 
-class ScalaPsiToKotlinTextConverter(protect: Project) extends Converter[ScalaPsiElement, String](protect) {
-  override def convert(from: ScalaPsiElement, state: ConverterStepState): Result[String] = {
-    val converter: ConverterStep[ScalaPsiElement, String] =
-        wrapped(withProgress(background = false), new InnerPsiTransformStep) -->
-        wrapped[ScalaPsiElement, String](
-          withProgress(background = true),
-          new ASTGenerationStep -->
-            new TypeTransform -->
-            new BasicTransform -->
-            new CollectionTransform -->
-            new TypeTransform -->
-            new DefinitionCollectorTransform -->
-            new CollectImportsStep -->
-            new PrintStringStep
-        )
-    converter(from, state, 0, notifier(stepsCount = 8, s"Converting file ${from.getContainingFile.getName}"))
-  }
-}
-
 
 class PostProcessOperationConverter(protect: Project) extends Converter[KtElement, KtElement](protect) {
   override def convert(from: KtElement, state: ConverterStepState): Result[KtElement] = {
