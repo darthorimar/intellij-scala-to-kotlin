@@ -218,7 +218,7 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
       case p: ScParameter => p.getName
     } getOrElse ""
 
-  private def recover[T](psi: PsiElement): T =
+  def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
       .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
       .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }

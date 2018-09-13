@@ -2,7 +2,7 @@ package darthorimar.scalaToKotlinConverter.ast
 
 import darthorimar.scalaToKotlinConverter.definition.Definition
 
-trait AST
+trait AST extends Product
 
 trait ErrorAst extends AST {
   def text: String

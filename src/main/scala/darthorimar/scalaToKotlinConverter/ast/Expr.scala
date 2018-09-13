@@ -67,6 +67,8 @@ case class ForInExpr(exprType: Type, value: RefExpr, range: Expr, body: Expr) ex
 
 case class WhileExpr(exprType: Type, condition: Expr, body: BlockExpr) extends Expr
 
+case class KotlinCodeExpr(exprType: Type, kotlinCode: String) extends Expr
+
 case class ThisExpr(exprType: Type) extends Expr
 
 case class InterpolatedStringExpr(parts: Seq[String], injected: Seq[Expr]) extends Expr {
@@ -133,7 +135,7 @@ case class Defn(attributes: Seq[Attribute],
   override def isObjectDefn: Boolean = defnType == ObjDefn
 }
 
-object EmptyDefExpr extends DefExpr {
+case object EmptyDefExpr extends DefExpr {
   override def attributes: Seq[Attribute] = Seq.empty
 }
 
