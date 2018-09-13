@@ -39,7 +39,6 @@ internal class ConvertOnCopyPastPostProcessor : CopyPastePostProcessor<Converter
         }
     }
 
-
     private fun <InternalRepresentation, ConverterState> convertElement(
             converter: LanguageConverterExtension<InternalRepresentation, ConverterState>,
             element: PsiElement): ConverterData<InternalRepresentation, ConverterState>? {
@@ -60,10 +59,10 @@ internal class ConvertOnCopyPastPostProcessor : CopyPastePostProcessor<Converter
                                          values: MutableList<ConverterTransferableData<*, *>>?) {
         if (project == null || values == null || editor == null || bounds == null) return
         val document = editor.document
-        val transferebleData = values.single()
-        val converter = transferebleData.converter as LanguageConverterExtension<Any, Any>
-        if (converter.createOnPasteDialog(project)?.showAndGet() != false) {
-            for (data in transferebleData.data) {
+        val transferableData = values.single()
+        val converter = transferableData.converter as LanguageConverterExtension<Any, Any>
+        if (OnPasteConverterDialog(converter, project).showAndGet()) {
+            for (data in transferableData.data) {
                 val (text, state) = converter
                         .convertInternalRepresentationToText(data.internalRepresentation as Any,
                                 data.state as Any,

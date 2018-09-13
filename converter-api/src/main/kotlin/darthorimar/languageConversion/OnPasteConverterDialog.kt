@@ -5,8 +5,8 @@ import com.intellij.openapi.ui.DialogWrapper
 
 import javax.swing.*
 
-class ConverterDialog(converter: LanguageConverterExtension<*, *>,
-                      project: Project) : DialogWrapper(project, true) {
+internal class OnPasteConverterDialog(converter: LanguageConverterExtension<*, *>,
+                                      project: Project) : DialogWrapper(project, true) {
     private var panel: JPanel? = null
     private var buttonOK: JButton? = null
     private var textBox: JLabel? = null
@@ -14,7 +14,7 @@ class ConverterDialog(converter: LanguageConverterExtension<*, *>,
     init {
         isModal = true
         rootPane.defaultButton = buttonOK
-        title = converter.title
+        title = "Convert ${converter.languageFrom.displayName} to ${converter.languageTo.displayName}"
         textBox?.text = "Content copied from ${converter.languageFrom.displayName}. Do you want to convert it to ${converter.languageTo.displayName} code?"
         init()
     }

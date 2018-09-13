@@ -19,8 +19,7 @@ import org.jetbrains.kotlin.idea.refactoring.project
 /**
  * Add support of converting one language to another.
  *
- * Add actions to menus which names are in [actionGroupNames] which
- * will convert selected or (opened files) from [languageFrom] to [languageTo]
+ * Add actions to menus which will convert selected or (opened files) from [languageFrom] to [languageTo]
  *
  * Add converting on copy-past from file with language [languageFrom] to one with [languageTo]
  *
@@ -34,98 +33,8 @@ import org.jetbrains.kotlin.idea.refactoring.project
  * @param languageFrom language to convert from
  * @param languageTo language to convert to
  */
-public abstract class LanguageConverterExtension<InternalRepresentation, ConverterState>(val languageFrom: Language,
-                                                                                         val languageTo: Language) : AbstractExtensionPointBean() {
-
-    /**
-     * Names of IDEA's menu in which convert actions will be added
-     */
-    open val actionGroupNames: Set<String>
-        get() = setOf("RefactoringMenu", "EditorTabPopupMenu", "ProjectViewPopupMenu")
-
-    val name
-        get() = "${languageFrom.displayName.capitalize()}To${languageTo.displayName.capitalize()}"
-
-    val title ="Convert ${languageFrom.displayName} to ${languageTo.displayName}"
-
-    /**
-     * Get currently selected files in IDEA
-     *
-     * By default takes files from project view and currently open file if none of above are selected
-     *
-     * @param dataContext a [DataContext] stores
-     * information about action context it was invoked in
-     *
-     * @return list of selected files if present, nul otherwise
-     */
-    open fun getSelectedFiles(dataContext: DataContext): List<PsiFile>? {
-        fun suitableFile(file: PsiFile) =
-                file.isWritable && file.language == languageFrom
-
-        val selectedFiles =
-                CommonDataKeys.VIRTUAL_FILE_ARRAY.getData(dataContext)?.mapNotNull {
-                    PsiManager.getInstance(dataContext.project).findFile(it)
-                }?.filter(::suitableFile)
-        if (!selectedFiles.isNullOrEmpty()) return selectedFiles
-        val inEditorFile =
-                CommonDataKeys.PSI_FILE.getData(dataContext)?.takeIf(::suitableFile)
-        if (inEditorFile != null) {
-            return listOf(inEditorFile)
-        }
-        return null
-    }
-
-    /**
-     * Replace file with language [languageFrom] and current content to
-     * a new file with language [languageTo] and [newText] content
-     * @param newText text file's content to be replaced to
-     * @param file file which should be replaces
-     * @param project project where permorm operation
-     * @return new file contains code with language [languageTo] if succeed, null otherwise
-     */
-
-    open fun replaceFileContent(newText: String, file: PsiFile, project: Project): PsiFile? {
-        val document = PsiDocumentManager.getInstance(project).getDocument(file) ?: return null
-        PsiDocumentManager.getInstance(project).doPostponedOperationsAndUnblockDocument(document)
-        document.replaceString(0, document.textLength, newText)
-        PsiDocumentManager.getInstance(project).commitDocument(document)
-        FileDocumentManager.getInstance().saveDocument(document)
-
-        val virtualFile = file.virtualFile
-        if (ScratchRootType.getInstance().containsFile(virtualFile)) {
-            val mapping = ScratchFileService.getInstance().scratchesMapping
-            mapping.setMapping(virtualFile, languageTo)
-        } else {
-            val fileNameWithoutExtension =
-                    file.name.removeSuffix(languageFrom.associatedFileType!!.defaultExtension)
-            val newFilename = "$fileNameWithoutExtension${languageTo.associatedFileType!!.defaultExtension}"
-            virtualFile.rename(this, newFilename)
-        }
-        val newDocument = PsiDocumentManager.getInstance(project).getDocument(file)
-                ?: return null
-        PsiDocumentManager.getInstance(project).commitDocument(newDocument)
-        return PsiManager.getInstance(project).findFile(virtualFile)
-    }
-
-
-    /**
-     *  Create a dialog which will be shown on paste
-     *  Iff ok button is pressed then code will be converted
-     *
-     *  @param project project in file of which converted code will be pasted in
-     *  @return created dialog, if null then no dilaog will be shown
-     */
-    open fun createOnPasteDialog(project: Project): DialogWrapper? =
-            ConverterDialog(this, project)
-
-    /**
-     * Convert [file] code to a [languageTo] code
-     *
-     * @param file file which containing code will be converted to [languageTo]
-     * @return [Pair] which contains converted code in [languageTo] and [ConverterState] collected if succeed, null otherwise
-     */
-    abstract fun convertPsiFileToText(file: PsiFile): Pair<String, ConverterState>?
-
+abstract class LanguageConverterExtension<InternalRepresentation, ConverterState>(val languageFrom: Language,
+                                                                                  val languageTo: Language) : AbstractExtensionPointBean() {
     /**
      * Converts given [element] to [InternalRepresentation]. Called when user performs copy operation
      * Called in dispatch thread with alternative resolving enabled
@@ -146,11 +55,10 @@ public abstract class LanguageConverterExtension<InternalRepresentation, Convert
      */
     abstract fun convertInternalRepresentationToText(representation: InternalRepresentation,
                                                      state: ConverterState,
-                                                     project: Project):
-            Pair<String, ConverterState>?
+                                                     project: Project): Pair<String, ConverterState>?
 
     /**
-     * Run some post-processing operations like adding imports to file or reformat code
+     * Runs post-processing operations like adding imports to file, reformat code or running inspections on generated code
      *
      * @param element PSI element which was converted. May be a [PsiFile] or arbitrary [PsiElement]
      * @param internalState [ConverterState] collected during conversion
@@ -161,3 +69,4 @@ public abstract class LanguageConverterExtension<InternalRepresentation, Convert
         val EP_NAME = ExtensionPointName.create<LanguageConverterExtension<*, *>>("com.intellij.languageConverter")
     }
 }
+

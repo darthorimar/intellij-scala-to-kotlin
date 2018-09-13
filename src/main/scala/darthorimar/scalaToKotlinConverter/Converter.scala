@@ -18,9 +18,7 @@ import org.jetbrains.plugins.scala.extensions._
 class ScalaPsiToKotlinTextConverter(protect: Project) extends Converter[ScalaPsiElement, String](protect) {
   override def convert(from: ScalaPsiElement, state: ConverterStepState): Result[String] = {
     val converter: ConverterStep[ScalaPsiElement, String] =
-      wrapped[ScalaPsiElement, ScalaPsiElement](
-        inWriteCommand,
-        wrapped(withProgress(background = false), new InnerPsiTransformStep)) -->
+        wrapped(withProgress(background = false), new InnerPsiTransformStep) -->
         wrapped[ScalaPsiElement, String](
           withProgress(background = true),
           new ASTGenerationStep -->
@@ -40,10 +38,9 @@ class ScalaPsiToKotlinTextConverter(protect: Project) extends Converter[ScalaPsi
 class PostProcessOperationConverter(protect: Project) extends Converter[KtElement, KtElement](protect) {
   override def convert(from: KtElement, state: ConverterStepState): Result[KtElement] = {
     val converter: ConverterStep[KtElement, KtElement] =
-      wrapped(inWriteCommand,
         wrapped(withProgress(background = false),
           new FormatFileAndGenerateImportsAndDefinitionsStep -->
-            new ApplyInspectionsStep))
+            new ApplyInspectionsStep)
     converter(from, state, 0, notifier(stepsCount = 2, s"Converting file ${from.getContainingFile.getName}"))
   }
 }
@@ -120,16 +117,6 @@ abstract class Converter[From, To](project: Project) {
     }
   }
 
-  def inWriteCommand[T](data: => T): T = {
-    var result: T = null.asInstanceOf[T]
-    CommandProcessor
-      .getInstance()
-      .executeCommand(project, () => {
-        CommandProcessor.getInstance().markCurrentCommandAsGlobal(project)
-        result = inWriteAction(data)
-      }, title, null)
-    result
-  }
 
   val title = "Converting Scala to Kotlin"
 }
