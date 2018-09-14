@@ -32,6 +32,11 @@
                 implementation="darthorimar.scalaToKotlinConverter.ScalaToKotlinLanguageConverter"/>
         <copyPastePostProcessor
                 implementation="darthorimar.languageConversion.ConvertOnCopyPastPostProcessor"/>
+
+        <applicationConfigurable groupId="language" id="language.converters" displayName="Language Converters"
+                                 instance="darthorimar.languageConversion.LanguageConverterConfigurable">
+        </applicationConfigurable>
+
     </extensions>
 
 
@@ -40,6 +45,8 @@
             <implementation-class>darthorimar.languageConversion.LanguageConverterApplicationComponent
             </implementation-class>
         </component>
+
+
     </application-components>
 
 
