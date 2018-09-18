@@ -1,7 +1,7 @@
 package darthorimar.scalaToKotlinConverter.dynamicConversions
 
 import com.intellij.openapi.project.Project
-import darthorimar.scalaToKotlinConverter.ast.Defn
+import darthorimar.scalaToKotlinConverter.ast.{BlockExpr, Defn, File, SimpleValOrVarDef}
 import darthorimar.scalaToKotlinConverter.step.ASTGenerationStep
 import org.jetbrains.plugins.scala.lang.psi.impl.ScalaPsiElementFactory
 import org.jetbrains.plugins.scala.project.ProjectContext
@@ -12,28 +12,36 @@ object ConversionsBuilder {
 
 
   def createConversion(conversionSource: ConversionSource, project: Project): Conversion = {
-    val objectDefinition = new ASTGenerationStep().recover[Defn](buildDambObject(conversionSource, project))
+    val objectDefinition =
+      new ASTGenerationStep().recover[File](buildDambObject(conversionSource, project)).definitions.head.asInstanceOf[Defn].body.get.exprs
     val scalaTemplate =
-      objectDefinition.body.get.exprs.head.asInstanceOf[Defn].body.get.exprs.head
-    val parameters = objectDefinition.body.get.exprs
+      objectDefinition.last.asInstanceOf[Defn].body.get
+        .exprs.head.asInstanceOf[SimpleValOrVarDef].expr
+        .get.asInstanceOf[BlockExpr].exprs.head
+    val parameters = objectDefinition.dropRight(1)
     Conversion(parameters, scalaTemplate, conversionSource.kotlin)
   }
 
 
+
+
+
   private def buildDambObject(conversion: ConversionSource, project: Project) =
     ScalaPsiElementFactory.createScalaFileFromText(
-      s"""object Dumb {
-         |  ${conversion.parameters}
+      s"""abstract class Dumb {
+         |  ${handleParameters(conversion.parameters)}
          |
          |  object Template {
-         |    ${conversion.scala}
+         |    val expr =  {
+         |       ${handleParameters(conversion.scala)}
+         |    }
          |  }
          |}
       """.stripMargin)(new ProjectContext(project))
 
   private def handleParameters(scalaCode: String) = {
-    val parameterRegex = raw"#{(\w*)}".r
-    parameterRegex.replaceAllIn(scalaCode, m => m.group(1) + "__")
+    val parameterRegex = raw"\#\{(\w*)\}".r
+    parameterRegex.replaceAllIn(scalaCode, m => m.group(1) + paramPrefix)
 
   }
 }

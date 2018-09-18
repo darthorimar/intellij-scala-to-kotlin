@@ -130,8 +130,9 @@ class ConvertTest extends ConverterTestBase {
 
   def testApplyConversions(): Unit =
     doTest(
-      """def a = Some(1).map(_.toString)
-      """.stripMargin,
+      """|val x: Option[Int] = Some(1)
+         |val f: Int => String = v => v.toString
+         |val res = x.map(f)""".stripMargin,
       """""".stripMargin
     )
 }

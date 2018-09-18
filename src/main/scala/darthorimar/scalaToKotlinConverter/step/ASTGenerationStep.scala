@@ -6,48 +6,42 @@ import com.intellij.psi.impl.source.JavaDummyHolder
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.definition.TupleDefinition
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
-import darthorimar.scalaToKotlinConverter.scopes.{ ASTGeneratorState, ScopedVal }
+import darthorimar.scalaToKotlinConverter.scopes.{ASTGeneratorState, ScopedVal}
 import darthorimar.scalaToKotlinConverter.step.ConverterStep.Notifier
-import darthorimar.scalaToKotlinConverter.types.{ KotlinTypes, LibTypes, ScalaTypes }
-import darthorimar.scalaToKotlinConverter.{ Exprs, ast }
+import darthorimar.scalaToKotlinConverter.types.{KotlinTypes, LibTypes, ScalaTypes}
+import darthorimar.scalaToKotlinConverter.{Exprs, ast}
 import org.jetbrains.plugins.scala.lang.lexer.ScalaTokenTypes
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.lang.psi.api.base._
 import org.jetbrains.plugins.scala.lang.psi.api.base.patterns._
-import org.jetbrains.plugins.scala.lang.psi.api.base.types.{ ScTypeArgs, ScTypeElement }
+import org.jetbrains.plugins.scala.lang.psi.api.base.types.{ScTypeArgs, ScTypeElement}
 import org.jetbrains.plugins.scala.lang.psi.api.expr._
-import org.jetbrains.plugins.scala.lang.psi.api.statements.{ ScFunction, ScFunctionDefinition, _ }
-import org.jetbrains.plugins.scala.lang.psi.api.statements.params.{ ScClassParameter, ScParameter, ScTypeParam }
-import org.jetbrains.plugins.scala.lang.psi.api.toplevel.templates.{ ScClassParents, ScTemplateParents }
+import org.jetbrains.plugins.scala.lang.psi.api.statements.{ScFunction, ScFunctionDefinition, _}
+import org.jetbrains.plugins.scala.lang.psi.api.statements.params.{ScClassParameter, ScParameter, ScTypeParam}
+import org.jetbrains.plugins.scala.lang.psi.api.toplevel.templates.{ScClassParents, ScTemplateParents}
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef._
 import org.jetbrains.plugins.scala.lang.psi.impl.expr.ScNewTemplateDefinitionImpl
 import org.jetbrains.plugins.scala.lang.psi.impl.toplevel.typedef.ScClassImpl
 import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
-import org.jetbrains.plugins.scala.lang.psi.types.api.designator.{ DesignatorOwner, ScProjectionType, ScThisType }
-import org.jetbrains.plugins.scala.lang.psi.types.api.{ JavaArrayType, StdType, TypeParameterType }
-import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ ScMethodType, ScTypePolymorphicType }
-import org.jetbrains.plugins.scala.lang.psi.types.result.{ TypeResult, Typeable }
-import org.jetbrains.plugins.scala.lang.psi.types.{
-  ScAbstractType,
-  ScCompoundType,
-  ScExistentialArgument,
-  ScExistentialType,
-  ScParameterizedType,
-  ScType
-}
-import org.jetbrains.plugins.scala.lang.psi.{ ScalaPsiElement, ScalaPsiUtil }
+import org.jetbrains.plugins.scala.lang.psi.types.api.designator.{DesignatorOwner, ScProjectionType, ScThisType}
+import org.jetbrains.plugins.scala.lang.psi.types.api.{JavaArrayType, StdType, TypeParameterType}
+import org.jetbrains.plugins.scala.lang.psi.types.nonvalue.{ScMethodType, ScTypePolymorphicType}
+import org.jetbrains.plugins.scala.lang.psi.types.result.{TypeResult, Typeable}
+import org.jetbrains.plugins.scala.lang.psi.types.{ScAbstractType, ScCompoundType, ScExistentialArgument, ScExistentialType, ScParameterizedType, ScType}
+import org.jetbrains.plugins.scala.lang.psi.{ScalaPsiElement, ScalaPsiUtil}
 import org.jetbrains.plugins.scala.extensions._
-import org.jetbrains.plugins.scala.lang.transformation.{ bindTo, qualifiedNameOf }
+import org.jetbrains.plugins.scala.lang.transformation.{bindTo, qualifiedNameOf}
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.JavaDummyHolder
-import org.jetbrains.plugins.scala.extensions.{ FirstChild, ImplicitConversion }
+import org.jetbrains.plugins.scala.extensions.{FirstChild, ImplicitConversion}
 import org.jetbrains.plugins.scala.lang.psi.ScalaPsiElement
 import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
 import org.jetbrains.plugins.scala.lang.psi.api.base.patterns.ScReferencePattern
 import org.jetbrains.plugins.scala.lang.psi.api.expr.ScReferenceExpression
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScFunction
+import org.jetbrains.plugins.scala.lang.psi.api.toplevel.ScTypedDefinition
 import org.jetbrains.plugins.scala.lang.psi.impl.ScalaCode._
-import org.jetbrains.plugins.scala.lang.transformation.{ AbstractTransformer, bindTo, qualifiedNameOf }
+import org.jetbrains.plugins.scala.lang.transformation.{AbstractTransformer, bindTo, qualifiedNameOf}
 import org.jetbrains.plugins.scala.project.ProjectContext
 
 import scala.annotation.tailrec
@@ -216,15 +210,16 @@ class ASTGenerationStep extends ConverterStep[ScalaPsiElement, AST] {
           .getOrElse("") + m.getName
 
       case p: ScParameter => p.getName
+      case f: ScFieldId => f.name
     } getOrElse ""
 
   def recover[T](psi: PsiElement): T =
     Try(transform[T](psi))
-      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
-      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorExpr(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorCasePattern(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorType(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorForEnumerator(psi.getText).asInstanceOf[T]) }
+//      .recoverWith { case _ => Try(ErrorWhenClause(psi.getText).asInstanceOf[T]) }
       .get
 
   private def transform[T](psi: PsiElement): T =

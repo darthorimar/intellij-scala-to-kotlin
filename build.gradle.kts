@@ -44,7 +44,9 @@ project(":") {
         testCompile("org.scala-lang:scala-library:2.12.6")
         testCompile("junit:junit:4.12")
         compile(project(":converter-api"))
-        compile(group = "net.jcazevedo", name = "moultingyaml_2.12", version = "0.4.0")    }
+        compile(group = "net.jcazevedo", name = "moultingyaml_2.12", version = "0.4.0")
+        compile(files("/home/ilya/code/Meerkat/core/target/scala-2.12/Meerkat-assembly-0.1.0.jar"))
+    }
 }
 
 project(":converter-api") {

@@ -41,9 +41,9 @@ class AstToTextConverter(protect: Project) extends Converter[AST, String](protec
     val converter: ConverterStep[AST, String] =
       wrapped[AST, String](
         withProgress(background = true),
-        new TypeTransform -->
+        new ApplyConversionsStep(protect) -->
+          new TypeTransform -->
           new BasicTransform -->
-          new CollectionTransform -->
           new TypeTransform -->
           new DefinitionCollectorTransform -->
           new CollectImportsStep -->
