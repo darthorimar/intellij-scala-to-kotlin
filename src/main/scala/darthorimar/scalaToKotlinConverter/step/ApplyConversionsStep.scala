@@ -21,10 +21,6 @@ class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
     ConversionsBuilder.build(parsed, project)
   }
 
-  def tryApply(expr: Expr, conversion: Conversion) = conversion match {
-    case Conversion(parameters, template, kotlinCode) =>
-  }
-
   implicit class TraversableSeqOfOptions[T](val seq: Seq[Option[T]]) {
     def sequence: Option[Seq[T]] =
       (Option(Seq.empty[T]) /: seq) {
@@ -38,12 +34,14 @@ class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
     state: ConverterStepState,
     index: Int,
     notifier: ConverterStep.Notifier
-  ): (NodeType, ConverterStepState) = {
+  ): (AST, ConverterStepState) = {
     notifier.notify(this, index)
     val input = new TemplateMeerkatInput(from)
     val conversion = conversions.head
     val parser = GrammarBuilder.buildGrammarByTemplate(conversion.scalaTemplate)
     val result = parseGraphFromAllPositions(parser, input)
+    val paths = result.flatMap(node => Seq(node.leftExtent, node.rightExtent)).distinct
+    input.print(paths)
     println(result)
     (from, state)
   }

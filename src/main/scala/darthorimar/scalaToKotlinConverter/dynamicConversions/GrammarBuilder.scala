@@ -9,24 +9,35 @@ import org.meerkat.parsers._
 
 object GrammarBuilder {
   def buildGrammarByTemplate(template: AST): Parser = {
-    def astNodeParser(ast: AST): Vertex[NodeType] =
-      V((_: AST).productPrefix == ast.productPrefix)
-
-    def build(templatePart: AST): Parser = {
-      def handlePair(
-        pair: (String, AST)
-      ): SequenceBuilder[String, NodeType, NoValue] = pair match {
-        case (name, ast) => outE(name) ~ build(ast)
-      }
-      val alternations =
-        templatePart.fields.toList match {
-          case Nil => parserToAlt(epsilon)
-          case (firstName, firstAst) :: others =>
-            (seqToAlt(outE(firstName) ~ build(firstAst)) /: others)(
-              _ | handlePair(_)
-            )
+    def nodeParser(node: Any): Vertex[NodeType] = {
+      def compare(real: Any, expected: Any): Boolean =
+        real -> expected match {
+          case (realAst: AST, nodeAst: AST) =>
+            realAst.productPrefix == nodeAst.productPrefix
+          case (Some(realValue), Some(nodeValue)) =>
+            compare(realValue, nodeValue)
+          case (realOne, nodeOne) => realOne.toString == nodeOne.toString
         }
-      syn(astNodeParser(templatePart) ~ syn(alternations), "root")
+      V((real: Any) => compare(real, node))
+    }
+
+    def build(templatePart: Any): Parser = templatePart match {
+      case astTemplatePart: AST =>
+        def handlePair(
+          pair: (String, Any)
+        ): SequenceBuilder[String, NodeType, NoValue] = pair match {
+          case (name, node) => outE(name) ~ build(node)
+        }
+        val alternations =
+          astTemplatePart.fields.toList match {
+            case Nil => parserToAlt(epsilon)
+            case (firstName, firstAst) :: others =>
+              (seqToAlt(outE(firstName) ~ build(firstAst)) /: others)(
+                _ | handlePair(_)
+              )
+          }
+        syn(nodeParser(templatePart) ~ syn(alternations), "root")
+      case other => syn(nodeParser(other), "root")
     }
     build(template)
   }

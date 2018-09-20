@@ -46,6 +46,7 @@ project(":") {
         compile(project(":converter-api"))
         compile(group = "net.jcazevedo", name = "moultingyaml_2.12", version = "0.4.0")
         compile(files("/home/ilya/code/Meerkat/core/target/scala-2.12/Meerkat-assembly-0.1.0.jar"))
+        compile(group = "guru.nidi", name = "graphviz-java", version = "0.7.0")
     }
 }
 
