@@ -8,7 +8,6 @@ class ApplyConversionTest extends ConverterTestBase {
          |val res = y.map(foo)
          |
          |""".stripMargin, """val y: Int? = Some.apply(1)
-        |val foo: (Int) -> String = { v -> v.toString() }
-        |val res: String? = y.let { foo(it) }""".stripMargin)
-
+         |val foo: (Int) -> String = { v -> v.toString() }
+         |val res: String? = y.let { foo(it) }""".stripMargin)
 }
