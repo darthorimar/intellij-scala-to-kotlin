@@ -2,8 +2,14 @@ package darthorimar.scalaToKotlinConverter.step
 
 import com.intellij.openapi.project.Project
 import darthorimar.scalaToKotlinConverter.ast._
-import darthorimar.scalaToKotlinConverter.dynamicConversions.{Conversion, ConversionsBuilder, YamlParser, _}
+import darthorimar.scalaToKotlinConverter.dynamicConversions.{
+  Conversion,
+  ConversionsBuilder,
+  YamlParser,
+  _
+}
 import org.meerkat.graph.parseGraphFromAllPositions
+import org.meerkat.sppf.{NonPackedNode, SPPFNode}
 
 class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
   override def name: String = "Applying internal transformations"
@@ -40,7 +46,17 @@ class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
     val conversion = conversions.head
     val parser = GrammarBuilder.buildGrammarByTemplate(conversion.scalaTemplate)
     val result = parseGraphFromAllPositions(parser, input)
-    val paths = result.flatMap(node => Seq(node.leftExtent, node.rightExtent)).distinct
+
+    def collectNodes(node: SPPFNode): Seq[Int] =
+      node match {
+        case nonPackedNode: NonPackedNode =>
+          Seq(nonPackedNode.leftExtent, nonPackedNode.rightExtent) ++
+            node.children.flatMap(collectNodes)
+        case _ => node.children.flatMap(collectNodes)
+      }
+
+    val paths =
+      result.flatMap(collectNodes).distinct
     input.print(paths)
     println(result)
     (from, state)

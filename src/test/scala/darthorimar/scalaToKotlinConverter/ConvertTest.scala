@@ -132,7 +132,9 @@ class ConvertTest extends ConverterTestBase {
     doTest(
       """|val y: Option[Int] = Some(1)
          |val f: Int => String = v => v.toString
-         |val res = y.map(f)""".stripMargin,
+         |val res = y.map(f)
+         |
+         |""".stripMargin,
       """""".stripMargin
     )
 }
