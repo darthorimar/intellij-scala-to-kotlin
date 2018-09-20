@@ -15,20 +15,32 @@ import org.jetbrains.plugins.scala.lang.psi.ScalaPsiElement
 import org.jetbrains.plugins.scala.util.ScalaUtils
 import org.jetbrains.plugins.scala.extensions._
 
-
-class PostProcessOperationConverter(protect: Project) extends Converter[KtElement, KtElement](protect) {
-  override def convert(from: KtElement, state: ConverterStepState): Result[KtElement] = {
+class PostProcessOperationConverter(protect: Project)
+    extends Converter[KtElement, KtElement](protect) {
+  override def convert(from: KtElement,
+                       state: ConverterStepState): Result[KtElement] = {
     val converter: ConverterStep[KtElement, KtElement] =
-        wrapped(withProgress(background = false),
-          new FormatFileAndGenerateImportsAndDefinitionsStep -->
-            new ApplyInspectionsStep)
-    converter(from, state, 0, notifier(stepsCount = 2, s"Converting file ${from.getContainingFile.getName}"))
+      wrapped(
+        withProgress(background = false),
+        new FormatFileAndGenerateImportsAndDefinitionsStep -->
+          new ApplyInspectionsStep
+      )
+    converter(
+      from,
+      state,
+      0,
+      notifier(
+        stepsCount = 2,
+        s"Converting file ${from.getContainingFile.getName}"
+      )
+    )
   }
 }
 
-
-class ScalaPsiToAstConverter(protect: Project) extends Converter[ScalaPsiElement, AST](protect) {
-  override def convert(from: ScalaPsiElement, state: ConverterStepState): Result[AST] = {
+class ScalaPsiToAstConverter(protect: Project)
+    extends Converter[ScalaPsiElement, AST](protect) {
+  override def convert(from: ScalaPsiElement,
+                       state: ConverterStepState): Result[AST] = {
     val converter: ConverterStep[ScalaPsiElement, AST] =
       new InnerPsiTransformStep -->
         new ASTGenerationStep
@@ -36,20 +48,38 @@ class ScalaPsiToAstConverter(protect: Project) extends Converter[ScalaPsiElement
   }
 }
 
-class AstToTextConverter(protect: Project) extends Converter[AST, String](protect) {
+class AstToTextConverter(protect: Project)
+    extends Converter[AST, String](protect) {
   override def convert(from: AST, state: ConverterStepState): Result[String] = {
     val converter: ConverterStep[AST, String] =
       wrapped[AST, String](
         withProgress(background = true),
-        new ApplyConversionsStep(protect) -->
-          new TypeTransform -->
+        new TypeTransform -->
+          new ApplyConversionsStep(protect) -->
           new BasicTransform -->
           new TypeTransform -->
           new DefinitionCollectorTransform -->
           new CollectImportsStep -->
           new PrintStringStep
       )
-    converter(from, state, 0, notifier(stepsCount = 10, "Converting copied Scala code"))
+    converter(
+      from,
+      state,
+      0,
+      notifier(stepsCount = 10, "Converting copied Scala code")
+    )
+  }
+}
+
+class TemplateConverter(protect: Project)
+    extends Converter[ScalaPsiElement, AST](protect) {
+  override def convert(from: ScalaPsiElement,
+                       state: ConverterStepState): Result[AST] = {
+    val converter: ConverterStep[ScalaPsiElement, AST] =
+      new InnerPsiTransformStep -->
+        new ASTGenerationStep -->
+        new TypeTransform
+    converter(from, state, 0, Notifier.empty)
   }
 }
 
@@ -57,16 +87,20 @@ abstract class Converter[From, To](project: Project) {
 
   def convert(from: From, state: ConverterStepState): Result[To]
 
-  def notifier(stepsCount: Int, caption: String): Notifier = (step: ConverterStep[_, _], index: Int) => {
-    Option(ProgressManager.getInstance().getProgressIndicator) foreach { indicator =>
-      indicator.setFraction(index.toDouble / stepsCount)
-      indicator.setText(caption)
-      indicator.setText2(s"${step.name} $index/$stepsCount")
+  def notifier(stepsCount: Int, caption: String): Notifier =
+    (step: ConverterStep[_, _], index: Int) => {
+      Option(ProgressManager.getInstance().getProgressIndicator) foreach {
+        indicator =>
+          indicator.setFraction(index.toDouble / stepsCount)
+          indicator.setText(caption)
+          indicator.setText2(s"${step.name} $index/$stepsCount")
+      }
     }
-  }
 
-  def wrapped[From1, To1](wrapper: (=> Result[To1]) => Result[To1],
-                          step: ConverterStep[From1, To1]): ConverterStep[From1, To1] = new ConverterStep[From1, To1] {
+  def wrapped[From1, To1](
+    wrapper: (=> Result[To1]) => Result[To1],
+    step: ConverterStep[From1, To1]
+  ): ConverterStep[From1, To1] = new ConverterStep[From1, To1] {
     override def apply(from: From1,
                        state: ConverterStepState,
                        index: Int,
@@ -81,7 +115,10 @@ abstract class Converter[From, To](project: Project) {
     val convert: ThrowableComputable[T, Exception] = () =>
       ProgressManager
         .getInstance()
-        .runProcess((() => data): Computable[T], ProgressManager.getInstance().getProgressIndicator)
+        .runProcess(
+          (() => data): Computable[T],
+          ProgressManager.getInstance().getProgressIndicator
+      )
 
     if (background)
       ProgressManager
@@ -97,7 +134,6 @@ abstract class Converter[From, To](project: Project) {
       result
     }
   }
-
 
   val title = "Converting Scala to Kotlin"
 }

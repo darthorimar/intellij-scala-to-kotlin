@@ -3,7 +3,7 @@ package darthorimar.scalaToKotlinConverter.step
 import darthorimar.scalaToKotlinConverter.BuilderBase
 import darthorimar.scalaToKotlinConverter.ast._
 import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
-import darthorimar.scalaToKotlinConverter.scopes.{ BuilderState, ScopedVal }
+import darthorimar.scalaToKotlinConverter.scopes.{BuilderState, ScopedVal}
 import darthorimar.scalaToKotlinConverter.step.ConverterStep.Notifier
 
 class PrintStringStep extends ConverterStep[AST, String] {
@@ -22,7 +22,8 @@ class PrintStringStep extends ConverterStep[AST, String] {
 }
 
 class KotlinBuilder extends BuilderBase {
-  val stateVal: ScopedVal[BuilderState] = new ScopedVal[BuilderState](BuilderState())
+  val stateVal: ScopedVal[BuilderState] =
+    new ScopedVal[BuilderState](BuilderState())
 
   def gen(ast: AST): Unit =
     ast match {
@@ -40,7 +41,16 @@ class KotlinBuilder extends BuilderBase {
       case ExprContainer(exprs) =>
         repNl(exprs)(gen)
 
-      case Defn(attrs, t, name, typeParams, consruct, supersBlock, block, companionDefn) =>
+      case Defn(
+          attrs,
+          t,
+          name,
+          typeParams,
+          consruct,
+          supersBlock,
+          block,
+          companionDefn
+          ) =>
         rep(attrs, " ")(gen)
         if (attrs.nonEmpty) str(" ")
         genKeyword(t)
@@ -307,9 +317,7 @@ class KotlinBuilder extends BuilderBase {
         genBlockOrExpr(body)
 
       case InterpolatedStringExpr(parts, injected) =>
-        scoped(
-          stateVal.updated(_.copy(inInterpolatedString = true))
-        ) {
+        scoped(stateVal.updated(_.copy(inInterpolatedString = true))) {
           str("\"")
           rep(parts.zip(injected), "") {
             case (p, i) =>
@@ -347,6 +355,9 @@ class KotlinBuilder extends BuilderBase {
       case ThrowExpr(expr) =>
         str("throw ")
         gen(expr)
+
+      case KotlinCodeExpr(exprType, kotlinCode) =>
+        str(kotlinCode)
 
       case EmptyDefExpr =>
       case x: Keyword =>

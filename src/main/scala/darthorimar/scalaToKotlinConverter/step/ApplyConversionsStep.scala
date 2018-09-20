@@ -8,22 +8,27 @@ import darthorimar.scalaToKotlinConverter.dynamicConversions.{
   YamlParser,
   _
 }
+import darthorimar.scalaToKotlinConverter.step.ConverterStep.Notifier
+import darthorimar.scalaToKotlinConverter.step.transform.Transform
 import org.meerkat.graph.parseGraphFromAllPositions
 import org.meerkat.sppf.{NonPackedNode, SPPFNode}
+
+import scala.PartialFunction
 
 class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
   override def name: String = "Applying internal transformations"
 
-  val conversions = {
+  val conversions: List[Conversion] = {
     val parsed =
-      YamlParser.parse(s"""conversions:
+      YamlParser.parse(s"""
+           |conversions:
            |  - parameters: |
-           |        val x: Option[Int]
-           |        val f: Int => String
+           |        val x$paramSuffix: Option[Int]
+           |        val f$paramSuffix: Int => String
            |    scala: |
-           |        x.map(f)
+           |        #{x}.map(#{f})
            |    kotlin: |
-           |        x.let { f(it) }""".stripMargin)
+           |        #{x}.let { #{f}(it) }""".stripMargin)
     ConversionsBuilder.build(parsed, project)
   }
 
@@ -35,6 +40,7 @@ class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
         case (Some(xs), Some(x)) => Some(x +: xs)
       }
   }
+
   override def apply(
     from: AST,
     state: ConverterStepState,
@@ -44,8 +50,8 @@ class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
     notifier.notify(this, index)
     val input = new TemplateMeerkatInput(from)
     val conversion = conversions.head
-    val parser = GrammarBuilder.buildGrammarByTemplate(conversion.scalaTemplate)
-    val result = parseGraphFromAllPositions(parser, input)
+    val (result, replacements) =
+      GrammarBuilder.buildGrammarByTemplate(conversion.scalaTemplate, input)
 
     def collectNodes(node: SPPFNode): Seq[Int] =
       node match {
@@ -55,10 +61,41 @@ class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
         case _ => node.children.flatMap(collectNodes)
       }
 
-    val paths =
-      result.flatMap(collectNodes).distinct
-    input.print(paths)
+    val kotlinCode =
+      replaceParameters(conversion.kotlinTemplate, replacements map {
+        case (k, v) => k.stripSuffix(paramSuffix) -> v
+      })
+
+    val possiblePoints =
+      result
+        .map(node => node.leftExtent -> node.rightExtent)
+        .groupBy(_._1)
+        .mapValues(_.map(_._2))
+        .toSeq
+
+    def getRealAccessable(origin: Int): Seq[Int] =
+      input.data.nodesChildrenIds(origin) flatMap {
+        case (_, id) => id +: getRealAccessable(id)
+      }
+
+    val pointOps = possiblePoints collectFirst {
+      case (origin, children) if getRealAccessable(origin).toSet + origin == children.toSet + origin =>
+        origin
+    }
+
+    val nodes = result.flatMap(node => Seq(node.leftExtent, node.rightExtent))
+
+    input.print(nodes)
     println(result)
-    (from, state)
+    pointOps map { point =>
+      new Transform {
+        override protected val action: PartialFunction[AST, AST] = {
+          case ast if input.data.nodeById(point) contains ast =>
+            KotlinCodeExpr(NoType, kotlinCode)
+        }
+        override def name: String = ""
+      }.apply(from, state, 0, Notifier.empty)
+    } getOrElse (from, state)
   }
+
 }

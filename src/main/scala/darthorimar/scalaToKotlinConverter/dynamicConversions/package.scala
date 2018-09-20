@@ -11,7 +11,7 @@ package object dynamicConversions {
                         scalaTemplate: Expr,
                         kotlinTemplate: String)
 
-  val paramPrefix = "PARAM"
+  val paramSuffix = "PARAM"
 
   type EdgeType = String
   type NodeType = Any
@@ -32,4 +32,6 @@ package object dynamicConversions {
         case (name, simpleValue)      => Seq(name -> simpleValue)
       }
   }
-  }
+  def replaceParameters(code: String, replacer: String => String): String =
+    raw"\#\{(\w*)\}".r.replaceAllIn(code, g => replacer(g.group(1)))
+}

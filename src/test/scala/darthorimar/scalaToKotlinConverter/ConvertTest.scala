@@ -127,14 +127,4 @@ class ConvertTest extends ConverterTestBase {
         |fun bar(): Pair<Int, Int> =Pair<Int, Int>(1, 2)
       """.stripMargin
     )
-
-  def testApplyConversions(): Unit =
-    doTest(
-      """|val y: Option[Int] = Some(1)
-         |val f: Int => String = v => v.toString
-         |val res = y.map(f)
-         |
-         |""".stripMargin,
-      """""".stripMargin
-    )
 }
