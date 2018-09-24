@@ -27,7 +27,7 @@ class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
            |conversions:
            |  - parameters: |
            |        val x$paramSuffix: Option[Int]
-           |        val f$paramSuffix: Int => String
+           |        val f$paramSuffix: Int => Int
            |    scala: |
            |        #{x}.map(#{f})
            |    kotlin: |

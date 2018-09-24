@@ -66,7 +66,7 @@ class ASTInputData(private val root: AST) {
     if (nodeToId.containsKey(node)) Some(nodeToId.get(node))
     else None
 
-  def print(highlightNodes: Seq[Int]): Unit =
+  def print(highlightNodes: Map[Int, Seq[Color]]): Unit =
     new ASTToDotPrinter().print(root, "ast", this, highlightNodes)
 }
 
@@ -76,12 +76,12 @@ class ASTToDotPrinter {
   def print(root: AST,
             fileName: String,
             inputData: ASTInputData,
-            highlightNodes: Seq[Int]): Unit = {
+            highlightNodes: Map[Int, Seq[Color]]): Unit = {
 
     def createNodeByName(name: String, id: Int): Node = {
       val newNode = node(s"$name#$id") `with` Label.of(s"($id) $name")
       if (highlightNodes contains id)
-        newNode `with` (Color.LIGHTGREY, Style.FILLED)
+        newNode `with` (highlightNodes(id) :_*) `with` Style.FILLED
       else newNode
     }
 
