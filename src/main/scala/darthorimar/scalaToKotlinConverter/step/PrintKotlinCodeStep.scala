@@ -356,8 +356,14 @@ class KotlinBuilder extends BuilderBase {
         str("throw ")
         gen(expr)
 
-      case KotlinCodeExpr(exprType, kotlinCode) =>
-        str(kotlinCode)
+      case KotlinCodeExpr(exprType, codeParts, exprParts) =>
+        rep(codeParts zip exprParts, "") { case (code, expr) =>
+          str(code)
+          gen(expr)
+        }
+        if (codeParts.length > exprParts.length) {
+          str(codeParts.last)
+        }
 
       case EmptyDefExpr =>
       case x: Keyword =>

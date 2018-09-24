@@ -2,18 +2,21 @@ package darthorimar.scalaToKotlinConverter.step
 
 import com.intellij.openapi.project.Project
 import darthorimar.scalaToKotlinConverter.ast._
+import darthorimar.scalaToKotlinConverter.dynamicConversions.ConversionsCollector.ConversionData
 import darthorimar.scalaToKotlinConverter.dynamicConversions.{
   Conversion,
   ConversionsBuilder,
   YamlParser,
   _
 }
+import darthorimar.scalaToKotlinConverter.scopes.ScopedVal.scoped
 import darthorimar.scalaToKotlinConverter.step.ConverterStep.Notifier
 import darthorimar.scalaToKotlinConverter.step.transform.Transform
 import org.meerkat.graph.parseGraphFromAllPositions
 import org.meerkat.sppf.{NonPackedNode, SPPFNode}
 
 import scala.PartialFunction
+import scala.language.postfixOps
 
 class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
   override def name: String = "Applying internal transformations"
@@ -49,53 +52,17 @@ class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
   ): (AST, ConverterStepState) = {
     notifier.notify(this, index)
     val input = new TemplateMeerkatInput(from)
-    val conversion = conversions.head
-    val (result, replacements) =
-      GrammarBuilder.buildGrammarByTemplate(conversion.scalaTemplate, input)
 
-    def collectNodes(node: SPPFNode): Seq[Int] =
-      node match {
-        case nonPackedNode: NonPackedNode =>
-          Seq(nonPackedNode.leftExtent, nonPackedNode.rightExtent) ++
-            node.children.flatMap(collectNodes)
-        case _ => node.children.flatMap(collectNodes)
-      }
+    val conversionsData =
+      ConversionsCollector.collectConversions(input, conversions) map {
+        case ConversionData(startPos, convertedTo) => startPos -> convertedTo
+      } toMap
 
-    val kotlinCode =
-      replaceParameters(conversion.kotlinTemplate, replacements map {
-        case (k, v) => k.stripSuffix(paramSuffix) -> v
-      })
-
-    val possiblePoints =
-      result
-        .map(node => node.leftExtent -> node.rightExtent)
-        .groupBy(_._1)
-        .mapValues(_.map(_._2))
-        .toSeq
-
-    def getRealAccessable(origin: Int): Seq[Int] =
-      input.data.nodesChildrenIds(origin) flatMap {
-        case (_, id) => id +: getRealAccessable(id)
-      }
-
-    val pointOps = possiblePoints collectFirst {
-      case (origin, children) if getRealAccessable(origin).toSet + origin == children.toSet + origin =>
-        origin
-    }
-
-    val nodes = result.flatMap(node => Seq(node.leftExtent, node.rightExtent))
-
-    input.print(nodes)
-    println(result)
-    pointOps map { point =>
-      new Transform {
-        override protected val action: PartialFunction[AST, AST] = {
-          case ast if input.data.nodeById(point) contains ast =>
-            KotlinCodeExpr(NoType, kotlinCode)
-        }
-        override def name: String = ""
-      }.apply(from, state, 0, Notifier.empty)
-    } getOrElse (from, state)
+    new Transform {
+      override protected val action: PartialFunction[AST, AST] =
+        Function.unlift(input.idByNode(_).flatMap(conversionsData.get))
+      override def name: String = ""
+    }.apply(from, state, 0, Notifier.empty)
   }
 
 }

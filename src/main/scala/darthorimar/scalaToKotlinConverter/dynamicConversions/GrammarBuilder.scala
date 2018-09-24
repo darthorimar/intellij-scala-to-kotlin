@@ -1,6 +1,6 @@
 package darthorimar.scalaToKotlinConverter.dynamicConversions
 
-import darthorimar.scalaToKotlinConverter.ast.AST
+import darthorimar.scalaToKotlinConverter.ast.{AST, Expr}
 import org.meerkat.parsers.Parsers.Nonterminal
 import org.meerkat.Syntax._
 import org.meerkat.graph.parseGraphFromAllPositions
@@ -12,11 +12,11 @@ import org.meerkat.sppf.NonPackedNode
 import scala.collection.mutable
 
 object GrammarBuilder {
-  def buildGrammarByTemplate(
+  def buildAndApplyGrammar(
     template: AST,
     input: TemplateMeerkatInput
   ): (scala.Seq[NonPackedNode], mutable.Map[String, String]) = {
-    val replacements = mutable.Map.empty[String, String]
+      val replacements = mutable.Map.empty[String, String]
     def nodeParser(node: Any): Vertex[NodeType] = {
       def compare(real: Any, expected: Any): Boolean =
         real -> expected match {

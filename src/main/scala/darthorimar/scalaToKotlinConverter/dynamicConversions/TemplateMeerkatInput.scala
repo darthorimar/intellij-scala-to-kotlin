@@ -1,9 +1,9 @@
 package darthorimar.scalaToKotlinConverter.dynamicConversions
 
 import java.io.File
+import java.util
 
-import darthorimar.scalaToKotlinConverter.ast.{AST, Type}
-import darthorimar.scalaToKotlinConverter.scopes.LocalNamer
+import darthorimar.scalaToKotlinConverter.ast.AST
 import guru.nidi.graphviz.attribute.{Color, Label, Style}
 import guru.nidi.graphviz.engine.{Format, Graphviz}
 import guru.nidi.graphviz.model.Factory.{graph, node, to}
@@ -12,30 +12,30 @@ import org.meerkat.input.Input
 
 import scala.collection.mutable
 
-class TemplateMeerkatInput(val root: AST) extends Input[EdgeType, NodeType] {
-  val data = new ASTInputData(root)
+class TemplateMeerkatInput(root: AST)
+    extends ASTInputData(root)
+    with Input[EdgeType, NodeType] {
 
-  override def edgesCount: Int = data.nodesCount
+  override def edgesCount: Int = nodesCount
 
   override def filterEdges(nodeId: Int,
                            predicate: EdgeType => Boolean,
                            outgoing: Boolean): Seq[(EdgeType, Int)] =
-    data.nodesChildrenIds(nodeId) filter {
+    nodesChildrenIds(nodeId) filter {
       case (name, _) if predicate(name) => true
       case _                            => false
     }
 
   override def checkNode(nodeId: Int,
                          predicate: NodeType => Boolean): Option[NodeType] =
-    data.nodeById(nodeId) filter predicate
+    nodeById(nodeId) filter predicate
 
-  def idToNode(id: Int): Option[Any] = data.nodeById(id)
-  def print(highlightNodes: Seq[Int]): Unit = data.print(highlightNodes)
 }
 
-class ASTInputData(val root: AST) {
+class ASTInputData(private val root: AST) {
   private val nodes = mutable.Map(-1 -> new mutable.ListBuffer[(String, Int)])
   private val idToNode = mutable.Map.empty[Int, Any]
+  private val nodeToId = new util.IdentityHashMap[Any, Int]
 
   private val queue = mutable.Queue[(Int, String, Any)]((-1, "", root))
   private var index = 0
@@ -49,6 +49,7 @@ class ASTInputData(val root: AST) {
       case _ =>
     }
     idToNode(index) = element
+    nodeToId.put(element, index)
     nodes(index) = new mutable.ListBuffer
     nodes(parentIndex).append((edgeLabel, index))
     index += 1
@@ -60,6 +61,10 @@ class ASTInputData(val root: AST) {
   def nodesCount: Int = nodes.size
 
   def nodeById(id: Int): Option[Any] = idToNode.get(id)
+
+  def idByNode[T](node: T): Option[Int] =
+    if (nodeToId.containsKey(node)) Some(nodeToId.get(node))
+    else None
 
   def print(highlightNodes: Seq[Int]): Unit =
     new ASTToDotPrinter().print(root, "ast", this, highlightNodes)
@@ -75,7 +80,8 @@ class ASTToDotPrinter {
 
     def createNodeByName(name: String, id: Int): Node = {
       val newNode = node(s"$name#$id") `with` Label.of(s"($id) $name")
-      if (highlightNodes contains id) newNode `with` (Color.LIGHTGREY, Style.FILLED)
+      if (highlightNodes contains id)
+        newNode `with` (Color.LIGHTGREY, Style.FILLED)
       else newNode
     }
 

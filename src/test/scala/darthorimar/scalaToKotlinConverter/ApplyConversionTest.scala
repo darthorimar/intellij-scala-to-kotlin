@@ -6,6 +6,8 @@ class ApplyConversionTest extends ConverterTestBase {
     doTest("""val y: Option[Int] = Some(1)
          |val foo: Int => String = v => v.toString
          |val res = y.map(foo)
+         |val res2 = y.map(foo)
+         |val res3 = y.map(foo)
          |
          |""".stripMargin, """val y: Int? = Some.apply(1)
          |val foo: (Int) -> String = { v -> v.toString() }

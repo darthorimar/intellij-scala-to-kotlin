@@ -67,7 +67,10 @@ case class ForInExpr(exprType: Type, value: RefExpr, range: Expr, body: Expr) ex
 
 case class WhileExpr(exprType: Type, condition: Expr, body: BlockExpr) extends Expr
 
-case class KotlinCodeExpr(exprType: Type, kotlinCode: String) extends Expr
+case class KotlinCodeExpr(exprType: Type,
+                          codeParts: Seq[String],
+                          exprParts: Seq[Expr])
+    extends Expr
 
 case class ThisExpr(exprType: Type) extends Expr
 

@@ -305,8 +305,8 @@ abstract class Transform extends ConverterStep[AST, AST] {
       case BracketsExpr(exprType, expr, inBrackets) =>
         BracketsExpr(transform[Type](exprType), transform[Expr](expr), transform[Expr](inBrackets))
 
-      case KotlinCodeExpr(exprType, kotlinCode) =>
-        KotlinCodeExpr(transform[Type](exprType), kotlinCode)
+      case KotlinCodeExpr(exprType, codeParts, exprParts) =>
+        KotlinCodeExpr(transform[Type](exprType), codeParts, exprParts.map(transform[Expr]))
 
       case EmptyDefExpr => EmptyDefExpr
 
