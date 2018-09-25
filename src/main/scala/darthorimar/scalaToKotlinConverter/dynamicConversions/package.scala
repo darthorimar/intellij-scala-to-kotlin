@@ -1,7 +1,9 @@
 package darthorimar.scalaToKotlinConverter
 
-import darthorimar.scalaToKotlinConverter.ast.{AST, Expr}
+import darthorimar.scalaToKotlinConverter.ast.{AST, Expr, KotlinCodeExpr, Type}
 import org.meerkat.parsers.Parsers.Nonterminal
+import org.meerkat.parsers.&
+
 
 import scala.language.implicitConversions
 
@@ -17,7 +19,9 @@ package object dynamicConversions {
 
   type EdgeType = String
   type NodeType = Any
+  type Data = (Int, Option[Int])
   type Parser = Nonterminal[EdgeType, NodeType]
+  type DataParser = Parser & Data
 
   implicit class ASTOps[T <: AST](val ast: T) extends AnyVal {
     private def fieldNames: Seq[String] =
@@ -34,18 +38,25 @@ package object dynamicConversions {
         case (name, simpleValue)      => Seq(name -> simpleValue)
       }
 
-//    def withId: WithId[T] = {
-//      def withIdRecursive[R](element: R): WithId[R] =
-//        element match {
-//          case ast: AST =>
-//
-//        }
-//    }
+    def id(implicit data: ASTInputData): Option[Int] =
+      data.idByNode(ast)
   }
+
+  def kotlinCodeExpr(expType: Type,
+                     template: String,
+                     holes: Map[String, AST]): KotlinCodeExpr = {
+    val (codeParts, exprs) = splitParameters(template, holes)
+    KotlinCodeExpr(expType, codeParts, exprs)
+  }
+
+  def splitParameters[A](code: String,
+                         splitter: String => A): (Seq[String], Seq[A]) = {
+    (paramRegex.split(code), paramRegex.findAllIn(code).map(splitter).toSeq)
+  }
+
   def replaceParameters(code: String, replacer: String => String): String =
-    raw"\#\{(\w*)\}".r.replaceAllIn(code, g => replacer(g.group(1)))
+    paramRegex.replaceAllIn(code, g => replacer(g.group(1)))
 
-  case class WithId[T](id: Int, element: T)
+  private val paramRegex = raw"\#\{(\w*)\}".r
 
-  implicit def withIdToElement[T](withId: WithId[T]): T = withId.element
 }

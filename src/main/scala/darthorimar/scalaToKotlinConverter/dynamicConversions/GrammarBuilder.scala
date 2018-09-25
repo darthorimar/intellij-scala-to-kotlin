@@ -1,10 +1,8 @@
 package darthorimar.scalaToKotlinConverter.dynamicConversions
 
-import darthorimar.scalaToKotlinConverter.ast.{AST, Expr}
-import org.meerkat.parsers.Parsers.Nonterminal
+import darthorimar.scalaToKotlinConverter.ast.{AST, RefExpr}
 import org.meerkat.Syntax._
 import org.meerkat.graph.parseGraphFromAllPositions
-import org.meerkat.input.LinearInput._
 import org.meerkat.parsers.Parsers._
 import org.meerkat.parsers._
 import org.meerkat.sppf.NonPackedNode
@@ -12,11 +10,9 @@ import org.meerkat.sppf.NonPackedNode
 import scala.collection.mutable
 
 object GrammarBuilder {
-  def buildAndApplyGrammar(
-    template: AST,
-    input: TemplateMeerkatInput
-  ): (scala.Seq[NonPackedNode], mutable.Map[String, String]) = {
-      val replacements = mutable.Map.empty[String, String]
+  def buildAndApplyGrammar(template: AST)(
+    implicit input: TemplateMeerkatInput
+  ): Stream[(Int, Option[(String, Int)])] = {
     def nodeParser(node: Any): Vertex[NodeType] = {
       def compare(real: Any, expected: Any): Boolean =
         real -> expected match {
@@ -24,36 +20,49 @@ object GrammarBuilder {
             realAst.productPrefix == nodeAst.productPrefix
           case (Some(realValue), Some(nodeValue)) =>
             compare(realValue, nodeValue)
-          case (realString: String, expectedString: String)
-              if expectedString.endsWith(paramSuffix) =>
-            replacements(expectedString) = realString
-            true
           case (realOne, nodeOne) => realOne.toString == nodeOne.toString
         }
-      V((real: Any) => compare(real, node))
+      V((real: NodeType) => compare(real, node))
     }
 
-    def build(templatePart: Any): Parser = templatePart match {
-      case astTemplatePart: AST =>
-        def handlePair(
-          pair: (String, Any)
-        ): SequenceBuilder[String, NodeType, NoValue] = pair match {
-          case (name, node) => outE(name) ~ build(node)
-        }
-        val alternations =
-          astTemplatePart.fields.toList match {
-            case Nil => parserToAlt(epsilon)
-            case (firstName, firstAst) :: others =>
-              (seqToAlt(outE(firstName) ~ build(firstAst)) /: others)(
-                _ | handlePair(_)
-              ) | epsilon
-          }
-        syn(nodeParser(templatePart) ~ syn(alternations), "root")
-      case other => syn(nodeParser(other), "root")
+    val noEdge = epsilonEdge ^ ((_: EdgeType) => None)
+    val noVertex = epsilonVertex ^ ((_: NodeType) => None)
+
+    def handlePair(pair: (String, Any)) =
+      pair match {
+        case (name, node) => outE(name) ~ build(node)
+      }
+    def buildAlternations(ast: AST) =
+      ast.fields.toList match {
+        case Nil => noEdge | noEdge//| noVertex
+        case (firstName, firstAst) :: others =>
+          (seqToAlt(outE(firstName) ~ build(firstAst)) /: others)(
+            _ | handlePair(_)
+          ) //| noEdge | noVertex
+      }
+    def build[Result](templatePart: Any): Parser & Option[(String, Int)] =
+      templatePart match {
+        case refExpr: RefExpr if refExpr.referenceName.endsWith(paramSuffix) =>
+          syn[EdgeType, NodeType, Option[(String, Int)]](
+            V[NodeType]((_: NodeType) => true) ^ (
+              (_: NodeType) => refExpr.id.map(refExpr.referenceName -> _)//might be error-prone
+            )
+          )
+        case astTemplatePart: AST =>
+          syn(
+            nodeParser(templatePart) ~ syn(buildAlternations(astTemplatePart))
+          )
+        case other => syn(nodeParser(other) ^ ((_: NodeType) => None))
+      }
+
+    val parser = syn( syn(nodeParser(template) ^ {
+      case ast: AST => ast.id.get
+      case _        => -1
+    }) ~ syn(buildAlternations(template))) & {
+      case sth => sth
     }
-    val parser = build(template)
-    val result = parseGraphFromAllPositions(parser, input)
-    result -> replacements
+    val r = executeQuery(parser, input).toList
+    Stream.empty
   }
 
 }

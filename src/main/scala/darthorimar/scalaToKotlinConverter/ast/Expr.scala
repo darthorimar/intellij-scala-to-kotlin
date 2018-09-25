@@ -69,7 +69,7 @@ case class WhileExpr(exprType: Type, condition: Expr, body: BlockExpr) extends E
 
 case class KotlinCodeExpr(exprType: Type,
                           codeParts: Seq[String],
-                          exprParts: Seq[Expr])
+                          exprParts: Seq[AST])
     extends Expr
 
 case class ThisExpr(exprType: Type) extends Expr

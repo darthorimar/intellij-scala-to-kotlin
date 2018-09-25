@@ -16,6 +16,7 @@ import org.meerkat.graph.parseGraphFromAllPositions
 import org.meerkat.sppf.{NonPackedNode, SPPFNode}
 
 import scala.PartialFunction
+import scala.collection.mutable
 import scala.language.postfixOps
 
 class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
@@ -51,16 +52,32 @@ class ApplyConversionsStep(project: Project) extends ConverterStep[AST, AST] {
     notifier: ConverterStep.Notifier
   ): (AST, ConverterStepState) = {
     notifier.notify(this, index)
-    val input = new TemplateMeerkatInput(from)
+    implicit val input: TemplateMeerkatInput = new TemplateMeerkatInput(from)
 
     val conversionsData =
-      ConversionsCollector.collectConversions(input, conversions) map {
-        case ConversionData(startPos, convertedTo) => startPos -> convertedTo
+      ConversionsCollector.collectConversions(conversions) map {
+        case conversionData @ ConversionData(startPos, _, _) =>
+          startPos -> conversionData
       } toMap
 
     new Transform {
-      override protected val action: PartialFunction[AST, AST] =
-        Function.unlift(input.idByNode(_).flatMap(conversionsData.get))
+      val newIds: mutable.Map[Int, AST] = mutable.Map.empty
+
+      override def transform[T <: AST](ast: AST): T = {
+        val newAst = super.transform[T](ast)
+        newIds(ast.id.get) = newAst
+        newAst
+      }
+      override protected val action: PartialFunction[AST, AST] = {
+        case expr: Expr if expr.id.exists(conversionsData.contains) =>
+          val conversionData = conversionsData(expr.id.get)
+          kotlinCodeExpr(
+            expr.exprType,
+            conversionData.convertedTemplate,
+            conversionData.holes.mapValues(newIds).toMap
+          )
+
+      }
       override def name: String = ""
     }.apply(from, state, 0, Notifier.empty)
   }

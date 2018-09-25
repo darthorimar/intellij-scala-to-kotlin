@@ -16,7 +16,7 @@ class TemplateMeerkatInput(root: AST)
     extends ASTInputData(root)
     with Input[EdgeType, NodeType] {
 
-  override def edgesCount: Int = nodesCount
+  override def nodesCount: Int = super[ASTInputData].nodesCount
 
   override def filterEdges(nodeId: Int,
                            predicate: EdgeType => Boolean,
@@ -36,6 +36,7 @@ class ASTInputData(private val root: AST) {
   private val nodes = mutable.Map(-1 -> new mutable.ListBuffer[(String, Int)])
   private val idToNode = mutable.Map.empty[Int, Any]
   private val nodeToId = new util.IdentityHashMap[Any, Int]
+  private val parentIdByChildId = mutable.Map.empty[Int, Int]
 
   private val queue = mutable.Queue[(Int, String, Any)]((-1, "", root))
   private var index = 0
@@ -51,16 +52,19 @@ class ASTInputData(private val root: AST) {
     idToNode(index) = element
     nodeToId.put(element, index)
     nodes(index) = new mutable.ListBuffer
-    nodes(parentIndex).append((edgeLabel, index))
+    nodes(parentIndex).append(edgeLabel -> index)
+    parentIdByChildId(index) = parentIndex
     index += 1
   }
 
   def nodesChildrenIds(parentId: Int): Seq[(String, Int)] =
-    nodes(parentId)
+    nodes.getOrElse(parentId, Seq.empty)
 
   def nodesCount: Int = nodes.size
 
   def nodeById(id: Int): Option[Any] = idToNode.get(id)
+
+  def parentIdByChild(id: Int): Option[Int] = parentIdByChildId.get(id)
 
   def idByNode[T](node: T): Option[Int] =
     if (nodeToId.containsKey(node)) Some(nodeToId.get(node))
@@ -81,7 +85,7 @@ class ASTToDotPrinter {
     def createNodeByName(name: String, id: Int): Node = {
       val newNode = node(s"$name#$id") `with` Label.of(s"($id) $name")
       if (highlightNodes contains id)
-        newNode `with` (highlightNodes(id) :_*) `with` Style.FILLED
+        newNode `with` (highlightNodes(id): _*) `with` Style.FILLED
       else newNode
     }
 
